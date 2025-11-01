@@ -1,0 +1,121 @@
+version: '3.8'
+
+# TravelMind Docker Compose for ZimaOS
+# Optimized for ZimaOS with proper data paths
+
+services:
+  # Backend Service (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: travelmind-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://travelmind:travelmind@db:5432/travelmind}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - SECRET_KEY=${SECRET_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - UPLOAD_DIR=/app/uploads
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      - ENABLE_AI_FEATURES=${ENABLE_AI_FEATURES:-true}
+    volumes:
+      # ZimaOS App Data Path
+      - /DATA/AppData/travelmind/data:/app/data
+      - /DATA/AppData/travelmind/uploads:/app/uploads
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - travelmind-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      # ZimaOS Labels for App Store
+      icon: https://raw.githubusercontent.com/chicohaager/TravelMind/main/frontend/public/icon-192.png
+      description: "Self-hosted travel planning and diary with AI assistance"
+      category: "Productivity"
+      author: "TravelMind Team"
+      com.zima.app.name: "TravelMind"
+      com.zima.app.version: "1.0.0"
+
+  # Frontend Service (React + Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+    container_name: travelmind-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - travelmind-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      com.zima.app.frontend: "true"
+
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: travelmind-db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-travelmind}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-travelmind}
+      - POSTGRES_DB=${POSTGRES_DB:-travelmind}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      # ZimaOS Database Path
+      - /DATA/AppData/travelmind/postgres:/var/lib/postgresql/data
+      - /DATA/AppData/travelmind/backups:/backups
+    restart: unless-stopped
+    networks:
+      - travelmind-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travelmind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      com.zima.app.database: "true"
+    # Optimize for ZimaOS storage
+    shm_size: 256mb
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "default_statistics_target=100"
+
+networks:
+  travelmind-network:
+    driver: bridge
+    labels:
+      com.zima.network: "travelmind"
+
+# Note: No volumes section - using direct ZimaOS paths for better integration
