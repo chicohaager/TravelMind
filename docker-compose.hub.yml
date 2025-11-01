@@ -1,0 +1,82 @@
+version: '3.8'
+
+# TravelMind Docker Compose - Using Pre-built Images from Docker Hub
+# This file uses images from Docker Hub for quick deployment without building
+
+services:
+  # Backend Service (FastAPI)
+  backend:
+    image: chicohaager/travelmind-backend:latest
+    container_name: travelmind-backend-prod
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://travelmind:travelmind@db:5432/travelmind}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - SECRET_KEY=${SECRET_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - UPLOAD_DIR=/app/uploads
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      - ENABLE_AI_FEATURES=${ENABLE_AI_FEATURES:-true}
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - travelmind-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service (React + Vite)
+  frontend:
+    image: chicohaager/travelmind-frontend:latest
+    container_name: travelmind-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - travelmind-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: travelmind-db-prod
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-travelmind}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-travelmind}
+      - POSTGRES_DB=${POSTGRES_DB:-travelmind}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - travelmind-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travelmind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  travelmind-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
