@@ -1,0 +1,178 @@
+/* Mobile Touch Optimizations for TravelMind */
+
+/* Ensure better touch targets (min 44x44px) */
+@media (max-width: 640px) {
+  button, a, input[type="button"], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Larger tap targets for interactive elements */
+  .btn, .btn-primary, .btn-secondary {
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+  }
+
+  /* Better spacing for form elements */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 12px !important;
+  }
+
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Better card spacing on mobile */
+  .card {
+    margin-bottom: 12px;
+  }
+
+  /* Stack buttons vertically on mobile */
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+
+  /* Better modal sizing */
+  .modal-content {
+    max-height: 95vh !important;
+    margin: 8px !important;
+  }
+
+  /* Sticky footer buttons */
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    padding: 12px;
+    margin: 0 -12px;
+  }
+
+  /* Better table responsiveness */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* Grid adjustments */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Better image sizing */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Show mobile-only elements */
+  .mobile-only {
+    display: block !important;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Touch-friendly hover states */
+@media (hover: none) {
+  button:hover, a:hover {
+    transform: none;
+  }
+
+  button:active, a:active {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+}
+
+/* Better focus states for keyboard navigation */
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Prevent text selection on buttons */
+button, .btn {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better safe area handling for iOS */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Loading states */
+.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Better accessibility for touch */
+@media (max-width: 640px) {
+  /* Larger checkboxes and radio buttons */
+  input[type="checkbox"], input[type="radio"] {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Better spacing for labels */
+  label {
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  /* Improve dropdown menus */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 20px;
+    padding-right: 40px !important;
+  }
+}
+
+/* Optimize animations for mobile */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Better contrast for readability */
+@media (prefers-contrast: high) {
+  button, a {
+    border: 2px solid currentColor;
+  }
+}

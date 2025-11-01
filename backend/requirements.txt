@@ -1,0 +1,61 @@
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+gunicorn==21.2.0
+
+# Database
+sqlalchemy==2.0.25
+alembic==1.13.1
+psycopg2-binary==2.9.9  # PostgreSQL (sync)
+asyncpg==0.29.0          # PostgreSQL (async)
+aiosqlite==0.19.0       # Async SQLite
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+bcrypt==4.1.2
+slowapi==0.1.9  # Rate limiting
+
+# AI APIs
+groq==0.4.2             # Groq (FREE, fast Llama models) - DEFAULT
+anthropic==0.18.1       # Claude
+openai==1.12.0          # OpenAI (GPT-4, GPT-3.5)
+google-generativeai==0.3.2  # Google Gemini
+
+# Validation & Serialization
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# HTTP & WebSocket
+websockets==12.0
+httpx==0.26.0
+requests==2.31.0
+
+# Web Scraping
+beautifulsoup4==4.12.3
+
+# File Handling
+python-magic==0.4.27
+pillow==10.2.0
+aiofiles==23.2.1
+
+# PDF Generation
+reportlab==4.0.9
+
+# Date & Time
+python-dateutil==2.8.2
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+typing-extensions==4.9.0
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+
+# Logging & Monitoring
+structlog==24.1.0

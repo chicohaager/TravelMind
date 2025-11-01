@@ -1,0 +1,122 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # ==================== Code Review ====================
+  code-review:
+    name: Automated Code Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run code review
+        uses: reviewdog/action-flake8@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          filter_mode: nofilter
+          fail_on_error: false
+          flake8_args: --max-line-length=120 backend/
+
+  # ==================== Security Check ====================
+  security-check:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python, javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # ==================== Test Coverage ====================
+  coverage-check:
+    name: Test Coverage Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest-cov
+
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET: test-secret
+          SECRET_KEY: test-secret
+        run: |
+          cd backend
+          pytest tests/ --cov=. --cov-report=html --cov-report=term
+
+      - name: Comment coverage on PR
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MINIMUM_GREEN: 70
+          MINIMUM_ORANGE: 50
+        continue-on-error: true
+
+  # ==================== Size Check ====================
+  size-check:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install and build
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Check bundle size
+        run: |
+          cd frontend/dist
+          SIZE=$(du -sh . | cut -f1)
+          echo "Bundle size: $SIZE"
+          # Add size check logic here
+
+  # ==================== PR Labeler ====================
+  label-pr:
+    name: Label PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+        continue-on-error: true
