@@ -1,674 +1,343 @@
 # 🌍 TravelMind
 
-**Deine intelligente Reiseplanungs- und Tagebuch-App mit KI-Unterstützung**
+<div align="center">
 
-TravelMind ist eine selbst gehostete Webanwendung zur Planung, Organisation und Dokumentation deiner Reisen. Mit Multi-Provider AI-Unterstützung (Claude, OpenAI, Gemini) erhältst du personalisierte Empfehlungen und intelligente Reisevorschläge.
+![TravelMind Logo](frontend/public/icon-192.png)
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/python-3.11-blue)
-![React](https://img.shields.io/badge/react-18-blue)
+**Your intelligent travel planning and diary app with AI assistance**
 
----
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/chicohaager/TravelMind/releases)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://hub.docker.com/u/chicohaager)
+[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
+[![React](https://img.shields.io/badge/react-18-blue)](https://reactjs.org/)
 
-## ✨ Features
+[🇬🇧 English](#english) | [🇩🇪 Deutsch](#deutsch)
 
-### 🗺️ Reiseplanung
-- **Reisen erstellen und verwalten** mit Titel, Beschreibung, Destination
-- **Interessen auswählen** für personalisierte Empfehlungen
-- **Budgetverwaltung** mit Ausgaben-Tracking
-- **Teilnehmerverwaltung** für Gruppenreisen
-- **Zeitraum festlegen** mit Start- und Enddatum
-- **Cover-Bilder hochladen** für jede Reise
-
-### 🤖 KI-Assistent (Multi-Provider)
-- **Wähle deinen AI-Provider**: Claude (Anthropic), OpenAI (GPT-4), oder Google Gemini
-- **Eigener API-Key**: Jeder Nutzer verwendet seinen eigenen API-Key
-- **Verschlüsselte Speicherung**: API-Keys werden sicher verschlüsselt gespeichert
-- **Personalisierte Empfehlungen** basierend auf deinen Interessen
-- **Automatische Ortsvorschläge** mit Beschreibungen und Details
-- **Intelligente Reise-Tipps** angepasst an Budget und Dauer
-- **Destination-Beschreibungen** mit atmosphärischen Texten
-- **Best-Time Empfehlungen** für jeden Ort (Vormittag/Nachmittag/Abend)
-
-### 📍 Orte & Sehenswürdigkeiten
-- **Orte sammeln** mit Name, Beschreibung, Kategorie
-- **GPS-Koordinaten** für Kartenansicht
-- **Google Maps Integration** - Direktlink zu jedem Ort
-- **Import von Reiseführern** (TripAdvisor, Lonely Planet)
-- **Automatische Ortssuche** nach Destination
-- **Besuchsstatus markieren** (besucht/nicht besucht)
-- **Kosten schätzen** pro Ort
-
-### 📓 Reisetagebuch
-- **Tagebucheinträge schreiben** mit Markdown-Support
-- **Fotos hochladen** (mehrere pro Eintrag)
-- **Stimmung festhalten** (happy, neutral, sad)
-- **Bewertungen vergeben** (1-5 Sterne)
-- **Tags hinzufügen** zur Organisation
-- **Standort speichern** für jeden Eintrag
-- **Export als PDF oder Markdown**
-
-### 📅 Timeline-Ansicht
-- **Chronologische Übersicht** aller Aktivitäten
-- **Tagesplanung** mit Zeitslots
-- **Drag & Drop Sortierung**
-- **Routenoptimierung** per KI
-
-### 💰 Budget-Tracker
-- **Ausgaben erfassen** mit Kategorie und Datum
-- **Budget-Übersicht** mit Fortschrittsbalken
-- **Mehrere Währungen** unterstützt
-- **Kostenteilung** für Gruppenreisen
-- **Visualisierung** nach Kategorien
-
-### 👥 Teilnehmerverwaltung
-- **Mitreisende hinzufügen** mit Namen und Kontakt
-- **Profilfotos** hochladen
-- **Kostenaufteilung** berechnen
+</div>
 
 ---
 
-## 🚀 Installation
+<a name="english"></a>
 
-### Voraussetzungen
-- **Docker** und **Docker Compose** installiert
-- **AI API Key** für KI-Features (optional, aber empfohlen)
-  - Claude: https://console.anthropic.com/
-  - OpenAI: https://platform.openai.com/
-  - Gemini: https://makersuite.google.com/
+## 🇬🇧 English
 
-### 1. Repository klonen
+### 📖 About TravelMind
+
+TravelMind is a **self-hosted web application** for planning, organizing and documenting your travels. With **multi-provider AI support** (Groq FREE, Claude, OpenAI, Gemini), you get personalized recommendations and intelligent travel suggestions.
+
+### 📸 Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src=".github/screenshots/dashboard.png" alt="Dashboard" />
+      <p align="center"><b>Dashboard - Trip Overview</b></p>
+    </td>
+    <td width="50%">
+      <img src=".github/screenshots/trip-overview.png" alt="Trip Detail" />
+      <p align="center"><b>Trip Detail - Places & Recommendations</b></p>
+    </td>
+  </tr>
+</table>
+
+### ✨ Key Features
+
+🗺️ **Trip Planning**
+- Create and manage trips with destinations, dates, and budgets
+- Select interests for personalized recommendations
+- Upload cover images and add participants
+- Track expenses and budget progress
+
+🤖 **AI Assistant (Multi-Provider)**
+- **Choose your AI provider**: Groq (FREE!), Claude, OpenAI, or Gemini
+- **Your own API key**: Each user configures their own provider
+- **Encrypted storage**: API keys are securely encrypted
+- Personalized recommendations based on interests
+- Automatic place suggestions with descriptions
+- Intelligent travel tips adapted to budget and duration
+
+📍 **Places & Attractions**
+- Collect places with descriptions and categories
+- GPS coordinates for map view
+- Google Maps integration
+- Import from travel guides (TripAdvisor, Lonely Planet)
+- Mark as visited and estimate costs
+
+📓 **Travel Diary**
+- Write diary entries with Markdown support
+- Upload multiple photos per entry
+- Set mood and ratings (1-5 stars)
+- Add tags for organization
+- Export as PDF or Markdown
+
+💰 **Budget Tracker**
+- Track expenses by category
+- Multiple currencies supported
+- Cost sharing for group trips
+- Visual budget overview with charts
+
+### 🚀 Quick Start
+
+#### Option 1: Docker Hub (Recommended)
+
 ```bash
-git clone https://github.com/dein-username/travelmind.git
-cd TravelMind
-```
+# Download configuration
+curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
+curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/.env.example
 
-### 2. Umgebungsvariablen konfigurieren
-```bash
+# Configure environment
 cp .env.example .env
+nano .env  # Edit with your settings
+
+# Start application
+docker-compose -f docker-compose.hub.yml up -d
+
+# Create admin user
+docker exec -it travelmind-backend-prod python create_admin.py
 ```
 
-Bearbeite die `.env` Datei:
-```env
-# Backend
-BACKEND_PORT=8000
-JWT_SECRET=dein-geheimer-schluessel-hier
-SECRET_KEY=dein-verschluesselungs-key-hier
+**Default credentials:**
+- Username: `admin`
+- Password: `admin123`
+- ⚠️ **Change password after first login!**
 
-# Database (optional, Standard: SQLite)
-DATABASE_URL=sqlite+aiosqlite:///./travelmind.db
+**Access:**
+- Frontend: http://localhost
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-# CORS (Frontend URL)
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000
-```
+#### Option 2: From Source
 
-**Hinweis:** AI-Provider und API-Keys werden nicht mehr global konfiguriert, sondern von jedem Nutzer individuell in den Einstellungen hinterlegt.
-
-### 3. Anwendung starten
 ```bash
-# Entwicklung
+git clone https://github.com/chicohaager/TravelMind.git
+cd TravelMind
+cp .env.example .env
+# Edit .env with your settings
 docker-compose up -d
-
-# Produktion
-docker-compose -f docker-compose.prod.yml up -d
 ```
 
-### 4. Anwendung öffnen
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000
-- **API Dokumentation**: http://localhost:8000/docs
-
----
-
-## 📖 Verwendung
-
-### Erste Schritte
-
-#### 1. Account erstellen
-- Öffne http://localhost:5173
-- Klicke auf "Registrieren"
-- Gib Benutzername und Passwort ein
-
-#### 2. Erste Reise anlegen
-- Klicke auf "Neue Reise"
-- Gib Titel und Destination ein (z.B. "La Palma: Naturparadies")
-- Wähle Start- und Enddatum
-- Setze dein Budget
-- **Wichtig**: Wähle deine Interessen aus (für KI-Empfehlungen)
-
-#### 3. Interessen festlegen
-- Gehe zum **Übersicht**-Tab deiner Reise
-- Klicke bei "Interessen" auf **Bearbeiten**
-- Wähle passende Interessen aus:
-  - Natur, Fotografie, Sport, Abenteuer
-  - Kultur, Geschichte, Kunst, Architektur
-  - Essen, Shopping, Nachtleben
-  - Strand, Entspannung, Städtereise
-
-#### 4. KI-Empfehlungen erhalten
-- Wechsle zum **Empfehlungen**-Tab
-- Die KI analysiert automatisch:
-  - Deine Destination
-  - Deine Interessen
-  - Dein Budget
-  - Deine Reisedauer
-- Du erhältst 6-8 personalisierte Orte mit:
-  - Farbigem Kategorie-Header
-  - Beschreibung und Grund der Empfehlung
-  - Best-Time (wann am besten besuchen)
-  - Geschätzte Kosten und Dauer
-  - **Google Maps Link**
-  - **Hinzufügen-Button**
-
-#### 5. Orte hinzufügen
-**Option A: Aus KI-Empfehlungen**
-- Klicke auf "Hinzufügen" bei einer Empfehlung
-
-**Option B: Manuell**
-- Gehe zum **Orte**-Tab
-- Klicke "Ort hinzufügen"
-- Fülle das Formular aus
-
-**Option C: Import aus Reiseführern**
-- Gehe zum **Orte**-Tab
-- Klicke "Import aus Reiseführer"
-- Gib deine Destination ein (z.B. "Paris")
-- Wähle gefundene Orte aus
-- Klicke "Ausgewählte importieren"
-
-#### 6. Tagebuch führen während der Reise
-- Gehe zum **Tagebuch**-Tab
-- Klicke "Neuer Eintrag"
-- Schreibe deine Erlebnisse (Markdown unterstützt)
-- Lade Fotos hoch (mehrere möglich)
-- Setze deine Stimmung und Bewertung
-- Speichere den Eintrag
-
-#### 7. Budget tracken
-- Gehe zum **Budget**-Tab
-- Klicke "Ausgabe hinzufügen"
-- Wähle Kategorie (Transport, Unterkunft, Essen, etc.)
-- Gib Betrag und Beschreibung ein
-- Die Übersicht zeigt automatisch:
-  - Gesamtausgaben
-  - Verbleibendes Budget
-  - Prozentuale Auslastung
-  - Ausgaben nach Kategorie
-
----
-
-## 🎨 Features im Detail
-
-### KI-Empfehlungen System
-
-Die KI-Empfehlungen nutzen Claude AI von Anthropic und analysieren:
-
-1. **Deine Interessen**
-   - Werden im Übersicht-Tab festgelegt
-   - Mindestens 2-3 Interessen empfohlen
-   - Beeinflussen Art und Stil der Empfehlungen
-
-2. **Bereits geplante Orte**
-   - KI vermeidet Duplikate
-   - Schlägt ergänzende Orte vor
-   - Sorgt für ausgewogene Mischung
-
-3. **Budget & Dauer**
-   - Empfehlungen passen zu deinem Budget
-   - Kostenlose und kostenpflichtige Orte
-   - Zeitplanung berücksichtigt Reisedauer
-
-4. **Empfehlungs-Karte zeigt:**
-   - **Gradient-Header** in Kategorie-Farbe:
-     - 🍽️ Restaurant: Orange → Rot → Pink
-     - 🎯 Attraction: Lila → Pink → Rot
-     - 🏖️ Beach: Blau → Cyan → Türkis
-     - 👁️ Viewpoint: Gelb → Orange → Rot
-     - 🌳 Park: Grün → Smaragd → Türkis
-   - **Großes Icon** (Restaurant 🍽️, Beach 🏖️, etc.)
-   - **Name & Beschreibung** des Ortes
-   - **Grund-Badge**: "Warum empfohlen?"
-   - **Best-Time Badge**: Vormittag/Nachmittag/Abend1
-   - **Dauer & Kosten**: Geschätzte Werte
-   - **2 Action-Buttons**:
-     - "Maps" → Öffnet Google Maps
-     - "Hinzufügen" → Speichert in deiner Reise
-
-### Guide Import Funktion
-
-Automatischer Import von Orten aus Online-Reiseführern:
-
-**Unterstützte Quellen:**
-- TripAdvisor
-- Lonely Planet
-- Weitere folgen...
-
-**So funktioniert's:**
-1. Gib nur die Destination ein (z.B. "Paris", "La Palma")
-2. System durchsucht automatisch mehrere Quellen
-3. Extrahiert Namen, Beschreibungen, Kategorien
-4. Entfernt Duplikate
-5. Zeigt gefilterte Liste zum Auswählen
-6. Import mit einem Klick
-
-### Tagebuch-Export
-
-**Markdown-Export:**
-- Strukturierte .md Datei
-- Alle Einträge chronologisch
-- Fotos als Links
-- Tags und Bewertungen
-
-**PDF-Export:**
-- Professionell formatiert
-- Eingebettete Bilder
-- Überschriften und Metadaten
-- Druckfertig
-
-### Budget-Funktionen
-
-**Kategorien:**
-- 🚗 Transport
-- 🏨 Unterkunft
-- 🍽️ Essen & Trinken
-- 🎭 Aktivitäten & Eintritte
-- 🛍️ Shopping
-- 💊 Gesundheit
-- 📱 Sonstiges
-
-**Visualisierung:**
-- Fortschrittsbalken (grün/gelb/rot)
-- Kreisdiagramm nach Kategorien
-- Tabelle aller Ausgaben
-- Sortierung nach Datum/Betrag/Kategorie
-
-**Kostenteilung:**
-- Für Gruppenreisen
-- Automatische Berechnung pro Person
-- Übersicht wer was bezahlt hat
-
----
-
-## 🛠️ Technologie-Stack
-
-### Backend
-- **FastAPI** - Modernes Python Web Framework
-- **SQLAlchemy 2.0** - Async ORM
-- **SQLite/PostgreSQL** - Datenbank
-- **Python-Jose** - JWT Authentication
-- **Anthropic Claude API** - KI-Integration
-- **BeautifulSoup4** - Web Scraping für Guide-Import
-- **ReportLab** - PDF-Generierung
-
-### Frontend
-- **React 18** - UI Framework
-- **Vite** - Build Tool & Dev Server
-- **React Router** - Navigation
-- **TanStack Query (React Query)** - State & Caching
-- **Framer Motion** - Animationen
-- **Tailwind CSS** - Styling
-- **Lucide React** - Icons
-- **React Hot Toast** - Benachrichtigungen
-- **Leaflet** - Karten-Integration
-
-### Infrastructure
-- **Docker & Docker Compose** - Containerisierung
-- **Nginx** - Reverse Proxy (Production)
-- **Uvicorn** - ASGI Server
-
----
-
-## 🏗️ Architektur
-
-```
-┌─────────────────────────────────────────────────────┐
-│                 Frontend (React + Vite)              │
-│  • TailwindCSS + Framer Motion                      │
-│  • React Query für State Management                 │
-│  • Responsive Design (Mobile-First)                 │
-└─────────────────┬───────────────────────────────────┘
-                  │
-                  │ REST API (JSON)
-                  │
-┌─────────────────▼───────────────────────────────────┐
-│              Backend (FastAPI + Python)              │
-│  • RESTful API Endpoints                            │
-│  • JWT Authentication                               │
-│  • Claude API Integration                           │
-│  • File Upload Management                           │
-│  • BeautifulSoup4 Web Scraping                     │
-└─────────────────┬───────────────────────────────────┘
-                  │
-                  │ SQLAlchemy ORM (Async)
-                  │
-┌─────────────────▼───────────────────────────────────┐
-│            Database (SQLite/PostgreSQL)              │
-│  • Users, Trips, Places, Diary Entries             │
-│  • Budget, Expenses, Participants                   │
-│  • Timeline Events                                  │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔧 Konfiguration
-
-### Umgebungsvariablen
-
-#### Backend (`backend/.env`)
-```env
-# API Keys
-CLAUDE_API_KEY=sk-ant-api03-xxxxx
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
-CLAUDE_MAX_TOKENS=2048
-
-# Database
-DATABASE_URL=sqlite+aiosqlite:///./travelmind.db
-# Oder PostgreSQL:
-# DATABASE_URL=postgresql+asyncpg://user:pass@localhost/travelmind
-
-# Security
-JWT_SECRET=dein-sehr-langer-zufälliger-geheimer-schlüssel
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=43200  # 30 Tage
-
-# Server
-BACKEND_PORT=8000
-BACKEND_RELOAD=true
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000
-
-# Features
-ENABLE_AI_FEATURES=true
-LOG_LEVEL=INFO
-MAX_UPLOAD_SIZE_MB=10
-```
-
-#### Frontend (`frontend/.env`)
-```env
-VITE_API_URL=http://localhost:8000
-```
-
----
-
-## 📱 API Dokumentation
-
-Die interaktive API-Dokumentation ist verfügbar unter:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Wichtige Endpoints
-
-#### Authentication
-```
-POST /api/auth/register - Registrierung
-POST /api/auth/login    - Login
-GET  /api/auth/me       - Aktueller User
-```
-
-#### Trips
-```
-GET    /api/trips           - Alle Reisen
-GET    /api/trips/{id}      - Einzelne Reise
-POST   /api/trips           - Reise erstellen
-PUT    /api/trips/{id}      - Reise aktualisieren
-DELETE /api/trips/{id}      - Reise löschen
-```
-
-#### AI
-```
-POST /api/ai/personalized-recommendations - Personalisierte Empfehlungen
-POST /api/ai/describe                     - Destination beschreiben
-POST /api/ai/chat                         - Chat mit KI
-```
-
-#### Places
-```
-GET  /api/places/{trip_id}/places              - Orte einer Reise
-POST /api/places/{trip_id}/places              - Ort hinzufügen
-POST /api/places/{trip_id}/search-guides       - Guide-Import
-POST /api/places/{trip_id}/import-places-bulk  - Bulk-Import
-```
-
----
-
-## 📁 Projektstruktur
-
-```
-TravelMind/
-├── frontend/
-│   ├── src/
-│   │   ├── components/          # React-Komponenten
-│   │   │   ├── layout/         # Navbar, Sidebar
-│   │   │   ├── DiaryEntry.jsx
-│   │   │   ├── PlaceCard.jsx
-│   │   │   └── RecommendationsView.jsx  # KI-Empfehlungen
-│   │   ├── pages/              # Seiten-Komponenten
-│   │   │   ├── Home.jsx
-│   │   │   ├── Trips.jsx
-│   │   │   ├── TripDetail.jsx
-│   │   │   ├── AIAssistant.jsx
-│   │   │   └── Budget.jsx
-│   │   ├── contexts/           # React Contexts
-│   │   ├── services/           # API-Services
-│   │   │   └── api.js
-│   │   ├── utils/              # Helper Functions
-│   │   └── App.jsx
-│   ├── public/
-│   ├── package.json
-│   └── vite.config.js
-├── backend/
-│   ├── routes/                 # API-Endpunkte
-│   │   ├── auth.py
-│   │   ├── trips.py
-│   │   ├── places.py
-│   │   ├── diary.py
-│   │   ├── budget.py
-│   │   ├── timeline.py
-│   │   └── ai.py
-│   ├── models/                 # Datenbank-Modelle
-│   │   ├── database.py
-│   │   ├── user.py
-│   │   ├── trip.py
-│   │   └── ...
-│   ├── services/               # Business Logic
-│   │   ├── claude.py          # Claude API Integration
-│   │   └── guide_parser.py    # Web Scraping
-│   ├── utils/                  # Hilfsfunktionen
-│   ├── main.py                 # FastAPI App
-│   └── requirements.txt
-├── uploads/                    # User-Uploads
-├── docker-compose.yml
-├── .env.example
-├── CLAUDE.md                   # Projekt-Dokumentation für Claude
-└── README.md
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Probleme und Lösungen
-
-#### Frontend verbindet nicht mit Backend
-```bash
-# Prüfe ob Backend läuft:
-docker-compose logs backend
-
-# Prüfe CORS-Einstellungen:
-# In .env: CORS_ORIGINS sollte Frontend-URL enthalten
-```
-
-#### KI-Empfehlungen funktionieren nicht
-```bash
-# Prüfe API-Key:
-echo $CLAUDE_API_KEY
-
-# Prüfe Backend-Logs:
-docker-compose logs backend | grep -i "claude"
-
-# Test API-Key:
-curl https://api.anthropic.com/v1/messages \
-  -H "x-api-key: $CLAUDE_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "content-type: application/json" \
-  -d '{"model":"claude-3-5-sonnet-20241022","max_tokens":10,"messages":[{"role":"user","content":"Hi"}]}'
-```
-
-#### Datenbank-Fehler
-```bash
-# SQLite-Datenbank neu erstellen:
-rm backend/travelmind.db
-docker-compose restart backend
-
-# PostgreSQL Connection-String prüfen:
-# DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/dbname
-```
-
----
-
-## 🚢 Deployment (Produktion)
-
-### Mit Docker Compose
-
-1. **Production Compose File**
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
-
-2. **Umgebungsvariablen setzen**
-   ```env
-   # Wichtig für Produktion:
-   BACKEND_RELOAD=false
-   LOG_LEVEL=WARNING
-   CORS_ORIGINS=https://deine-domain.com
-   ```
-
-3. **Reverse Proxy (Nginx)**
-   ```nginx
-   server {
-       listen 80;
-       server_name deine-domain.com;
-
-       location / {
-           proxy_pass http://localhost:5173;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-
-       location /api {
-           proxy_pass http://localhost:8000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-       }
-   }
-   ```
-
-4. **SSL mit Let's Encrypt**
-   ```bash
-   certbot --nginx -d deine-domain.com
-   ```
-
----
-
-## 🤝 Contributing
-
-Beiträge sind willkommen! Bitte beachte:
-
-1. Fork das Repository
-2. Erstelle einen Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Committe deine Änderungen (`git commit -m 'Add some AmazingFeature'`)
-4. Push zum Branch (`git push origin feature/AmazingFeature`)
-5. Öffne einen Pull Request
-
-### Development Setup
+#### Option 3: ZimaOS
 
 ```bash
-# Backend
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python main.py
-
-# Frontend
-cd frontend
-npm install
-npm run dev
+git clone https://github.com/chicohaager/TravelMind.git
+cd TravelMind
+docker-compose -f docker-compose.zimaos.yml up -d
 ```
 
----
+### 🛠️ Technology Stack
 
-## 🔐 Sicherheit
+**Backend:**
+- FastAPI (Python 3.11)
+- SQLAlchemy 2.0 (Async ORM)
+- SQLite / PostgreSQL
+- Multi-AI Provider Support
 
-### Best Practices
+**Frontend:**
+- React 18 + Vite
+- TanStack Query
+- Tailwind CSS
+- Framer Motion
+- Leaflet Maps
 
-1. **JWT_SECRET ändern**
-   ```bash
-   # Generiere sicheren Key:
-   openssl rand -hex 32
-   ```
+**Infrastructure:**
+- Docker & Docker Compose
+- Nginx (Production)
 
-2. **Starke Passwörter verwenden**
-   - Mindestens 8 Zeichen
-   - Buchstaben, Zahlen, Sonderzeichen
+### 📚 Documentation
 
-3. **HTTPS in Produktion**
-   - Nutze Reverse Proxy (Nginx, Caddy)
-   - SSL-Zertifikate (Let's Encrypt)
+- [Deployment Guide](DEPLOYMENT.md) - Standard production deployment
+- [Docker Hub Guide](DOCKER_HUB.md) - Quick deployment with pre-built images
+- [ZimaOS Deployment](ZIMAOS_DEPLOYMENT.md) - Deploy on ZimaOS/NAS
+- [API Documentation](http://localhost:8000/docs) - Interactive API docs
 
-4. **API-Key schützen**
-   - Nie im Git commiten
-   - Nutze `.env` Datei
-   - Setze passende Berechtigungen
+### 🤝 Contributing
 
----
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 Lizenz
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Dieses Projekt ist unter der MIT-Lizenz lizensiert. Siehe `LICENSE` Datei für Details.
+### 📄 License
 
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Danksagungen
+### 🙏 Acknowledgments
 
-- **Anthropic** für die Claude AI API
-- **FastAPI** Community
-- **React** Team
-- **Tailwind CSS** Contributors
-- Alle Open Source Libraries die dieses Projekt möglich machen
-
----
-
-## 📞 Support & Community
-
-- **Issues**: [GitHub Issues](https://github.com/dein-username/travelmind/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/dein-username/travelmind/discussions)
-
----
-
-## 🗺️ Roadmap
-
-### Geplante Features
-
-- [ ] Mobile App (React Native)
-- [ ] Offline-Modus (PWA)
-- [ ] Mehrsprachigkeit (i18n)
-- [ ] Foto-Galerien mit Lightbox
-- [ ] Social Features (Reisen teilen)
-- [ ] Import aus Google Maps/TripIt
-- [ ] Wetter-Integration
-- [ ] Flug-Tracking
-- [ ] Hotel-Buchungen-Integration
-- [ ] Collaborative Planning (Echtzeit)
-- [ ] Kalender-Export (iCal)
-- [ ] Backup & Sync
+- **Groq** for free AI inference
+- **Anthropic** for Claude AI API
+- **OpenAI** for GPT API
+- **Google** for Gemini API
+- FastAPI, React, and all open-source contributors
 
 ---
 
-**Made with ❤️ and ☕ by the TravelMind Team**
+<a name="deutsch"></a>
+
+## 🇩🇪 Deutsch
+
+### 📖 Über TravelMind
+
+TravelMind ist eine **selbst gehostete Webanwendung** zur Planung, Organisation und Dokumentation deiner Reisen. Mit **Multi-Provider KI-Unterstützung** (Groq KOSTENLOS, Claude, OpenAI, Gemini) erhältst du personalisierte Empfehlungen und intelligente Reisevorschläge.
+
+### 📸 Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src=".github/screenshots/dashboard.png" alt="Dashboard" />
+      <p align="center"><b>Dashboard - Reise-Übersicht</b></p>
+    </td>
+    <td width="50%">
+      <img src=".github/screenshots/trip-overview.png" alt="Reise-Detail" />
+      <p align="center"><b>Reise-Detail - Orte & Empfehlungen</b></p>
+    </td>
+  </tr>
+</table>
+
+### ✨ Hauptfunktionen
+
+🗺️ **Reiseplanung**
+- Reisen erstellen mit Ziel, Datum und Budget
+- Interessen auswählen für personalisierte Empfehlungen
+- Cover-Bilder hochladen und Teilnehmer hinzufügen
+- Ausgaben tracken und Budget-Fortschritt verfolgen
+
+🤖 **KI-Assistent (Multi-Provider)**
+- **Wähle deinen AI-Provider**: Groq (KOSTENLOS!), Claude, OpenAI oder Gemini
+- **Eigener API-Key**: Jeder Nutzer konfiguriert seinen eigenen Provider
+- **Verschlüsselte Speicherung**: API-Keys werden sicher verschlüsselt
+- Personalisierte Empfehlungen basierend auf Interessen
+- Automatische Ortsvorschläge mit Beschreibungen
+- Intelligente Reisetipps angepasst an Budget und Dauer
+
+📍 **Orte & Sehenswürdigkeiten**
+- Orte sammeln mit Beschreibungen und Kategorien
+- GPS-Koordinaten für Kartenansicht
+- Google Maps Integration
+- Import aus Reiseführern (TripAdvisor, Lonely Planet)
+- Als besucht markieren und Kosten schätzen
+
+📓 **Reisetagebuch**
+- Tagebucheinträge mit Markdown-Support schreiben
+- Mehrere Fotos pro Eintrag hochladen
+- Stimmung und Bewertungen (1-5 Sterne) festhalten
+- Tags zur Organisation hinzufügen
+- Export als PDF oder Markdown
+
+💰 **Budget-Tracker**
+- Ausgaben nach Kategorie erfassen
+- Mehrere Währungen unterstützt
+- Kostenteilung für Gruppenreisen
+- Visuelle Budget-Übersicht mit Diagrammen
+
+### 🚀 Schnellstart
+
+#### Option 1: Docker Hub (Empfohlen)
+
+```bash
+# Konfiguration herunterladen
+curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
+curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/.env.example
+
+# Umgebung konfigurieren
+cp .env.example .env
+nano .env  # Mit deinen Einstellungen bearbeiten
+
+# Anwendung starten
+docker-compose -f docker-compose.hub.yml up -d
+
+# Admin-User erstellen
+docker exec -it travelmind-backend-prod python create_admin.py
+```
+
+**Standard-Zugangsdaten:**
+- Benutzername: `admin`
+- Passwort: `admin123`
+- ⚠️ **Passwort nach erstem Login ändern!**
+
+**Zugriff:**
+- Frontend: http://localhost
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+#### Option 2: Aus dem Quellcode
+
+```bash
+git clone https://github.com/chicohaager/TravelMind.git
+cd TravelMind
+cp .env.example .env
+# .env mit deinen Einstellungen bearbeiten
+docker-compose up -d
+```
+
+#### Option 3: ZimaOS
+
+```bash
+git clone https://github.com/chicohaager/TravelMind.git
+cd TravelMind
+docker-compose -f docker-compose.zimaos.yml up -d
+```
+
+### 🛠️ Technologie-Stack
+
+**Backend:**
+- FastAPI (Python 3.11)
+- SQLAlchemy 2.0 (Async ORM)
+- SQLite / PostgreSQL
+- Multi-AI Provider Support
+
+**Frontend:**
+- React 18 + Vite
+- TanStack Query
+- Tailwind CSS
+- Framer Motion
+- Leaflet Maps
+
+**Infrastruktur:**
+- Docker & Docker Compose
+- Nginx (Production)
+
+### 📚 Dokumentation
+
+- [Deployment-Anleitung](DEPLOYMENT.md) - Standard Production Deployment
+- [Docker Hub Anleitung](DOCKER_HUB.md) - Schnell-Deployment mit fertigen Images
+- [ZimaOS Deployment](ZIMAOS_DEPLOYMENT.md) - Deployment auf ZimaOS/NAS
+- [API-Dokumentation](http://localhost:8000/docs) - Interaktive API-Docs
+
+### 🤝 Mitwirken
+
+Beiträge sind willkommen! Erstelle gerne einen Pull Request.
+
+1. Repository forken
+2. Feature Branch erstellen (`git checkout -b feature/NeuesFunktion`)
+3. Änderungen committen (`git commit -m 'Füge neue Funktion hinzu'`)
+4. Branch pushen (`git push origin feature/NeuesFunktion`)
+5. Pull Request öffnen
+
+### 📄 Lizenz
+
+Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe [LICENSE](LICENSE) Datei für Details.
+
+### 🙏 Danksagungen
+
+- **Groq** für kostenlose KI-Inferenz
+- **Anthropic** für Claude AI API
+- **OpenAI** für GPT API
+- **Google** für Gemini API
+- FastAPI, React und alle Open-Source-Mitwirkenden
+
+---
+
+<div align="center">
+
+**Made with ❤️ by the TravelMind Team**
+
+[GitHub](https://github.com/chicohaager/TravelMind) • [Docker Hub](https://hub.docker.com/u/chicohaager) • [Issues](https://github.com/chicohaager/TravelMind/issues)
 
 *Happy Travels! 🌍✈️*
+
+</div>
