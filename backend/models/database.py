@@ -254,6 +254,7 @@ async def init_db():
     async with engine.begin() as conn:
         # Import all models here to ensure they're registered
         from models import user, trip, diary, place, place_list, expense, participant, route, settings
+        from models import audit_log  # Audit logging
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)

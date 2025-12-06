@@ -55,12 +55,12 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
   const handleSaveRoute = async () => {
     if (!newRoute.name) {
-      toast.error(t('routes.pleaseEnterRouteName'))
+      toast.error(t('routes:pleaseEnterRouteName'))
       return
     }
 
     if (newRoute.place_ids.length < 2) {
-      toast.error(t('routes.routeNeedsTwoPlaces'))
+      toast.error(t('routes:routeNeedsTwoPlaces'))
       return
     }
 
@@ -99,12 +99,12 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
       resetForm()
     } catch (error) {
       console.error('Error saving route:', error)
-      toast.error(error.response?.data?.detail || t('routes.errorSavingRoute'))
+      toast.error(error.response?.data?.detail || t('routes:errorSavingRoute'))
     }
   }
 
   const handleDeleteRoute = async (routeId) => {
-    if (!confirm(t('routes.confirmDeleteRoute'))) return
+    if (!confirm(t('routes:confirmDeleteRoute'))) return
 
     try {
       await routesService.delete(routeId)
@@ -113,10 +113,10 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
       if (onRoutesChange) {
         onRoutesChange(newRoutes)
       }
-      toast.success(t('routes.routeDeleted'))
+      toast.success(t('routes:routeDeleted'))
     } catch (error) {
       console.error('Error deleting route:', error)
-      toast.error(t('routes.errorDeletingRoute'))
+      toast.error(t('routes:errorDeletingRoute'))
     }
   }
 
@@ -309,7 +309,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                       {provided.placeholder}
                       {availablePlaces.length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-8">
-                          {t('routes.allPlacesAddedToRoute')}
+                          {t('routes:allPlacesAddedToRoute')}
                         </p>
                       )}
                     </div>

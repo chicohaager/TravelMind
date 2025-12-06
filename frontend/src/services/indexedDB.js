@@ -18,16 +18,24 @@ const STORES = {
 class IndexedDBService {
   constructor() {
     this.db = null
+    this.isAvailable = typeof window !== 'undefined' &&
+                       typeof window.indexedDB !== 'undefined' &&
+                       window.indexedDB !== null
   }
 
   /**
    * Initialize the database
    */
   async init() {
+    if (!this.isAvailable) {
+      console.warn('IndexedDB is not available in this environment')
+      return null
+    }
+
     if (this.db) return this.db
 
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION)
+      const request = window.indexedDB.open(DB_NAME, DB_VERSION)
 
       request.onerror = () => {
         console.error('IndexedDB error:', request.error)
@@ -89,6 +97,7 @@ class IndexedDBService {
    */
   async get(storeName, key) {
     await this.init()
+    if (!this.db) return null
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(storeName, 'readonly')
       const store = transaction.objectStore(storeName)
@@ -104,6 +113,7 @@ class IndexedDBService {
    */
   async getAll(storeName, indexName = null, indexValue = null) {
     await this.init()
+    if (!this.db) return []
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(storeName, 'readonly')
       const store = transaction.objectStore(storeName)
@@ -126,6 +136,7 @@ class IndexedDBService {
    */
   async put(storeName, data) {
     await this.init()
+    if (!this.db) return null
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(storeName, 'readwrite')
       const store = transaction.objectStore(storeName)
@@ -141,6 +152,7 @@ class IndexedDBService {
    */
   async delete(storeName, key) {
     await this.init()
+    if (!this.db) return
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(storeName, 'readwrite')
       const store = transaction.objectStore(storeName)
@@ -156,6 +168,7 @@ class IndexedDBService {
    */
   async clear(storeName) {
     await this.init()
+    if (!this.db) return
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(storeName, 'readwrite')
       const store = transaction.objectStore(storeName)

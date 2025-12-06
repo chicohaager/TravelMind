@@ -26,10 +26,10 @@ export default function Profile() {
     try {
       await usersService.updateProfile(formData)
       await loadUser()
-      toast.success(t('profile.profileUpdated'))
+      toast.success(t('profile:profileUpdated'))
       setIsEditing(false)
     } catch (error) {
-      const message = error.response?.data?.detail || t('profile.updateError')
+      const message = error.response?.data?.detail || t('profile:updateError')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -42,14 +42,14 @@ export default function Profile() {
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error(t('profile.fileTooLarge'))
+      toast.error(t('profile:fileTooLarge'))
       return
     }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      toast.error(t('settings.onlyImageFiles'))
+      toast.error(t('settings:onlyImageFiles'))
       return
     }
 
@@ -58,9 +58,9 @@ export default function Profile() {
     try {
       await usersService.uploadAvatar(file)
       await loadUser()
-      toast.success(t('profile.avatarUploaded'))
+      toast.success(t('profile:avatarUploaded'))
     } catch (error) {
-      const message = error.response?.data?.detail || t('profile.uploadError')
+      const message = error.response?.data?.detail || t('profile:uploadError')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -90,7 +90,7 @@ export default function Profile() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold mb-2">{t('profile.myProfile')}</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('profile:myProfile')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Verwalte deine persönlichen Informationen
         </p>
@@ -163,7 +163,7 @@ export default function Profile() {
         >
           <div className="card">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">{t('profile.profileInformation')}</h3>
+              <h3 className="text-xl font-bold">{t('profile:profileInformation')}</h3>
 
               {!isEditing ? (
                 <button
@@ -196,7 +196,7 @@ export default function Profile() {
                     disabled={loading}
                   >
                     <Save className="w-4 h-4" />
-                    {t('common.save')}
+                    {t('common:save')}
                   </button>
                 </div>
               )}
@@ -207,7 +207,7 @@ export default function Profile() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('profile.username')}
+                    {t('profile:username')}
                   </label>
                   <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                     <User className="w-4 h-4 text-gray-400" />
@@ -230,7 +230,7 @@ export default function Profile() {
                     Vollständiger Name
                   </label>
                   <div className="text-gray-900 dark:text-gray-100">
-                    {user.full_name || <span className="text-gray-400 italic">{t('profile.notSpecified')}</span>}
+                    {user.full_name || <span className="text-gray-400 italic">{t('profile:notSpecified')}</span>}
                   </div>
                 </div>
 
@@ -239,7 +239,7 @@ export default function Profile() {
                     Über mich
                   </label>
                   <div className="text-gray-900 dark:text-gray-100">
-                    {user.bio || <span className="text-gray-400 italic">{t('profile.noDescription')}</span>}
+                    {user.bio || <span className="text-gray-400 italic">{t('profile:noDescription')}</span>}
                   </div>
                 </div>
               </div>

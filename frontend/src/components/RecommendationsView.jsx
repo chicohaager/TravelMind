@@ -97,7 +97,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
 
   const handleAddSelectedPlaces = async () => {
     if (selectedRecommendations.length === 0) {
-      toast.error(t('recommendations.noRecommendationsSelected'))
+      toast.error(t('recommendations:noRecommendationsSelected'))
       return
     }
 
@@ -116,18 +116,18 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
           visited: false,
           cost: rec.estimated_cost,
           currency: trip.currency || 'EUR',
-          notes: `${t('recommendations.aiRecommendation')}: ${rec.reason}`,
+          notes: `${t('recommendations:aiRecommendation')}: ${rec.reason}`,
           image_url: getPlaceholderImage(rec.category, rec.name),
           tags: [rec.category],
           photos: []
         })
       }
 
-      toast.success(t('recommendations.recommendationsAdded', { count: selectedRecommendations.length }))
+      toast.success(t('recommendations:recommendationsAdded', { count: selectedRecommendations.length }))
       setSelectedRecommendations([])
       setTimeout(() => refetch(), 500)
     } catch (err) {
-      toast.error(t('recommendations.errorAdding'))
+      toast.error(t('recommendations:errorAdding'))
     } finally {
       setIsAddingMultiple(false)
     }
@@ -146,16 +146,16 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
         visited: false,
         cost: recommendation.estimated_cost,
         currency: trip.currency || 'EUR',
-        notes: `${t('recommendations.aiRecommendation')}: ${recommendation.reason}`,
+        notes: `${t('recommendations:aiRecommendation')}: ${recommendation.reason}`,
         image_url: getPlaceholderImage(recommendation.category, recommendation.name),
         tags: [recommendation.category],
         photos: []
       })
 
-      toast.success(t('recommendations.placeAdded', { name: recommendation.name }))
+      toast.success(t('recommendations:placeAdded', { name: recommendation.name }))
       setTimeout(() => refetch(), 500)
     } catch (err) {
-      toast.error(t('recommendations.errorAdding'))
+      toast.error(t('recommendations:errorAdding'))
     } finally {
       setAddingPlaceId(null)
     }
@@ -168,7 +168,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
           <div className="text-center">
             <Loader className="w-12 h-12 animate-spin mx-auto text-primary-600 mb-4" />
             <p className="text-gray-600 dark:text-gray-400">
-              {t('recommendations.analyzingTrip')}
+              {t('recommendations:analyzingTrip')}
             </p>
           </div>
         </div>
@@ -182,12 +182,12 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">{t('recommendations.errorLoading')}</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('recommendations:errorLoading')}</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {t('recommendations.recommendationsCouldNotBeLoaded')}
+              {t('recommendations:recommendationsCouldNotBeLoaded')}
             </p>
             <button onClick={() => refetch()} className="btn-primary">
-              {t('recommendations.tryAgain')}
+              {t('recommendations:tryAgain')}
             </button>
           </div>
         </div>
@@ -203,10 +203,10 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2 mb-2">
               <Sparkles className="w-6 h-6 text-primary-600" />
-              {t('recommendations.personalizedRecommendations')}
+              {t('recommendations:personalizedRecommendations')}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t('recommendations.basedOnInterests')}
+              {t('recommendations:basedOnInterests')}
             </p>
           </div>
           <button
@@ -215,7 +215,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
             className="btn-outline btn-sm flex items-center gap-2 rounded-full"
           >
             <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
-            {t('recommendations.refresh')}
+            {t('recommendations:refresh')}
           </button>
         </div>
 
@@ -227,7 +227,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
               className="btn-outline btn-sm flex items-center gap-2 rounded-full"
             >
               <CheckCircle className="w-4 h-4" />
-              {selectedRecommendations.length === recommendations.length ? t('recommendations.deselectAll') : t('recommendations.selectAll')}
+              {selectedRecommendations.length === recommendations.length ? t('recommendations:deselectAll') : t('recommendations:selectAll')}
             </button>
 
             {selectedRecommendations.length > 0 && (
@@ -239,12 +239,12 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                 {isAddingMultiple ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    {t('recommendations.addingCount', { count: selectedRecommendations.length })}
+                    {t('recommendations:addingCount', { count: selectedRecommendations.length })}
                   </>
                 ) : (
                   <>
                     <Plus className="w-4 h-4" />
-                    {t('recommendations.addSelectedCount', { count: selectedRecommendations.length })}
+                    {t('recommendations:addSelectedCount', { count: selectedRecommendations.length })}
                   </>
                 )}
               </button>
@@ -252,7 +252,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
 
             {selectedRecommendations.length > 0 && (
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {t('recommendations.selectedOfTotal', { selected: selectedRecommendations.length, total: recommendations.length })}
+                {t('recommendations:selectedOfTotal', { selected: selectedRecommendations.length, total: recommendations.length })}
               </span>
             )}
           </div>
@@ -340,7 +340,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      title={t('recommendations.openInGoogleMaps')}
+                      title={t('recommendations:openInGoogleMaps')}
                     >
                       <MapPin className="w-5 h-5" />
                     </a>
@@ -349,7 +349,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                     onClick={() => handleAddPlace(rec)}
                     disabled={addingPlaceId === rec.name}
                     className="p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={t('recommendations.addToTrip')}
+                    title={t('recommendations:addToTrip')}
                   >
                     {addingPlaceId === rec.name ? (
                       <Loader className="w-5 h-5 animate-spin" />
@@ -365,9 +365,9 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
       ) : (
         <div className="text-center py-12 card">
           <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{t('recommendations.noRecommendationsAvailable')}</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('recommendations:noRecommendationsAvailable')}</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {t('recommendations.addInterestsAndPlaces')}
+            {t('recommendations:addInterestsAndPlaces')}
           </p>
         </div>
       )}

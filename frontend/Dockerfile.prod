@@ -1,41 +1,67 @@
-# Production Dockerfile for TravelMind Frontend
+# ============================================
+# TravelMind Frontend - Production Dockerfile
+# ============================================
+# Multi-stage build with nginx for static file serving
+# Optimized for production with gzip compression
 
-# Build stage
+# ============================================
+# Stage 1: Build
+# ============================================
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (including dev dependencies for build)
+RUN npm ci
 
-# Copy application code
+# Copy source code
 COPY . .
 
-# Build argument for API URL
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
-
-# Build the application
+# Build for production
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+# ============================================
+# Stage 2: Production with nginx
+# ============================================
+FROM nginx:alpine AS production
 
-# Copy built files from builder
+# Labels
+LABEL org.opencontainers.image.title="TravelMind Frontend"
+LABEL org.opencontainers.image.description="Self-hosted travel planning app frontend"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.source="https://github.com/your-repo/TravelMind"
+
+# Create non-root user for nginx
+RUN addgroup -g 1001 -S travelmind && \
+    adduser -u 1001 -S travelmind -G travelmind
+
+# Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Create nginx pid and cache directories with proper permissions
+RUN mkdir -p /var/cache/nginx /var/run && \
+    chown -R travelmind:travelmind /var/cache/nginx /var/run /usr/share/nginx/html && \
+    chmod -R 755 /var/cache/nginx
+
+# Remove default nginx config
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+# Switch to non-root user (nginx will still bind to port 80 via capability)
+# For full non-root, use port 8080 and update nginx.conf
+USER travelmind
 
 # Expose port
 EXPOSE 80
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
 
-# Run nginx
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

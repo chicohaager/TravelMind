@@ -38,10 +38,10 @@ export default function Trips() {
     onSuccess: () => {
       queryClient.invalidateQueries(['trips'])
       setIsModalOpen(false)
-      toast.success(t('trips.createSuccess'))
+      toast.success(t('trips:createSuccess'))
     },
     onError: (error) => {
-      toast.error(formatError(error, t('trips.createError')))
+      toast.error(formatError(error, t('trips:createError')))
       console.error(error)
     }
   })
@@ -54,10 +54,10 @@ export default function Trips() {
     onSuccess: () => {
       queryClient.invalidateQueries(['trips'])
       setDeletingTrip(null)
-      toast.success(t('trips.deleteSuccess'))
+      toast.success(t('trips:deleteSuccess'))
     },
     onError: (error) => {
-      toast.error(formatError(error, t('trips.deleteError')))
+      toast.error(formatError(error, t('trips:deleteError')))
       console.error(error)
     }
   })
@@ -72,10 +72,10 @@ export default function Trips() {
       queryClient.invalidateQueries(['trips'])
       setEditingTrip(null)
       setIsModalOpen(false)
-      toast.success(t('trips.updateSuccess'))
+      toast.success(t('trips:updateSuccess'))
     },
     onError: (error) => {
-      toast.error(formatError(error, t('trips.updateError')))
+      toast.error(formatError(error, t('trips:updateError')))
       console.error(error)
     }
   })
@@ -143,7 +143,7 @@ export default function Trips() {
 
   const calculateDuration = (start, end) => {
     const days = Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24))
-    return `${days} ${t('common.days')}`
+    return `${days} ${t('common:days')}`
   }
 
   return (
@@ -151,21 +151,21 @@ export default function Trips() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-bold mb-2">{t('trips.title')}</h1>
+          <h1 className="text-4xl font-bold mb-2">{t('trips:title')}</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {t('trips.manageAdventures')}
+            {t('trips:manageAdventures')}
           </p>
           {isCached && (
             <div className="mt-2 flex items-center gap-2 text-sm">
               {isOffline ? (
                 <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                   <WifiOff size={16} />
-                  {t('trips.offlineMode')}
+                  {t('trips:offlineMode')}
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                   <Wifi size={16} />
-                  {t('trips.cachedUpdating')}
+                  {t('trips:cachedUpdating')}
                 </span>
               )}
             </div>
@@ -176,7 +176,7 @@ export default function Trips() {
           className="btn btn-primary"
         >
           <Plus className="w-5 h-5" />
-          {t('trips.newTrip')}
+          {t('trips:newTrip')}
         </button>
       </div>
 
@@ -187,7 +187,7 @@ export default function Trips() {
             {trips.length}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t('trips.planned')}
+            {t('trips:planned')}
           </div>
         </div>
         <div className="card">
@@ -201,7 +201,7 @@ export default function Trips() {
             }, 0)}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t('trips.totalDays')}
+            {t('trips:totalDays')}
           </div>
         </div>
         <div className="card">
@@ -209,7 +209,7 @@ export default function Trips() {
             {formatCurrency(trips.reduce((acc, trip) => acc + (trip.budget || 0), 0), trips[0]?.currency || 'EUR')}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t('trips.totalBudget')}
+            {t('trips:totalBudget')}
           </div>
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function Trips() {
       {isLoading && (
         <div className="card text-center py-16">
           <div className="animate-spin w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">{t('trips.loading')}</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('trips:loading')}</p>
         </div>
       )}
 
@@ -257,7 +257,7 @@ export default function Trips() {
                     navigate(`/trips/${trip.id}`)
                   }}
                   className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
-                  title={t('trips.showDetails')}
+                  title={t('trips:showDetails')}
                 >
                   <Eye className="w-4 h-4 text-gray-700" />
                 </button>
@@ -267,7 +267,7 @@ export default function Trips() {
                     openEditModal(trip)
                   }}
                   className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
-                  title={t('common.edit')}
+                  title={t('common:edit')}
                 >
                   <Edit2 className="w-4 h-4 text-gray-700" />
                 </button>
@@ -277,7 +277,7 @@ export default function Trips() {
                     setDeletingTrip(trip)
                   }}
                   className="p-2 bg-red-500/90 hover:bg-red-500 rounded-lg transition-colors"
-                  title={t('common.delete')}
+                  title={t('common:delete')}
                 >
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>
@@ -310,7 +310,7 @@ export default function Trips() {
               ) : (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <Calendar className="w-4 h-4" />
-                  <span>{t('trips.dateNotSet')}</span>
+                  <span>{t('trips:dateNotSet')}</span>
                 </div>
               )}
 
@@ -332,10 +332,10 @@ export default function Trips() {
               <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('trips.budget')}
+                    {t('trips:budget')}
                   </span>
                   <span className="font-semibold text-green-600 dark:text-green-500">
-                    {trip.budget ? formatCurrency(trip.budget, trip.currency || 'EUR') : t('trips.notSet')}
+                    {trip.budget ? formatCurrency(trip.budget, trip.currency || 'EUR') : t('trips:notSet')}
                   </span>
                 </div>
               </div>
@@ -353,16 +353,16 @@ export default function Trips() {
           className="card text-center py-16"
         >
           <MapPin className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-xl font-semibold mb-2">{t('trips.noTripsPlanned')}</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('trips:noTripsPlanned')}</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {t('trips.startFirstAdventure')}
+            {t('trips:startFirstAdventure')}
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
             className="btn btn-primary"
           >
             <Plus className="w-5 h-5" />
-            {t('trips.createFirstTrip')}
+            {t('trips:createFirstTrip')}
           </button>
         </motion.div>
       )}
@@ -385,9 +385,9 @@ export default function Trips() {
             animate={{ opacity: 1, scale: 1 }}
             className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
-            <h3 className="text-xl font-bold mb-4">{t('trips.deleteQuestion')}</h3>
+            <h3 className="text-xl font-bold mb-4">{t('trips:deleteQuestion')}</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {t('trips.deleteWarning').split('{title}').map((part, i, arr) => (
+              {t('trips:deleteWarning').split('{title}').map((part, i, arr) => (
                 i < arr.length - 1 ? (
                   <span key={i}>
                     {part}
@@ -401,13 +401,13 @@ export default function Trips() {
                 onClick={() => setDeletingTrip(null)}
                 className="btn btn-secondary flex-1"
               >
-                {t('common.cancel')}
+                {t('common:cancel')}
               </button>
               <button
                 onClick={() => handleDeleteTrip(deletingTrip.id)}
                 className="btn bg-red-500 hover:bg-red-600 text-white flex-1"
               >
-                {t('common.delete')}
+                {t('common:delete')}
               </button>
             </div>
           </motion.div>

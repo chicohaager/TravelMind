@@ -9,16 +9,14 @@ from typing import List, Optional, Dict, Any
 import json
 import urllib.parse
 import asyncio
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from services.ai_service import create_ai_service
+from utils.rate_limits import limiter, RateLimits
 from services.pexels_service import get_place_photo
 from routes.auth import get_current_active_user
 from models.user import User
 from utils.encryption import encryption_service
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 
 # Helper function to get user's AI service
@@ -107,7 +105,7 @@ class PersonalizedRecommendationsRequest(BaseModel):
 
 # Endpoints
 @router.post("/suggest")
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.AI_RECOMMENDATIONS)
 async def suggest_destinations(
     request: Request,
     suggestion_request: DestinationSuggestionRequest,
@@ -134,7 +132,7 @@ async def suggest_destinations(
 
 
 @router.post("/plan")
-@limiter.limit("5/minute")
+@limiter.limit(RateLimits.AI_PLAN)
 async def plan_trip(
     request: Request,
     plan_request: TripPlanRequest,
@@ -161,7 +159,7 @@ async def plan_trip(
 
 
 @router.post("/describe")
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.AI_DESCRIBE)
 async def describe_destination(
     request: Request,
     describe_request: DescribeDestinationRequest,
@@ -188,7 +186,7 @@ async def describe_destination(
 
 
 @router.post("/chat")
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.AI_CHAT)
 async def chat(
     request: Request,
     chat_request: ChatRequest,
@@ -216,7 +214,7 @@ async def chat(
 
 
 @router.post("/local-tips")
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.AI_TIPS)
 async def get_local_tips(
     request: Request,
     tips_request: LocalTipsRequest,
@@ -245,7 +243,7 @@ async def get_local_tips(
 
 
 @router.post("/trip-suggestions")
-@limiter.limit("15/minute")
+@limiter.limit(RateLimits.AI_TIPS)
 async def get_trip_suggestions(
     request: Request,
     suggestions_request: TripFormSuggestionsRequest,
@@ -293,7 +291,7 @@ async def get_trip_suggestions(
 
 
 @router.post("/personalized-recommendations")
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.AI_RECOMMENDATIONS)
 async def get_personalized_recommendations(
     request: Request,
     recommendations_request: PersonalizedRecommendationsRequest,

@@ -11,7 +11,7 @@ export default function AIAssistant() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: t('ai.greeting')
+      content: t('ai:greeting')
     }
   ])
   const [input, setInput] = useState('')
@@ -20,26 +20,26 @@ export default function AIAssistant() {
   const quickActions = [
     {
       icon: MapPin,
-      label: t('ai.suggestDestinations'),
-      prompt: t('ai.destinationsPrompt'),
+      label: t('ai:suggestDestinations'),
+      prompt: t('ai:destinationsPrompt'),
       color: 'bg-blue-500'
     },
     {
       icon: Compass,
-      label: t('ai.trip7Days'),
-      prompt: t('ai.tripPlanPrompt'),
+      label: t('ai:trip7Days'),
+      prompt: t('ai:tripPlanPrompt'),
       color: 'bg-purple-500'
     },
     {
       icon: Coffee,
-      label: t('ai.localTips'),
-      prompt: t('ai.secretTipsPrompt'),
+      label: t('ai:localTips'),
+      prompt: t('ai:secretTipsPrompt'),
       color: 'bg-orange-500'
     },
     {
       icon: Camera,
-      label: t('ai.bestPhotoSpots'),
-      prompt: t('ai.photoSpotsPrompt'),
+      label: t('ai:bestPhotoSpots'),
+      prompt: t('ai:photoSpotsPrompt'),
       color: 'bg-pink-500'
     }
   ]
@@ -68,7 +68,7 @@ export default function AIAssistant() {
       }])
     } catch (error) {
       console.error('Error sending message:', error)
-      toast.error(t('ai.errorMessage'))
+      toast.error(t('ai:errorMessage'))
 
       // Remove last user message on error
       setMessages(prev => prev.slice(0, -1))
@@ -91,9 +91,9 @@ export default function AIAssistant() {
           <Sparkles className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold">{t('ai.title')}</h1>
+          <h1 className="text-3xl font-bold">{t('ai:title')}</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {t('ai.personalTravelAdvisor')}
+            {t('ai:personalTravelAdvisor')}
           </p>
         </div>
       </div>
@@ -147,7 +147,7 @@ export default function AIAssistant() {
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-4 h-4 text-primary-500" />
                     <span className="text-xs font-semibold text-primary-500">
-                      {t('ai.assistantLabel')}
+                      {t('ai:assistantLabel')}
                     </span>
                   </div>
                 )}
@@ -165,7 +165,7 @@ export default function AIAssistant() {
               <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary-500 animate-pulse" />
-                  <span className="text-sm">{t('ai.thinking')}</span>
+                  <span className="text-sm">{t('ai:thinking')}</span>
                 </div>
               </div>
             </motion.div>
@@ -179,7 +179,7 @@ export default function AIAssistant() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={t('ai.askAnything')}
+              placeholder={t('ai:askAnything')}
               className="input flex-1"
               disabled={loading}
             />
@@ -192,7 +192,7 @@ export default function AIAssistant() {
             </button>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            {t('ai.tipMessage')}
+            {t('ai:tipMessage')}
           </p>
         </form>
       </div>

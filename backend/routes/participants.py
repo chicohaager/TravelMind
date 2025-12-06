@@ -3,7 +3,7 @@ Participants Router
 Manage trip participants/travelers with photos using SQLite
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, Field
@@ -11,17 +11,40 @@ from typing import List, Optional
 from datetime import datetime
 import os
 import uuid
+import magic
 from pathlib import Path
+import structlog
+
 from models.database import get_db
 from models.participant import Participant
+from models.trip import Trip
+from models.user import User
+from routes.auth import get_current_active_user
 
+logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 # Upload configuration
 UPLOAD_DIR = Path("./uploads/participants")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+async def verify_trip_access(trip_id: int, current_user: User, db: AsyncSession) -> Trip:
+    """Verify user has access to the trip and return the trip object."""
+    result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = result.scalar_one_or_none()
+
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    if trip.owner_id != current_user.id:
+        logger.warning("unauthorized_participant_access", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    return trip
 
 
 # Request/Response Models
@@ -51,20 +74,25 @@ class ParticipantResponse(BaseModel):
 
 
 # Helper functions
-def validate_file_extension(filename: str) -> bool:
-    """Check if file extension is allowed"""
+def validate_file_type(contents: bytes, filename: str) -> bool:
+    """
+    Validate file type by checking actual content, not just extension.
+    Uses python-magic to detect MIME type from file content.
+    """
+    # Check extension first
     extension = filename.split(".")[-1].lower()
-    return extension in ALLOWED_EXTENSIONS
+    if extension not in ALLOWED_EXTENSIONS:
+        return False
+
+    # Check actual MIME type using file contents
+    mime = magic.Magic(mime=True)
+    mime_type = mime.from_buffer(contents)
+
+    return mime_type in ALLOWED_MIME_TYPES
 
 
 async def save_participant_photo(upload_file: UploadFile, participant_id: int) -> str:
     """Save uploaded participant photo and return the file path"""
-    if not validate_file_extension(upload_file.filename):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Nur folgende Dateitypen erlaubt: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-
     # Read file content
     contents = await upload_file.read()
 
@@ -73,6 +101,13 @@ async def save_participant_photo(upload_file: UploadFile, participant_id: int) -
         raise HTTPException(
             status_code=400,
             detail=f"Datei zu groß. Maximum: {MAX_FILE_SIZE / (1024*1024)}MB"
+        )
+
+    # Validate file type (extension AND mime type)
+    if not validate_file_type(contents, upload_file.filename):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ungültiger Dateityp. Erlaubt: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
     # Generate unique filename
@@ -90,14 +125,32 @@ async def save_participant_photo(upload_file: UploadFile, participant_id: int) -
 
 # Endpoints
 @router.get("/{trip_id}/participants", response_model=List[ParticipantResponse])
-async def get_participants(trip_id: int, db: AsyncSession = Depends(get_db)):
+async def get_participants(
+    trip_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """
-    Get all participants for a trip
+    Get all participants for a trip with pagination.
+    Requires authentication and trip ownership.
+
+    - **skip**: Number of records to skip (default: 0)
+    - **limit**: Maximum number of records to return (default: 100, max: 500)
     """
+    # Enforce maximum limit
+    limit = min(limit, 500)
+
+    # Verify access
+    await verify_trip_access(trip_id, current_user, db)
+
     result = await db.execute(
         select(Participant)
         .where(Participant.trip_id == trip_id)
         .order_by(Participant.created_at)
+        .offset(skip)
+        .limit(limit)
     )
     participants = result.scalars().all()
     return participants
@@ -107,11 +160,16 @@ async def get_participants(trip_id: int, db: AsyncSession = Depends(get_db)):
 async def create_participant(
     trip_id: int,
     participant: ParticipantCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
-    Add a participant to a trip
+    Add a participant to a trip.
+    Requires authentication and trip ownership.
     """
+    # Verify access
+    await verify_trip_access(trip_id, current_user, db)
+
     new_participant = Participant(
         trip_id=trip_id,
         name=participant.name,
@@ -130,10 +188,12 @@ async def create_participant(
 async def update_participant(
     participant_id: int,
     participant: ParticipantUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
-    Update participant information
+    Update participant information.
+    Requires authentication and trip ownership.
     """
     result = await db.execute(
         select(Participant).where(Participant.id == participant_id)
@@ -142,6 +202,9 @@ async def update_participant(
 
     if not existing_participant:
         raise HTTPException(status_code=404, detail="Participant not found")
+
+    # Verify trip ownership
+    await verify_trip_access(existing_participant.trip_id, current_user, db)
 
     # Update only provided fields
     update_data = participant.model_dump(exclude_unset=True)
@@ -157,9 +220,14 @@ async def update_participant(
 
 
 @router.delete("/participants/{participant_id}", status_code=204)
-async def delete_participant(participant_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_participant(
+    participant_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """
-    Remove a participant from a trip
+    Remove a participant from a trip.
+    Requires authentication and trip ownership.
     """
     result = await db.execute(
         select(Participant).where(Participant.id == participant_id)
@@ -168,6 +236,9 @@ async def delete_participant(participant_id: int, db: AsyncSession = Depends(get
 
     if not participant:
         raise HTTPException(status_code=404, detail="Participant not found")
+
+    # Verify trip ownership
+    await verify_trip_access(participant.trip_id, current_user, db)
 
     await db.delete(participant)
     await db.commit()
@@ -179,12 +250,15 @@ async def delete_participant(participant_id: int, db: AsyncSession = Depends(get
 async def upload_participant_photo(
     participant_id: int,
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
-    Upload a photo for a participant
+    Upload a photo for a participant.
+    Requires authentication and trip ownership.
 
     Accepts image files (jpg, jpeg, png, gif, webp) up to 5MB.
+    Validates both file extension and MIME type for security.
     """
     result = await db.execute(
         select(Participant).where(Participant.id == participant_id)
@@ -194,7 +268,10 @@ async def upload_participant_photo(
     if not participant:
         raise HTTPException(status_code=404, detail="Participant not found")
 
-    # Save the uploaded file
+    # Verify trip ownership
+    await verify_trip_access(participant.trip_id, current_user, db)
+
+    # Save the uploaded file (with MIME type validation)
     file_url = await save_participant_photo(file, participant_id)
 
     # Update participant with new photo

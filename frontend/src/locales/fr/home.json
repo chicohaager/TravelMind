@@ -1,0 +1,23 @@
+{
+  "title": "Bienvenue sur TravelMind",
+  "subtitle": "Votre compagnon de voyage assisté par IA",
+  "description": "Planifiez vos voyages, documentez vos souvenirs et obtenez des recommandations personnalisées avec l'IA",
+  "getStarted": "Commencer",
+  "yourNextTrip": "Votre prochain voyage",
+  "isWaiting": "vous attend !",
+  "planExploreDocument": "Planifiez, explorez et documentez vos voyages avec l'assistance de l'IA.",
+  "selfHostedPrivacy": "Tout auto-hébergé et respectueux de la vie privée.",
+  "planNewTrip": "Planifier un voyage",
+  "aiAssistant": "Assistant IA",
+  "recentTrips": "Voyages récents",
+  "showAll": "Tout afficher",
+  "readyForNextAdventure": "Prêt pour votre prochaine aventure ?",
+  "letAiHelp": "Laissez l'IA vous aider à planifier le voyage parfait",
+  "startWithAi": "Commencer avec l'IA",
+  "features": {
+    "trips": "Planifier et organiser des voyages",
+    "diary": "Journal de voyage",
+    "ai": "Recommandations IA",
+    "budget": "Suivi du budget"
+  }
+}

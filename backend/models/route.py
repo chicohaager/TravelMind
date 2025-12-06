@@ -36,7 +36,7 @@ class Route(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Foreign Keys
-    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Relationships
     trip = relationship("Trip", back_populates="routes")

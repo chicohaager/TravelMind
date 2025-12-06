@@ -140,9 +140,9 @@ class SyncQueueService {
 
       // Show toast notification
       if (succeeded > 0 && failed === 0) {
-        toast.success(i18n.t('offline.changesSynced', { count: succeeded }))
+        toast.success(i18n.t('offline:changesSynced', { count: succeeded }))
       } else if (failed > 0) {
-        toast.error(i18n.t('offline.changesFailedToSync', { count: failed }))
+        toast.error(i18n.t('offline:changesFailedToSync', { count: failed }))
       }
 
       this.notifySyncStatus({
@@ -290,7 +290,7 @@ class SyncQueueService {
     }
 
     if (failed.length > 0) {
-      toast.info(i18n.t('offline.retryingFailedOperations', { count: failed.length }))
+      toast.info(i18n.t('offline:retryingFailedOperations', { count: failed.length }))
       await this.processSyncQueue()
     }
   }
@@ -311,7 +311,7 @@ class SyncQueueService {
    */
   async clearAll() {
     await indexedDB.clearSyncQueue()
-    toast.success(i18n.t('offline.queueCleared'))
+    toast.success(i18n.t('offline:queueCleared'))
   }
 }
 

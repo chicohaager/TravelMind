@@ -1,0 +1,23 @@
+{
+  "title": "Welcome to TravelMind",
+  "subtitle": "Your AI-powered travel companion",
+  "description": "Plan trips, document memories, and get personalized recommendations with AI",
+  "getStarted": "Get Started",
+  "yourNextTrip": "Your next trip",
+  "isWaiting": "is waiting!",
+  "planExploreDocument": "Plan, explore and document your travels with AI assistance.",
+  "selfHostedPrivacy": "All self-hosted and privacy-friendly.",
+  "planNewTrip": "Plan New Trip",
+  "aiAssistant": "AI Assistant",
+  "recentTrips": "Recent Trips",
+  "showAll": "Show all",
+  "readyForNextAdventure": "Ready for your next adventure?",
+  "letAiHelp": "Let AI help you plan the perfect trip",
+  "startWithAi": "Start with AI",
+  "features": {
+    "trips": "Plan & Organize Trips",
+    "diary": "Travel Diary",
+    "ai": "AI Recommendations",
+    "budget": "Budget Tracking"
+  }
+}

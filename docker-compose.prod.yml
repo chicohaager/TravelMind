@@ -1,63 +1,225 @@
+# ============================================
+# TravelMind - Production Docker Compose
+# ============================================
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+#
+# Before first run:
+#   1. Copy .env.example to .env and configure
+#   2. Generate secure JWT_SECRET and SECRET_KEY
+#   3. Configure your domain and SSL certificates
+
 version: '3.8'
 
 services:
-  # Backend Service (FastAPI) - Production
+  # ==========================================
+  # Backend Service (FastAPI + Gunicorn)
+  # ==========================================
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
-    container_name: travelmind-backend-prod
-    ports:
-      - "8003:8000"
+    container_name: travelmind-backend
+    restart: always
     environment:
-      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
-      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-5-sonnet-20241022}
-      - DATABASE_URL=${DATABASE_URL}
+      # Database
+      - DATABASE_URL=${DATABASE_URL:-postgresql://travelmind:travelmind@db:5432/travelmind}
+      
+      # Security (REQUIRED - generate secure values!)
       - JWT_SECRET=${JWT_SECRET}
       - SECRET_KEY=${SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      
+      # CORS (set to your domain)
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://your-domain.com}
+      
+      # Frontend URL for password reset emails
+      - FRONTEND_URL=${FRONTEND_URL:-https://your-domain.com}
+      
+      # Logging
       - LOG_LEVEL=${LOG_LEVEL:-WARNING}
-      - CORS_ORIGINS=${CORS_ORIGINS}
+      
+      # Rate Limiting
+      - RATE_LIMIT_AUTH_LOGIN=${RATE_LIMIT_AUTH_LOGIN:-10/minute}
+      - RATE_LIMIT_AI_CHAT=${RATE_LIMIT_AI_CHAT:-20/minute}
+      
+      # Optional: Sentry error tracking
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-production}
+      
+      # Optional: Email for password reset
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-noreply@your-domain.com}
     volumes:
-      - ./data:/app/data
-      - ./uploads:/app/uploads
+      # Persistent data
+      - travelmind_data:/app/data
+      - travelmind_uploads:/app/uploads
+      - travelmind_backups:/app/backups
+      - travelmind_logs:/app/logs
     depends_on:
-      - db
-    restart: always
+      db:
+        condition: service_healthy
     networks:
       - travelmind-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  # Frontend Service (React) - Production Build
+  # ==========================================
+  # Frontend Service (Nginx + React)
+  # ==========================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
-      args:
-        - VITE_API_URL=${VITE_API_URL}
-    container_name: travelmind-frontend-prod
+    container_name: travelmind-frontend
+    restart: always
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      # SSL certificates (optional, use with reverse proxy)
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
-    restart: always
     networks:
       - travelmind-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
+  # ==========================================
   # Database Service (PostgreSQL)
+  # ==========================================
   db:
     image: postgres:15-alpine
-    container_name: travelmind-db-prod
+    container_name: travelmind-db
+    restart: always
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_USER=${POSTGRES_USER:-travelmind}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_DB=${POSTGRES_DB:-travelmind}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+      # Custom PostgreSQL config for production
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     networks:
       - travelmind-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-travelmind} -d ${POSTGRES_DB:-travelmind}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # ==========================================
+  # Redis Cache (Optional but recommended)
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: travelmind-redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - travelmind-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # ==========================================
+  # Backup Service (Scheduled backups)
+  # ==========================================
+  backup:
+    image: postgres:15-alpine
+    container_name: travelmind-backup
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-travelmind}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-travelmind}
+      - POSTGRES_HOST=db
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - travelmind_backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - travelmind-network
+    # Run daily backup at 2 AM
+    entrypoint: /bin/sh
+    command: >
+      -c 'while true; do
+        echo "Starting backup at $$(date)";
+        PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h $$POSTGRES_HOST -U $$POSTGRES_USER $$POSTGRES_DB > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql;
+        echo "Backup complete. Cleaning old backups...";
+        find /backups -name "backup_*.sql" -mtime +$$BACKUP_RETENTION_DAYS -delete;
+        echo "Sleeping until next backup...";
+        sleep 86400;
+      done'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  travelmind_data:
+    driver: local
+  travelmind_uploads:
+    driver: local
+  travelmind_backups:
+    driver: local
+  travelmind_logs:
+    driver: local
 
 networks:
   travelmind-network:

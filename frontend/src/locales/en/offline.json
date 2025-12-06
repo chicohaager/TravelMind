@@ -1,0 +1,9 @@
+{
+  "changeWillSync": "Offline: Change will be synced when online",
+  "dataDeleted": "Offline data deleted",
+  "errorDeleting": "Error deleting offline data",
+  "changesSynced": "{{count}} change(s) synced",
+  "changesFailedToSync": "{{count}} change(s) could not be synced",
+  "retryingFailedOperations": "{{count}} failed operations being retried",
+  "queueCleared": "Sync queue cleared"
+}

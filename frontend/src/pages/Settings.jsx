@@ -4,9 +4,11 @@ import { Lock, Trash2, AlertTriangle, Eye, EyeOff, Brain, CheckCircle, XCircle, 
 import { useAuth } from '@/contexts/AuthContext'
 import { usersService, userSettingsService } from '@/services/api'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 
 export default function Settings() {
+  const { t } = useTranslation()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
@@ -51,7 +53,7 @@ export default function Settings() {
 
   const handleValidateAPIKey = async () => {
     if (!aiSettings.api_key) {
-      toast.error(t('settings.enterApiKey'))
+      toast.error(t('settings:enterApiKey'))
       return
     }
 
@@ -64,12 +66,12 @@ export default function Settings() {
       })
 
       if (response.data.valid) {
-        toast.success(t('settings.apiKeyValid'))
+        toast.success(t('settings:apiKeyValid'))
       } else {
-        toast.error(response.data.message || t('settings.apiKeyInvalid'))
+        toast.error(response.data.message || t('settings:apiKeyInvalid'))
       }
     } catch (error) {
-      const message = error.response?.data?.detail || t('settings.validationError')
+      const message = error.response?.data?.detail || t('settings:validationError')
       toast.error(message)
     } finally {
       setValidatingAPIKey(false)
@@ -78,7 +80,7 @@ export default function Settings() {
 
   const handleSaveAISettings = async () => {
     if (!aiSettings.api_key) {
-      toast.error(t('settings.enterApiKey'))
+      toast.error(t('settings:enterApiKey'))
       return
     }
 
@@ -90,12 +92,12 @@ export default function Settings() {
         api_key: aiSettings.api_key,
       })
 
-      toast.success(t('settings.aiSettingsSaved'))
+      toast.success(t('settings:aiSettingsSaved'))
       setAISettings({ ...aiSettings, api_key: '', has_api_key: true })
       setShowAPIKey(false)
       await loadAISettings()
     } catch (error) {
-      const message = error.response?.data?.detail || t('settings.saveError')
+      const message = error.response?.data?.detail || t('settings:saveError')
       toast.error(message)
     } finally {
       setAILoading(false)
@@ -103,7 +105,7 @@ export default function Settings() {
   }
 
   const handleDeleteAISettings = async () => {
-    if (!confirm(t('settings.deleteAiConfirm'))) {
+    if (!confirm(t('settings:deleteAiConfirm'))) {
       return
     }
 
@@ -111,10 +113,10 @@ export default function Settings() {
 
     try {
       await userSettingsService.deleteAISettings()
-      toast.success(t('settings.aiSettingsDeleted'))
+      toast.success(t('settings:aiSettingsDeleted'))
       setAISettings({ ai_provider: 'GROQ', api_key: '', has_api_key: false })
     } catch (error) {
-      const message = error.response?.data?.detail || t('settings.deleteError')
+      const message = error.response?.data?.detail || t('settings:deleteError')
       toast.error(message)
     } finally {
       setAILoading(false)
@@ -125,12 +127,12 @@ export default function Settings() {
     e.preventDefault()
 
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      toast.error(t('auth.passwordsDoNotMatch'))
+      toast.error(t('auth:passwordsDoNotMatch'))
       return
     }
 
     if (passwordForm.new_password.length < 8) {
-      toast.error(t('settings.passwordMinLength'))
+      toast.error(t('settings:passwordMinLength'))
       return
     }
 
@@ -142,14 +144,14 @@ export default function Settings() {
         new_password: passwordForm.new_password,
       })
 
-      toast.success(t('settings.passwordChanged'))
+      toast.success(t('settings:passwordChanged'))
       setPasswordForm({
         current_password: '',
         new_password: '',
         confirm_password: '',
       })
     } catch (error) {
-      const message = error.response?.data?.detail || t('settings.passwordChangeError')
+      const message = error.response?.data?.detail || t('settings:passwordChangeError')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -158,7 +160,7 @@ export default function Settings() {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== user?.username) {
-      toast.error(t('auth.usernameDoesNotMatch'))
+      toast.error(t('auth:usernameDoesNotMatch'))
       return
     }
 
@@ -166,11 +168,11 @@ export default function Settings() {
 
     try {
       await usersService.deleteAccount()
-      toast.success(t('settings.accountDeleted'))
+      toast.success(t('settings:accountDeleted'))
       logout()
       navigate('/')
     } catch (error) {
-      const message = error.response?.data?.detail || t('settings.accountDeleteError')
+      const message = error.response?.data?.detail || t('settings:accountDeleteError')
       toast.error(message)
     } finally {
       setLoading(false)
@@ -184,9 +186,9 @@ export default function Settings() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold mb-2">{t('settings.title')}</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('settings:title')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          {t('settings.securityDescription')}
+          {t('settings:securityDescription')}
         </p>
       </motion.div>
 
@@ -203,16 +205,16 @@ export default function Settings() {
                   <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">{t('ai.aiConfiguration')}</h3>
+                  <h3 className="text-xl font-bold">{t('ai:aiConfiguration')}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('ai.configureProvider')}
+                    {t('ai:configureProvider')}
                   </p>
                 </div>
               </div>
               {aiSettings.has_api_key && (
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <CheckCircle className="w-5 h-5" />
-                  <span className="text-sm font-medium">{t('ai.configured')}</span>
+                  <span className="text-sm font-medium">{t('ai:configured')}</span>
                 </div>
               )}
             </div>
@@ -221,7 +223,7 @@ export default function Settings() {
               {/* Provider Selection */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('ai.provider')}
+                  {t('ai:provider')}
                 </label>
                 <select
                   value={aiSettings.ai_provider}
@@ -229,23 +231,23 @@ export default function Settings() {
                   className="input w-full"
                   disabled={aiLoading}
                 >
-                  <option value="GROQ">{t('ai.groqOption')}</option>
-                  <option value="CLAUDE">{t('ai.claudeOption')}</option>
-                  <option value="OPENAI">{t('ai.openaiOption')}</option>
-                  <option value="GEMINI">{t('ai.geminiOption')}</option>
+                  <option value="GROQ">{t('ai:groqOption')}</option>
+                  <option value="CLAUDE">{t('ai:claudeOption')}</option>
+                  <option value="OPENAI">{t('ai:openaiOption')}</option>
+                  <option value="GEMINI">{t('ai:geminiOption')}</option>
                 </select>
                 <p className="text-sm text-gray-500 mt-1">
-                  {t('ai.selectProvider')}
+                  {t('ai:selectProvider')}
                 </p>
               </div>
 
               {/* API Key Input */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('ai.apiKey')}
+                  {t('ai:apiKey')}
                   {aiSettings.has_api_key && (
                     <span className="ml-2 text-xs text-green-600 dark:text-green-400">
-                      ({t('ai.apiKeyStored')})
+                      ({t('ai:apiKeyStored')})
                     </span>
                   )}
                 </label>
@@ -255,7 +257,7 @@ export default function Settings() {
                     value={aiSettings.api_key}
                     onChange={(e) => setAISettings({ ...aiSettings, api_key: e.target.value })}
                     className="input w-full pr-10"
-                    placeholder={aiSettings.has_api_key ? t('ai.enterNewApiKey') : t('ai.enterApiKey')}
+                    placeholder={aiSettings.has_api_key ? t('ai:enterNewApiKey') : t('ai:enterApiKey')}
                     disabled={aiLoading}
                   />
                   <button
@@ -268,13 +270,13 @@ export default function Settings() {
                 </div>
                 <div className="mt-2 space-y-1">
                   <p className="text-xs text-gray-500">
-                    {aiSettings.ai_provider === 'GROQ' && t('settings.getApiKeyGroq')}
-                    {aiSettings.ai_provider === 'CLAUDE' && t('settings.getApiKeyClaude')}
-                    {aiSettings.ai_provider === 'OPENAI' && t('settings.getApiKeyOpenAI')}
-                    {aiSettings.ai_provider === 'GEMINI' && t('settings.getApiKeyGemini')}
+                    {aiSettings.ai_provider === 'GROQ' && t('settings:getApiKeyGroq')}
+                    {aiSettings.ai_provider === 'CLAUDE' && t('settings:getApiKeyClaude')}
+                    {aiSettings.ai_provider === 'OPENAI' && t('settings:getApiKeyOpenAI')}
+                    {aiSettings.ai_provider === 'GEMINI' && t('settings:getApiKeyGemini')}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {t('settings.apiKeyEncrypted')}
+                    {t('settings:apiKeyEncrypted')}
                   </p>
                 </div>
               </div>
@@ -303,7 +305,7 @@ export default function Settings() {
                   className="btn-primary flex-1"
                   disabled={!aiSettings.api_key || aiLoading}
                 >
-                  {aiLoading ? t('settings.saving') : t('common.save')}
+                  {aiLoading ? t('settings:saving') : t('common:save')}
                 </button>
               </div>
 
@@ -315,7 +317,7 @@ export default function Settings() {
                   disabled={aiLoading}
                 >
                   <XCircle className="w-4 h-4" />
-                  {t('settings.deleteAiSettings')}
+                  {t('settings:deleteAiSettings')}
                 </button>
               )}
             </div>
@@ -334,9 +336,9 @@ export default function Settings() {
                 <Lock className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
-                <h3 className="text-xl font-bold">{t('settings.changePassword')}</h3>
+                <h3 className="text-xl font-bold">{t('settings:changePassword')}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('settings.changePasswordDescription')}
+                  {t('settings:changePasswordDescription')}
                 </p>
               </div>
             </div>
@@ -344,7 +346,7 @@ export default function Settings() {
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('settings.currentPassword')}
+                  {t('settings:currentPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -369,7 +371,7 @@ export default function Settings() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('settings.newPassword')}
+                  {t('settings:newPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -392,13 +394,13 @@ export default function Settings() {
                   </button>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  {t('auth.passwordTooShort')}
+                  {t('auth:passwordTooShort')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('settings.confirmNewPassword')}
+                  {t('settings:confirmNewPassword')}
                 </label>
                 <input
                   type={showNewPassword ? 'text' : 'password'}
@@ -418,7 +420,7 @@ export default function Settings() {
                 className="btn-primary w-full"
                 disabled={loading}
               >
-                {loading ? t('settings.updating') : t('settings.changePassword')}
+                {loading ? t('settings:updating') : t('settings:changePassword')}
               </button>
             </form>
           </div>
@@ -437,10 +439,10 @@ export default function Settings() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-red-600 dark:text-red-400">
-                  {t('settings.deleteAccount')}
+                  {t('settings:deleteAccount')}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('settings.deleteAccountPermanently')}
+                  {t('settings:deleteAccountPermanently')}
                 </p>
               </div>
             </div>
@@ -449,8 +451,8 @@ export default function Settings() {
               <div className="flex gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800 dark:text-red-300">
-                  <p className="font-semibold mb-1">{t('settings.deleteWarningTitle')}</p>
-                  <p>{t('settings.deleteWarningText')}</p>
+                  <p className="font-semibold mb-1">{t('settings:deleteWarningTitle')}</p>
+                  <p>{t('settings:deleteWarningText')}</p>
                 </div>
               </div>
             </div>
@@ -460,14 +462,14 @@ export default function Settings() {
                 onClick={() => setShowDeleteConfirm(true)}
                 className="btn bg-red-600 hover:bg-red-700 text-white w-full"
               >
-                {t('settings.deleteAccount')}
+                {t('settings:deleteAccount')}
               </button>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2" dangerouslySetInnerHTML={{
-                    __html: t('settings.confirmUsernamePrompt').replace('{username}', user?.username || '')
-                  }} />
+                  <label className="block text-sm font-medium mb-2">
+                    {t('settings:confirmUsernamePromptPrefix')} <strong>{user?.username || ''}</strong> {t('settings:confirmUsernamePromptSuffix')}
+                  </label>
 
                   <input
                     type="text"
@@ -488,14 +490,14 @@ export default function Settings() {
                     className="btn-outline flex-1"
                     disabled={loading}
                   >
-                    {t('common.cancel')}
+                    {t('common:cancel')}
                   </button>
                   <button
                     onClick={handleDeleteAccount}
                     className="btn bg-red-600 hover:bg-red-700 text-white flex-1"
                     disabled={loading || deleteConfirmText !== user?.username}
                   >
-                    {loading ? t('settings.deleting') : t('settings.permanentlyDelete')}
+                    {loading ? t('settings:deleting') : t('settings:permanentlyDelete')}
                   </button>
                 </div>
               </div>

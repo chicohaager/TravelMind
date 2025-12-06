@@ -157,7 +157,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="p-2 text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            title={t('places.openWebsite')}
+            title={t('places:openWebsite')}
           >
             <ExternalLink className="w-5 h-5" />
           </a>
@@ -168,7 +168,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
             onEdit(place)
           }}
           className="p-2 text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          title={t('places.editPlace')}
+          title={t('places:editPlace')}
         >
           <Edit className="w-5 h-5" />
         </button>
@@ -178,7 +178,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
             onDelete(place.id)
           }}
           className="p-2 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-          title={t('places.deletePlace')}
+          title={t('places:deletePlace')}
         >
           <Trash2 className="w-5 h-5" />
         </button>

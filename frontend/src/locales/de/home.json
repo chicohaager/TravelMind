@@ -1,0 +1,23 @@
+{
+  "title": "Willkommen bei TravelMind",
+  "subtitle": "Dein KI-gestützter Reisebegleiter",
+  "description": "Plane Reisen, dokumentiere Erinnerungen und erhalte personalisierte Empfehlungen mit KI",
+  "getStarted": "Jetzt starten",
+  "yourNextTrip": "Deine nächste Reise",
+  "isWaiting": "wartet schon!",
+  "planExploreDocument": "Plane, erkunde und dokumentiere deine Reisen mit KI-Unterstützung.",
+  "selfHostedPrivacy": "Alles selbstgehostet und datenschutzfreundlich.",
+  "planNewTrip": "Neue Reise planen",
+  "aiAssistant": "KI-Assistent",
+  "recentTrips": "Aktuelle Reisen",
+  "showAll": "Alle anzeigen",
+  "readyForNextAdventure": "Bereit für dein nächstes Abenteuer?",
+  "letAiHelp": "Lass KI dir helfen, die perfekte Reise zu planen",
+  "startWithAi": "Mit KI starten",
+  "features": {
+    "trips": "Reisen planen & organisieren",
+    "diary": "Reisetagebuch",
+    "ai": "KI-Empfehlungen",
+    "budget": "Budget-Tracking"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Karte",
+  "noPlacesYet": "Noch keine Orte",
+  "addPlacesToSeeOnMap": "Füge Orte zu deiner Reise hinzu, um sie auf der Karte zu sehen",
+  "addPlaces": "Orte hinzufügen",
+  "createRoutes": "Routen erstellen",
+  "needTwoPlacesForRoute": "Du benötigst mindestens 2 Orte um eine Route zu erstellen",
+  "addMorePlaces": "Weitere Orte hinzufügen",
+  "mapStatistics": "Karten-Statistik",
+  "totalPlaces": "Orte gesamt:",
+  "activeRoutes": "Aktive Routen:",
+  "visited": "Besucht:",
+  "tip": "Tipp",
+  "dragPlacesToCreateRoutes": "Ziehe Orte von der linken Liste in die Routen-Reihenfolge rechts, um eigene Routen zu erstellen. Ändere Farben und Stile, um verschiedene Tage oder Themen zu organisieren!"
+}

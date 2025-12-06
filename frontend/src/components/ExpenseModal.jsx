@@ -117,7 +117,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
 
     // Validate splits
     if (Math.abs(totalSplits - totalAmount) > 0.01) {
-      alert(t('budget.splitSumError')
+      alert(t('budget:splitSumError')
         .replace('{splitSum}', totalSplits.toFixed(2))
         .replace('{totalAmount}', totalAmount.toFixed(2)))
       return
@@ -170,7 +170,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
               {/* Header */}
               <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
                 <h2 className="text-2xl font-bold">
-                  {initialData ? t('budget.editExpense') : t('budget.newExpense')}
+                  {initialData ? t('budget:editExpense') : t('budget:newExpense')}
                 </h2>
                 <button
                   onClick={onClose}
@@ -185,19 +185,19 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                 {/* Title & Category */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('budget.titleLabel')} *</label>
+                    <label className="block text-sm font-medium mb-2">{t('budget:titleLabel')} *</label>
                     <input
                       type="text"
                       name="title"
                       value={formData.title}
                       onChange={handleChange}
-                      placeholder={t('budget.titlePlaceholder')}
+                      placeholder={t('budget:titlePlaceholder')}
                       required
                       className="input"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('budget.categoryLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('budget:categoryLabel')}</label>
                     <select name="category" value={formData.category} onChange={handleChange} className="input">
                       {categories.map((cat) => (
                         <option key={cat.value} value={cat.value}>
@@ -213,7 +213,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                   <div className="col-span-2">
                     <label className="block text-sm font-medium mb-2">
                       <DollarSign className="w-4 h-4 inline mr-1" />
-                      {t('budget.amountLabel')} *
+                      {t('budget:amountLabel')} *
                     </label>
                     <input
                       type="number"
@@ -228,7 +228,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('budget.currencyLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('budget:currencyLabel')}</label>
                     <select name="currency" value={formData.currency} onChange={handleChange} className="input">
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
@@ -242,7 +242,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       <Calendar className="w-4 h-4 inline mr-1" />
-                      {t('budget.dateLabel')} *
+                      {t('budget:dateLabel')} *
                     </label>
                     <input
                       type="date"
@@ -256,10 +256,10 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       <User className="w-4 h-4 inline mr-1" />
-                      {t('budget.paidByLabel')} *
+                      {t('budget:paidByLabel')} *
                     </label>
                     <select name="paid_by" value={formData.paid_by} onChange={handleChange} required className="input">
-                      <option value="">{t('budget.paidByPlaceholder')}</option>
+                      <option value="">{t('budget:paidByPlaceholder')}</option>
                       {participants.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
@@ -271,12 +271,12 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('budget.notesLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('budget:notesLabel')}</label>
                   <textarea
                     name="notes"
                     value={formData.notes}
                     onChange={handleChange}
-                    placeholder={t('budget.notesPlaceholder')}
+                    placeholder={t('budget:notesPlaceholder')}
                     rows={2}
                     className="input"
                   />
@@ -286,7 +286,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Users className="w-4 h-4 inline mr-1" />
-                    {t('budget.splitLabel')}
+                    {t('budget:splitLabel')}
                   </label>
                   <div className="flex gap-2 mb-3">
                     <button
@@ -298,7 +298,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                           : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
                       }`}
                     >
-                      {t('budget.splitEqual')}
+                      {t('budget:splitEqual')}
                     </button>
                     <button
                       type="button"
@@ -309,7 +309,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                           : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
                       }`}
                     >
-                      {t('budget.splitCustom')}
+                      {t('budget:splitCustom')}
                     </button>
                   </div>
 
@@ -319,7 +319,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                       const participant = participants.find((p) => p.id === split.participant_id)
                       return (
                         <div key={split.participant_id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                          <div className="flex-1 font-medium">{participant?.name || t('budget.unknown')}</div>
+                          <div className="flex-1 font-medium">{participant?.name || t('budget:unknown')}</div>
                           <input
                             type="number"
                             value={split.amount}
@@ -338,16 +338,16 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                   {/* Validation */}
                   <div className={`mt-3 p-3 rounded-lg text-sm ${isValid ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
                     <div className="flex justify-between">
-                      <span>{t('budget.totalSplit')}</span>
+                      <span>{t('budget:totalSplit')}</span>
                       <strong>{totalSplits.toFixed(2)} {formData.currency}</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>{t('budget.totalAmount')}</span>
+                      <span>{t('budget:totalAmount')}</span>
                       <strong>{totalAmount.toFixed(2)} {formData.currency}</strong>
                     </div>
                     {!isValid && (
                       <div className="mt-2 font-medium">
-                        {t('budget.splitValidationError')}
+                        {t('budget:splitValidationError')}
                       </div>
                     )}
                   </div>
@@ -356,10 +356,10 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
-                    {t('common.cancel')}
+                    {t('common:cancel')}
                   </button>
                   <button type="submit" disabled={!isValid} className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {initialData ? t('budget.saveButton') : t('budget.addButton')}
+                    {initialData ? t('budget:saveButton') : t('budget:addButton')}
                   </button>
                 </div>
               </form>

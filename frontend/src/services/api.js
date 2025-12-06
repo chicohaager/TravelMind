@@ -13,11 +13,15 @@ if (isDev || window.location.hostname === 'localhost' || window.location.hostnam
   baseURL = `${API_URL}/api`
 }
 
-console.log('API Config:', { isDev, API_URL, baseURL, hostname: window.location.hostname })
+// Only log in development
+if (isDev) {
+  console.log('API Config:', { isDev, API_URL, baseURL, hostname: window.location.hostname })
+}
 
-// Create axios instance
+// Create axios instance with timeout
 const api = axios.create({
   baseURL,
+  timeout: 30000, // 30 second timeout for normal requests
   headers: {
     'Content-Type': 'application/json',
   },

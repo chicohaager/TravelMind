@@ -36,7 +36,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
       toast.success('Zur Timeline hinzugefügt')
     },
     onError: (error) => {
-      toast.error(error.response?.data?.detail || t('timeline.errorAdding'))
+      toast.error(error.response?.data?.detail || t('timeline:errorAdding'))
     }
   })
 
@@ -50,7 +50,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
       toast.success('Aus Timeline entfernt')
     },
     onError: () => {
-      toast.error(t('timeline.errorDeleting'))
+      toast.error(t('timeline:errorDeleting'))
     }
   })
 
@@ -75,7 +75,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
       toast.success(data.message || 'Route optimiert')
     },
     onError: () => {
-      toast.error(t('timeline.errorOptimizing'))
+      toast.error(t('timeline:errorOptimizing'))
     }
   })
 
@@ -148,7 +148,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
           <div className="text-center py-12">
             <CalendarDays className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {t('timeline.noEntriesYet')}
+              {t('timeline:noEntriesYet')}
             </p>
             {places && places.length > 0 ? (
               <button

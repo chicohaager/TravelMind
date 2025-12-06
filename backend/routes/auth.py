@@ -3,7 +3,7 @@ Authentication Router
 User authentication and authorization with JWT
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 
 from models.database import get_db
 from models.user import User
+from services.audit_service import audit_service
+from utils.rate_limits import limiter, RateLimits
 
 load_dotenv()
 
@@ -30,39 +32,70 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
 # Pydantic Models
 class UserRegister(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
-    email: EmailStr
-    password: str = Field(..., min_length=8)
-    full_name: Optional[str] = None
+    username: str = Field(..., min_length=3, max_length=50, example="johndoe")
+    email: EmailStr = Field(..., example="john@example.com")
+    password: str = Field(..., min_length=8, example="securepassword123")
+    full_name: Optional[str] = Field(None, example="John Doe")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "johndoe",
+                "email": "john@example.com",
+                "password": "securepassword123",
+                "full_name": "John Doe"
+            }
+        }
 
 
 class UserLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., example="johndoe")
+    password: str = Field(..., example="securepassword123")
 
 
 class Token(BaseModel):
-    access_token: str
-    token_type: str
+    access_token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    token_type: str = Field(default="bearer", example="bearer")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",
+                "token_type": "bearer"
+            }
+        }
 
 
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    username: Optional[str] = Field(None, example="johndoe")
 
 
 class UserResponse(BaseModel):
-    id: int
-    username: str
-    email: str
-    full_name: Optional[str]
-    avatar_url: Optional[str]
-    bio: Optional[str]
-    is_active: bool
-    is_superuser: bool
-    created_at: datetime
+    id: int = Field(..., example=1)
+    username: str = Field(..., example="johndoe")
+    email: str = Field(..., example="john@example.com")
+    full_name: Optional[str] = Field(None, example="John Doe")
+    avatar_url: Optional[str] = Field(None, example="/uploads/avatars/user_1_abc123.jpg")
+    bio: Optional[str] = Field(None, example="Travel enthusiast and photographer")
+    is_active: bool = Field(..., example=True)
+    is_superuser: bool = Field(..., example=False)
+    created_at: datetime = Field(..., example="2025-01-15T10:30:00Z")
 
     class Config:
         from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "username": "johndoe",
+                "email": "john@example.com",
+                "full_name": "John Doe",
+                "avatar_url": "/uploads/avatars/user_1_abc123.jpg",
+                "bio": "Travel enthusiast and photographer",
+                "is_active": True,
+                "is_superuser": False,
+                "created_at": "2025-01-15T10:30:00Z"
+            }
+        }
 
 
 # Helper Functions
@@ -152,7 +185,12 @@ async def get_registration_status(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/register", response_model=Token, status_code=201)
-async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.AUTH_REGISTER)
+async def register(
+    request: Request,
+    user_data: UserRegister,
+    db: AsyncSession = Depends(get_db)
+):
     """
     Register a new user
 
@@ -197,6 +235,16 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(new_user)
 
+    # Audit log: user registration
+    await audit_service.log_auth_event(
+        db=db,
+        event="register",
+        user_id=new_user.id,
+        username=new_user.username,
+        request=request,
+        details={"email": new_user.email}
+    )
+
     # Generate access token
     access_token = create_access_token(data={"sub": new_user.username})
 
@@ -204,7 +252,9 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit(RateLimits.AUTH_LOGIN)
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
@@ -219,6 +269,15 @@ async def login(
 
     # Verify credentials
     if not user or not user.verify_password(form_data.password):
+        # Audit log: failed login attempt
+        await audit_service.log_auth_event(
+            db=db,
+            event="login_failed",
+            username=form_data.username,
+            request=request,
+            status="failure",
+            details={"reason": "invalid_credentials"}
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -227,10 +286,29 @@ async def login(
 
     # Check if user is active
     if not user.is_active:
+        # Audit log: inactive user login attempt
+        await audit_service.log_auth_event(
+            db=db,
+            event="login_failed",
+            user_id=user.id,
+            username=user.username,
+            request=request,
+            status="failure",
+            details={"reason": "user_inactive"}
+        )
         raise HTTPException(
             status_code=400,
             detail="Inactive user"
         )
+
+    # Audit log: successful login
+    await audit_service.log_auth_event(
+        db=db,
+        event="login",
+        user_id=user.id,
+        username=user.username,
+        request=request
+    )
 
     # Generate access token
     access_token = create_access_token(data={"sub": user.username})
@@ -259,7 +337,8 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(current_user: User = Depends(get_current_active_user)):
+@limiter.limit(RateLimits.AUTH_REFRESH)
+async def refresh_token(request: Request, current_user: User = Depends(get_current_active_user)):
     """
     Refresh access token
 
