@@ -13,7 +13,7 @@ services:
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
       - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-5-sonnet-20241022}
       - CLAUDE_MAX_TOKENS=${CLAUDE_MAX_TOKENS:-2048}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://travelmind:travelmind@db:5432/travelmind}
+      - DATABASE_URL=postgresql://travelmind:travelmind@db:5432/travelmind
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}

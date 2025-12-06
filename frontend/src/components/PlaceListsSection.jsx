@@ -74,10 +74,10 @@ export default function PlaceListsSection({
       setNewListTitle('')
       setNewListIcon('📍')
       setNewListColor('#6366F1')
-      toast.success(t('placeLists.listCreated'))
+      toast.success(t('placeLists:listCreated'))
     },
     onError: () => {
-      toast.error(t('placeLists.errorCreating'))
+      toast.error(t('placeLists:errorCreating'))
     }
   })
 
@@ -90,10 +90,10 @@ export default function PlaceListsSection({
     onSuccess: () => {
       queryClient.invalidateQueries(['placeLists', tripId])
       setEditingListId(null)
-      toast.success(t('placeLists.listUpdated'))
+      toast.success(t('placeLists:listUpdated'))
     },
     onError: () => {
-      toast.error(t('placeLists.errorUpdating'))
+      toast.error(t('placeLists:errorUpdating'))
     }
   })
 
@@ -105,16 +105,16 @@ export default function PlaceListsSection({
     onSuccess: () => {
       queryClient.invalidateQueries(['placeLists', tripId])
       queryClient.invalidateQueries(['places', tripId])
-      toast.success(t('placeLists.listDeleted'))
+      toast.success(t('placeLists:listDeleted'))
     },
     onError: () => {
-      toast.error(t('placeLists.errorDeleting'))
+      toast.error(t('placeLists:errorDeleting'))
     }
   })
 
   const handleCreateList = async () => {
     if (!newListTitle.trim()) {
-      toast.error(t('placeLists.pleaseEnterTitle'))
+      toast.error(t('placeLists:pleaseEnterTitle'))
       return
     }
 
@@ -127,7 +127,7 @@ export default function PlaceListsSection({
   }
 
   const handleDeleteList = async (listId) => {
-    if (confirm(t('placeLists.confirmDeleteList'))) {
+    if (confirm(t('placeLists:confirmDeleteList'))) {
       await deleteListMutation.mutateAsync(listId)
     }
   }
@@ -170,7 +170,7 @@ export default function PlaceListsSection({
                 <ChevronDown className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               )}
               <Sparkles className="w-5 h-5 text-primary-600" />
-              <h3 className="text-lg font-bold">{t('placeLists.recommendedPlaces')}</h3>
+              <h3 className="text-lg font-bold">{t('placeLists:recommendedPlaces')}</h3>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 ({recommendedPlaces.length})
               </span>
@@ -225,7 +225,7 @@ export default function PlaceListsSection({
               <button
                 onClick={() => handleDeleteList(list.id)}
                 className="p-2 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-                title={t('placeLists.deleteList')}
+                title={t('placeLists:deleteList')}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -253,7 +253,7 @@ export default function PlaceListsSection({
                   ))
                 ) : (
                   <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
-                    {t('placeLists.noPlacesInList')}
+                    {t('placeLists:noPlacesInList')}
                   </p>
                 )}
               </motion.div>
@@ -269,23 +269,23 @@ export default function PlaceListsSection({
           className="w-full btn btn-outline flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          {t('placeLists.createNewList')}
+          {t('placeLists:createNewList')}
         </button>
       ) : (
         <div className="card border-2 border-primary-500">
-          <h3 className="text-lg font-bold mb-4">{t('placeLists.createNewList')}</h3>
+          <h3 className="text-lg font-bold mb-4">{t('placeLists:createNewList')}</h3>
 
           <div className="space-y-4">
             {/* Title */}
             <div>
               <label className="block text-sm font-medium mb-2">
-                {t('placeLists.title')} <span className="text-red-500">*</span>
+                {t('placeLists:title')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={newListTitle}
                 onChange={(e) => setNewListTitle(e.target.value)}
-                placeholder={t('placeLists.titlePlaceholder')}
+                placeholder={t('placeLists:titlePlaceholder')}
                 className="input w-full"
                 autoFocus
               />
@@ -293,7 +293,7 @@ export default function PlaceListsSection({
 
             {/* Icon Selector */}
             <div>
-              <label className="block text-sm font-medium mb-2">{t('placeLists.icon')}</label>
+              <label className="block text-sm font-medium mb-2">{t('placeLists:icon')}</label>
               <div className="flex flex-wrap gap-2">
                 {EMOJI_PRESETS.map(({ emoji, label }) => (
                   <button
@@ -315,7 +315,7 @@ export default function PlaceListsSection({
 
             {/* Color Selector */}
             <div>
-              <label className="block text-sm font-medium mb-2">{t('placeLists.color')}</label>
+              <label className="block text-sm font-medium mb-2">{t('placeLists:color')}</label>
               <div className="flex flex-wrap gap-2">
                 {COLOR_PRESETS.map((color) => (
                   <button
@@ -342,7 +342,7 @@ export default function PlaceListsSection({
                 className="btn-primary flex-1 flex items-center justify-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                {t('common.create')}
+                {t('common:create')}
               </button>
               <button
                 onClick={() => {
@@ -355,7 +355,7 @@ export default function PlaceListsSection({
                 className="btn-outline flex items-center gap-2"
               >
                 <X className="w-4 h-4" />
-                {t('common.cancel')}
+                {t('common:cancel')}
               </button>
             </div>
           </div>

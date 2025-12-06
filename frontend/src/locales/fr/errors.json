@@ -1,0 +1,8 @@
+{
+  "generic": "Une erreur s'est produite. Veuillez réessayer.",
+  "network": "Erreur réseau. Veuillez vérifier votre connexion.",
+  "notFound": "Non trouvé.",
+  "unauthorized": "Non autorisé. Veuillez vous connecter.",
+  "forbidden": "Accès refusé.",
+  "validation": "Erreur de validation. Veuillez vérifier vos données."
+}

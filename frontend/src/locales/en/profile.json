@@ -1,0 +1,18 @@
+{
+  "title": "Profile",
+  "myProfile": "My Profile",
+  "fullName": "Full Name",
+  "bio": "Bio",
+  "updateProfile": "Update Profile",
+  "avatar": "Avatar",
+  "changeAvatar": "Change Avatar",
+  "profileInformation": "Profile Information",
+  "profileUpdated": "Profile successfully updated",
+  "updateError": "Error updating",
+  "avatarUploaded": "Avatar successfully uploaded",
+  "uploadError": "Error uploading",
+  "username": "Username",
+  "notSpecified": "Not specified",
+  "noDescription": "No description",
+  "fileTooLarge": "File too large. Maximum: 5MB"
+}

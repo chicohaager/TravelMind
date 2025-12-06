@@ -3,17 +3,23 @@ Admin Router
 Admin-only endpoints for user and system management
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import aliased
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
 from datetime import datetime
 
 from models.database import get_db
 from models.user import User
+from models.trip import Trip
+from models.diary import DiaryEntry
+from models.audit_log import AuditLog
 from routes.auth import get_current_active_user, UserRegister
 from utils.geocoding import geocode_if_missing
+from services.audit_service import audit_service
+from utils.rate_limits import get_rate_limit_status, limiter, RateLimits
 
 router = APIRouter()
 
@@ -68,6 +74,26 @@ class SystemStats(BaseModel):
     total_places: int
 
 
+class AuditLogResponse(BaseModel):
+    id: int
+    event_type: str
+    event_category: str
+    user_id: Optional[int]
+    username: Optional[str]
+    resource_type: Optional[str]
+    resource_id: Optional[int]
+    ip_address: Optional[str]
+    request_method: Optional[str]
+    request_path: Optional[str]
+    description: Optional[str]
+    details: Optional[dict]
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # Endpoints
 @router.get("/users", response_model=List[UserListItem])
 async def list_users(
@@ -84,8 +110,29 @@ async def list_users(
     Returns a paginated list of all users with basic statistics.
     Supports searching by username, email, or full name.
     """
-    # Build query
-    query = select(User)
+    # Build optimized query with subqueries for counts (avoiding N+1 problem)
+    # Subquery for trip count per user
+    trip_count_subq = (
+        select(func.count(Trip.id))
+        .where(Trip.owner_id == User.id)
+        .correlate(User)
+        .scalar_subquery()
+    )
+
+    # Subquery for diary count per user
+    diary_count_subq = (
+        select(func.count(DiaryEntry.id))
+        .where(DiaryEntry.author_id == User.id)
+        .correlate(User)
+        .scalar_subquery()
+    )
+
+    # Main query with counts
+    query = select(
+        User,
+        trip_count_subq.label('trip_count'),
+        diary_count_subq.label('diary_count')
+    )
 
     # Apply filters
     if search:
@@ -102,28 +149,16 @@ async def list_users(
     # Apply pagination
     query = query.offset(skip).limit(limit).order_by(User.created_at.desc())
 
-    # Execute query
+    # Execute query - single query with all counts
     result = await db.execute(query)
-    users = result.scalars().all()
+    rows = result.all()
 
-    # Import models for counting
-    from models.trip import Trip
-    from models.diary import DiaryEntry
-
-    # For each user, get trip and diary counts
+    # Build response list
     user_list = []
-    for user in users:
-        # Count trips for this user
-        trip_count_result = await db.execute(
-            select(func.count(Trip.id)).where(Trip.owner_id == user.id)
-        )
-        trip_count = trip_count_result.scalar()
-
-        # Count diary entries for this user
-        diary_count_result = await db.execute(
-            select(func.count(DiaryEntry.id)).where(DiaryEntry.author_id == user.id)
-        )
-        diary_count = diary_count_result.scalar()
+    for row in rows:
+        user = row[0]  # User object
+        trip_count = row[1] or 0  # trip_count
+        diary_count = row[2] or 0  # diary_count
 
         user_dict = {
             "id": user.id,
@@ -195,6 +230,7 @@ async def get_user_admin(
 async def update_user_admin(
     user_id: int,
     user_update: UserAdminUpdate,
+    request: Request,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
@@ -232,12 +268,24 @@ async def update_user_admin(
     await db.commit()
     await db.refresh(user)
 
+    # Audit log: admin user update
+    await audit_service.log_admin_event(
+        db=db,
+        action="user_update",
+        admin_user_id=admin.id,
+        admin_username=admin.username,
+        target_user_id=user.id,
+        request=request,
+        details={"updated_fields": list(update_data.keys()), "target_username": user.username}
+    )
+
     return user
 
 
 @router.delete("/users/{user_id}", status_code=204)
 async def delete_user_admin(
     user_id: int,
+    request: Request,
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
@@ -259,8 +307,23 @@ async def delete_user_admin(
             detail="Cannot delete your own account via admin panel"
         )
 
+    # Store user info for audit before deletion
+    deleted_username = user.username
+    deleted_email = user.email
+
     await db.delete(user)
     await db.commit()
+
+    # Audit log: admin user deletion
+    await audit_service.log_admin_event(
+        db=db,
+        action="user_delete",
+        admin_user_id=admin.id,
+        admin_username=admin.username,
+        target_user_id=user_id,
+        request=request,
+        details={"deleted_username": deleted_username, "deleted_email": deleted_email}
+    )
 
     return None
 
@@ -378,6 +441,7 @@ async def get_setting_by_key(
 async def update_setting(
     key: str,
     update: SettingUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
@@ -395,6 +459,16 @@ async def update_setting(
         description=update.description
     )
 
+    # Audit log: settings change
+    await audit_service.log_admin_event(
+        db=db,
+        action="settings_change",
+        admin_user_id=admin.id,
+        admin_username=admin.username,
+        request=request,
+        details={"key": key, "new_value": update.value}
+    )
+
     return {
         "message": f"Setting '{key}' updated successfully",
         "key": setting.key,
@@ -405,6 +479,7 @@ async def update_setting(
 
 @router.post("/settings/registration/toggle")
 async def toggle_registration(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
@@ -419,6 +494,16 @@ async def toggle_registration(
 
     await set_setting(db, "registration_open", str(new_value).lower(), "boolean")
 
+    # Audit log: registration toggle
+    await audit_service.log_admin_event(
+        db=db,
+        action="settings_change",
+        admin_user_id=admin.id,
+        admin_username=admin.username,
+        request=request,
+        details={"key": "registration_open", "new_value": new_value}
+    )
+
     return {
         "message": f"Registrierung {'geöffnet' if new_value else 'geschlossen'}",
         "registration_open": new_value
@@ -428,6 +513,7 @@ async def toggle_registration(
 @router.post("/users/create")
 async def admin_create_user(
     user_data: UserRegister,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
@@ -463,6 +549,17 @@ async def admin_create_user(
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+
+    # Audit log: admin user creation
+    await audit_service.log_admin_event(
+        db=db,
+        action="user_create",
+        admin_user_id=admin.id,
+        admin_username=admin.username,
+        target_user_id=new_user.id,
+        request=request,
+        details={"created_username": new_user.username, "created_email": new_user.email}
+    )
 
     return {
         "message": "User created successfully by admin",
@@ -581,4 +678,119 @@ async def batch_geocode_places(
         "total_found": len(places_to_fix),
         "failed_count": len(failed_places),
         "failed_places": failed_places[:10]  # Only show first 10 failures
+    }
+
+
+# ==================== AUDIT LOG ENDPOINTS ====================
+
+@router.get("/audit-logs", response_model=List[AuditLogResponse])
+async def get_audit_logs(
+    skip: int = 0,
+    limit: int = 100,
+    event_category: Optional[str] = None,
+    user_id: Optional[int] = None,
+    event_type: Optional[str] = None,
+    status: Optional[str] = None,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get audit logs (Admin only)
+
+    Returns paginated audit logs with optional filtering.
+
+    Filters:
+    - **event_category**: Filter by category (auth, data, admin, security)
+    - **user_id**: Filter by user ID
+    - **event_type**: Filter by event type (e.g., auth.login, trip.create)
+    - **status**: Filter by status (success, failure, warning)
+    """
+    limit = min(limit, 500)
+
+    query = select(AuditLog).order_by(AuditLog.created_at.desc())
+
+    if event_category:
+        query = query.where(AuditLog.event_category == event_category)
+    if user_id:
+        query = query.where(AuditLog.user_id == user_id)
+    if event_type:
+        query = query.where(AuditLog.event_type == event_type)
+    if status:
+        query = query.where(AuditLog.status == status)
+
+    query = query.offset(skip).limit(limit)
+
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    return logs
+
+
+@router.get("/audit-logs/stats")
+async def get_audit_stats(
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get audit log statistics (Admin only)
+
+    Returns counts and summaries of audit events.
+    """
+    from sqlalchemy import func
+
+    # Total counts by category
+    category_result = await db.execute(
+        select(AuditLog.event_category, func.count(AuditLog.id))
+        .group_by(AuditLog.event_category)
+    )
+    category_counts = dict(category_result.all())
+
+    # Failed events in last 24 hours
+    from datetime import timedelta
+    yesterday = datetime.now() - timedelta(hours=24)
+    failed_result = await db.execute(
+        select(func.count(AuditLog.id))
+        .where(AuditLog.status == "failure")
+        .where(AuditLog.created_at > yesterday)
+    )
+    failed_24h = failed_result.scalar() or 0
+
+    # Recent security events
+    security_result = await db.execute(
+        select(func.count(AuditLog.id))
+        .where(AuditLog.event_category == "security")
+        .where(AuditLog.created_at > yesterday)
+    )
+    security_24h = security_result.scalar() or 0
+
+    # Total events
+    total_result = await db.execute(select(func.count(AuditLog.id)))
+    total_events = total_result.scalar() or 0
+
+    return {
+        "total_events": total_events,
+        "by_category": category_counts,
+        "failed_last_24h": failed_24h,
+        "security_events_24h": security_24h
+    }
+
+
+# ==================== RATE LIMITING CONFIG ====================
+
+@router.get("/rate-limits")
+@limiter.limit(RateLimits.ADMIN_READ)
+async def get_rate_limits(
+    request: Request,
+    admin: User = Depends(require_admin)
+):
+    """
+    Get current rate limit configuration (Admin only)
+
+    Returns all configured rate limits for API endpoints.
+    Limits can be customized via environment variables.
+    """
+    return {
+        "message": "Current rate limit configuration",
+        "limits": get_rate_limit_status(),
+        "note": "Limits can be customized via RATE_LIMIT_* environment variables"
     }

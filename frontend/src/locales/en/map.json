@@ -1,0 +1,15 @@
+{
+  "title": "Map",
+  "noPlacesYet": "No places yet",
+  "addPlacesToSeeOnMap": "Add places to your trip to see them on the map",
+  "addPlaces": "Add Places",
+  "createRoutes": "Create Routes",
+  "needTwoPlacesForRoute": "You need at least 2 places to create a route",
+  "addMorePlaces": "Add more places",
+  "mapStatistics": "Map Statistics",
+  "totalPlaces": "Total places:",
+  "activeRoutes": "Active routes:",
+  "visited": "Visited:",
+  "tip": "Tip",
+  "dragPlacesToCreateRoutes": "Drag places from the left list into the route order on the right to create your own routes. Change colors and styles to organize different days or themes!"
+}

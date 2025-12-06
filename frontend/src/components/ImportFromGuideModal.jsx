@@ -34,7 +34,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
 
   const handleSearch = async () => {
     if (!searchDestination.trim()) {
-      setError(t('places.pleaseEnterDestination'))
+      setError(t('places:pleaseEnterDestination'))
       return
     }
 
@@ -54,19 +54,19 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
         setSelectedPlaces(new Set(response.data.places.map((_, i) => i)))
 
         if (response.data.places.length === 0) {
-          toast(t('places.noPlacesFound'), { icon: '🤷' })
+          toast(t('places:noPlacesFound'), { icon: '🤷' })
         } else {
           const sourceText = response.data.sources_searched?.length
-            ? ` ${t('places.from')} ${response.data.sources_searched.join(', ')}`
+            ? ` ${t('places:from')} ${response.data.sources_searched.join(', ')}`
             : ''
-          toast.success(t('places.placesFound', { count: response.data.places.length }) + sourceText + '!')
+          toast.success(t('places:placesFound', { count: response.data.places.length }) + sourceText + '!')
         }
       } else {
-        setError(response.data.error || t('places.errorSearching'))
-        toast.error(t('places.errorLoadingPlaces'))
+        setError(response.data.error || t('places:errorSearching'))
+        toast.error(t('places:errorLoadingPlaces'))
       }
     } catch (err) {
-      const message = err.response?.data?.detail || t('places.errorLoading')
+      const message = err.response?.data?.detail || t('places:errorLoading')
       setError(message)
       toast.error(message)
     } finally {
@@ -94,7 +94,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
 
   const handleImport = async () => {
     if (selectedPlaces.size === 0) {
-      toast.error(t('places.selectAtLeastOne'))
+      toast.error(t('places:selectAtLeastOne'))
       return
     }
 
@@ -125,11 +125,11 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
 
       await placesService.importPlacesBulk(tripId, placesToImport)
 
-      toast.success(t('places.placesImported').replace('{count}', selectedPlaces.size))
+      toast.success(t('places:placesImported').replace('{count}', selectedPlaces.size))
       onImportComplete?.()
       handleClose()
     } catch (err) {
-      const message = err.response?.data?.detail || t('places.errorImporting')
+      const message = err.response?.data?.detail || t('places:errorImporting')
       toast.error(message)
     } finally {
       setImporting(false)
@@ -164,10 +164,10 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
               <div>
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   <Globe className="w-6 h-6 text-primary-600" />
-                  {t('places.importGuideTitle')}
+                  {t('places:importGuideTitle')}
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {t('places.importGuideSubtitle')}
+                  {t('places:importGuideSubtitle')}
                 </p>
               </div>
               <button
@@ -184,7 +184,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
             {/* Destination Search */}
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2">
-                {t('places.destinationLabel')}
+                {t('places:destinationLabel')}
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -193,7 +193,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
                     type="text"
                     value={searchDestination}
                     onChange={(e) => setSearchDestination(e.target.value)}
-                    placeholder={t('places.destinationPlaceholder')}
+                    placeholder={t('places:destinationPlaceholder')}
                     className="input pl-10 w-full"
                     disabled={parsing || importing}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -207,12 +207,12 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
                   {parsing ? (
                     <>
                       <Loader className="w-5 h-5 animate-spin" />
-                      {t('places.searching')}
+                      {t('places:searching')}
                     </>
                   ) : (
                     <>
                       <Search className="w-5 h-5" />
-                      {t('places.searchButton')}
+                      {t('places:searchButton')}
                     </>
                   )}
                 </button>
@@ -230,12 +230,12 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
                 <div className="flex items-start gap-2">
                   <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-600 dark:text-blue-400">
-                    <p className="font-medium mb-1">{t('places.howItWorks')}</p>
+                    <p className="font-medium mb-1">{t('places:howItWorks')}</p>
                     <ul className="list-disc list-inside space-y-0.5 text-xs">
-                      <li>{t('places.howItWorksStep1')}</li>
-                      <li>{t('places.howItWorksStep2')}</li>
-                      <li>{t('places.howItWorksStep3')}</li>
-                      <li>{t('places.howItWorksStep4')}</li>
+                      <li>{t('places:howItWorksStep1')}</li>
+                      <li>{t('places:howItWorksStep2')}</li>
+                      <li>{t('places:howItWorksStep3')}</li>
+                      <li>{t('places:howItWorksStep4')}</li>
                     </ul>
                   </div>
                 </div>
@@ -245,7 +245,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
               {sourcesSearched.length > 0 && (
                 <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   <Globe className="w-4 h-4" />
-                  <span>{t('places.sourcesSearched')} {sourcesSearched.join(', ')}</span>
+                  <span>{t('places:sourcesSearched')} {sourcesSearched.join(', ')}</span>
                 </div>
               )}
             </div>
@@ -255,13 +255,13 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">
-                    {t('places.foundPlaces').replace('{count}', extractedPlaces.length)}
+                    {t('places:foundPlaces').replace('{count}', extractedPlaces.length)}
                   </h3>
                   <button
                     onClick={toggleAll}
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    {selectedPlaces.size === extractedPlaces.length ? t('places.deselectAll') : t('places.selectAll')}
+                    {selectedPlaces.size === extractedPlaces.length ? t('places:deselectAll') : t('places:selectAll')}
                   </button>
                 </div>
 
@@ -324,10 +324,10 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
               <div className="text-center py-12">
                 <Loader className="w-12 h-12 animate-spin mx-auto text-primary-600" />
                 <p className="mt-4 text-gray-600 dark:text-gray-400">
-                  {t('places.searchingGuides')}
+                  {t('places:searchingGuides')}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                  {t('places.searchingGuidesInfo')}
+                  {t('places:searchingGuidesInfo')}
                 </p>
               </div>
             )}
@@ -337,11 +337,9 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
           {extractedPlaces.length > 0 && (
             <div className="flex-shrink-0 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-gray-400" dangerouslySetInnerHTML={{
-                  __html: t('places.selectedCount')
-                    .replace('{selected}', selectedPlaces.size)
-                    .replace('{total}', extractedPlaces.length)
-                }} />
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('places:selectedCountPrefix')} <strong>{selectedPlaces.size}</strong> {t('places:selectedCountMiddle')} <strong>{extractedPlaces.length}</strong> {t('places:selectedCountSuffix')}
+                </p>
 
                 <div className="flex gap-2">
                   <button
@@ -349,7 +347,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
                     className="btn-outline"
                     disabled={importing}
                   >
-                    {t('common.cancel')}
+                    {t('common:cancel')}
                   </button>
                   <button
                     onClick={handleImport}
@@ -359,12 +357,12 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
                     {importing ? (
                       <>
                         <Loader className="w-5 h-5 animate-spin" />
-                        {t('places.importing')}
+                        {t('places:importing')}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="w-5 h-5" />
-                        {t('places.importButton').replace('{count}', selectedPlaces.size)}
+                        {t('places:importButton').replace('{count}', selectedPlaces.size)}
                       </>
                     )}
                   </button>

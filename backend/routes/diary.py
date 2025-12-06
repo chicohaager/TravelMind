@@ -15,8 +15,7 @@ import os
 import uuid
 import magic
 from pathlib import Path
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from utils.rate_limits import limiter, RateLimits
 import structlog
 from openai import OpenAI
 
@@ -28,7 +27,6 @@ from routes.auth import get_current_active_user, get_optional_user
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 # Upload configuration
 UPLOAD_DIR = Path("./uploads/diary")
@@ -86,7 +84,7 @@ class DiaryEntryResponse(BaseModel):
 
 
 @router.get("/{trip_id}", response_model=List[DiaryEntryResponse])
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.DIARY_LIST)
 async def get_diary_entries(
     request: Request,
     trip_id: int,
@@ -176,7 +174,7 @@ async def _create_diary_entry_handler(
 
 @router.post("/{trip_id}", response_model=DiaryEntryResponse, status_code=201)
 @router.post("/{trip_id}/", response_model=DiaryEntryResponse, status_code=201)
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.DIARY_DELETE)
 async def create_diary_entry(
     request: Request,
     trip_id: int,
@@ -189,7 +187,7 @@ async def create_diary_entry(
 
 
 @router.put("/{entry_id}", response_model=DiaryEntryResponse)
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.DIARY_CREATE)
 async def update_diary_entry(
     request: Request,
     entry_id: int,
@@ -232,7 +230,7 @@ async def update_diary_entry(
 
 
 @router.delete("/{entry_id}", status_code=204)
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.DIARY_DELETE)
 async def delete_diary_entry(
     request: Request,
     entry_id: int,
@@ -469,9 +467,10 @@ async def export_diary_pdf(
 
         # Content - convert markdown-style formatting to basic HTML
         content = entry.content
-        # Simple markdown to HTML conversion
-        content = content.replace('**', '<b>').replace('**', '</b>')
-        content = content.replace('*', '<i>').replace('*', '</i>')
+        # Simple markdown to HTML conversion using regex for proper matching
+        import re
+        content = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', content)  # Bold
+        content = re.sub(r'\*(.+?)\*', r'<i>\1</i>', content)      # Italic
 
         # Split into paragraphs
         paragraphs = content.split('\n\n')
@@ -491,18 +490,27 @@ async def export_diary_pdf(
 
                 for photo_url in entry.photos[photo_idx:photo_idx + 2]:
                     try:
-                        # Convert URL path to file system path
+                        # Convert URL path to file system path SAFELY
                         # photo_url is like "/uploads/diary/uuid.jpg"
-                        photo_path = photo_url.lstrip('/')  # Remove leading slash
-                        photo_file = Path(photo_path)
+                        # Security: Extract only the filename and construct safe path
+                        photo_filename = Path(photo_url).name  # Only get filename, no path traversal
 
-                        if photo_file.exists():
+                        # Validate filename (must not contain path separators)
+                        if '/' in photo_filename or '\\' in photo_filename or '..' in photo_filename:
+                            logger.warning("pdf_path_traversal_attempt", photo_url=photo_url)
+                            row_images.append(Paragraph(f"<i>Ungültiger Dateipfad</i>", meta_style))
+                            continue
+
+                        # Construct safe absolute path
+                        photo_file = UPLOAD_DIR / photo_filename
+
+                        if photo_file.exists() and photo_file.is_file():
                             # Create reportlab Image with max width of 2.5 inches
                             img = RLImage(str(photo_file), width=2.5*inch, height=2.5*inch, kind='proportional')
                             row_images.append(img)
                         else:
                             # If file doesn't exist, add placeholder
-                            row_images.append(Paragraph(f"<i>Foto nicht gefunden: {photo_file.name}</i>", meta_style))
+                            row_images.append(Paragraph(f"<i>Foto nicht gefunden: {photo_filename}</i>", meta_style))
                     except Exception as e:
                         # If image loading fails, add error message
                         logger.warning("pdf_image_error", photo_url=photo_url, error=str(e))
@@ -545,7 +553,7 @@ async def export_diary_pdf(
 
 
 @router.post("/{entry_id}/upload-photo")
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.DIARY_UPLOAD)
 async def upload_diary_photo(
     request: Request,
     entry_id: int,
@@ -663,7 +671,7 @@ async def delete_diary_photo(
 # ==================== Audio Transcription ====================
 
 @router.post("/transcribe-audio")
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.DIARY_DELETE)
 async def transcribe_audio(
     request: Request,
     audio: UploadFile = File(...),

@@ -67,6 +67,29 @@ docker-compose.override.yml
 coverage.xml
 *.cover
 
+# Playwright
+frontend/.auth/
+frontend/playwright-report/
+frontend/playwright/.cache/
+frontend/test-results/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 backend/uploads/
+
+# Development artifacts
+frontend/dev-dist/
+
+# Large media files in root
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp4
+*.mov
+*.heic
+
+# Temp files
+*.tmp
+*.bak
+.env.new

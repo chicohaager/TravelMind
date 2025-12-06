@@ -1,0 +1,8 @@
+{
+  "generic": "An error occurred. Please try again.",
+  "network": "Network error. Please check your connection.",
+  "notFound": "Not found.",
+  "unauthorized": "Unauthorized. Please login.",
+  "forbidden": "Access denied.",
+  "validation": "Validation error. Please check your input."
+}

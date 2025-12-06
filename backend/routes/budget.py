@@ -3,18 +3,39 @@ Budget/Expenses Router
 Track trip expenses with participant cost splitting using SQLite
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import List, Optional, Any, Union
 from datetime import datetime, date
 from enum import Enum
+import structlog
+
 from models.database import get_db
 from models.expense import Expense
 from models.participant import Participant
+from models.trip import Trip
+from models.user import User
+from routes.auth import get_current_active_user
 
+logger = structlog.get_logger(__name__)
 router = APIRouter()
+
+
+async def verify_trip_access(trip_id: int, current_user: User, db: AsyncSession) -> Trip:
+    """Verify user has access to the trip and return the trip object."""
+    result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = result.scalar_one_or_none()
+
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    if trip.owner_id != current_user.id:
+        logger.warning("unauthorized_budget_access", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    return trip
 
 
 class ExpenseCategory(str, Enum):
@@ -95,13 +116,33 @@ class BudgetSummary(BaseModel):
 
 
 @router.get("/{trip_id}/expenses")
-async def get_expenses(trip_id: int, db: AsyncSession = Depends(get_db)):
-    """Get all expenses for a trip"""
-    # Get expenses
+async def get_expenses(
+    trip_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get all expenses for a trip with pagination.
+    Requires authentication and trip ownership.
+
+    - **skip**: Number of records to skip (default: 0)
+    - **limit**: Maximum number of records to return (default: 100, max: 500)
+    """
+    # Enforce maximum limit
+    limit = min(limit, 500)
+
+    # Verify access
+    await verify_trip_access(trip_id, current_user, db)
+
+    # Get expenses with pagination
     result = await db.execute(
         select(Expense)
         .where(Expense.trip_id == trip_id)
         .order_by(Expense.date.desc())
+        .offset(skip)
+        .limit(limit)
     )
     expenses = result.scalars().all()
 
@@ -137,9 +178,12 @@ async def get_expenses(trip_id: int, db: AsyncSession = Depends(get_db)):
 async def _create_expense_handler(
     trip_id: int,
     expense: ExpenseCreate,
-    db: AsyncSession
+    db: AsyncSession,
+    current_user: User
 ):
-    """Create a new expense"""
+    """Create a new expense. Requires authentication and trip ownership."""
+    # Verify access
+    await verify_trip_access(trip_id, current_user, db)
     # Get participants for validation
     participants_result = await db.execute(
         select(Participant).where(Participant.trip_id == trip_id)
@@ -204,31 +248,37 @@ async def _create_expense_handler(
 async def create_expense(
     trip_id: int,
     expense: ExpenseCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
-    return await _create_expense_handler(trip_id, expense, db)
+    return await _create_expense_handler(trip_id, expense, db, current_user)
 
 @router.post("/{trip_id}/expenses/", status_code=201)
 async def create_expense_slash(
     trip_id: int,
     expense: ExpenseCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
-    return await _create_expense_handler(trip_id, expense, db)
+    return await _create_expense_handler(trip_id, expense, db, current_user)
 
 
 @router.put("/expenses/{expense_id}")
 async def update_expense(
     expense_id: int,
     expense: ExpenseUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Update an expense"""
+    """Update an expense. Requires authentication and trip ownership."""
     result = await db.execute(select(Expense).where(Expense.id == expense_id))
     existing_expense = result.scalar_one_or_none()
 
     if not existing_expense:
         raise HTTPException(status_code=404, detail="Expense not found")
+
+    # Verify trip ownership
+    await verify_trip_access(existing_expense.trip_id, current_user, db)
 
     # If splits are being updated, validate them
     if expense.splits is not None:
@@ -286,13 +336,20 @@ async def update_expense(
 
 
 @router.delete("/expenses/{expense_id}", status_code=204)
-async def delete_expense(expense_id: int, db: AsyncSession = Depends(get_db)):
-    """Delete an expense"""
+async def delete_expense(
+    expense_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete an expense. Requires authentication and trip ownership."""
     result = await db.execute(select(Expense).where(Expense.id == expense_id))
     expense = result.scalar_one_or_none()
 
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
+
+    # Verify trip ownership
+    await verify_trip_access(expense.trip_id, current_user, db)
 
     await db.delete(expense)
     await db.commit()
@@ -301,8 +358,15 @@ async def delete_expense(expense_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{trip_id}/budget-summary", response_model=BudgetSummary)
-async def get_budget_summary(trip_id: int, db: AsyncSession = Depends(get_db)):
-    """Get budget summary with totals and balances"""
+async def get_budget_summary(
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get budget summary with totals and balances. Requires authentication and trip ownership."""
+    # Verify access
+    await verify_trip_access(trip_id, current_user, db)
+
     # Get expenses
     expenses_result = await db.execute(
         select(Expense).where(Expense.trip_id == trip_id)
@@ -369,13 +433,18 @@ async def split_expense_equally(
     category: str,
     paid_by: int,
     date: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
-    Create an expense split equally among all participants
+    Create an expense split equally among all participants.
+    Requires authentication and trip ownership.
 
     Helper endpoint for quick expense entry
     """
+    # Verify access
+    await verify_trip_access(trip_id, current_user, db)
+
     # Get participants
     participants_result = await db.execute(
         select(Participant).where(Participant.trip_id == trip_id)
