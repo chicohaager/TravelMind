@@ -1,0 +1,18 @@
+{
+  "listCreated": "List created",
+  "errorCreating": "Error creating",
+  "listUpdated": "List updated",
+  "errorUpdating": "Error updating",
+  "listDeleted": "List deleted",
+  "errorDeleting": "Error deleting",
+  "pleaseEnterTitle": "Please enter a title",
+  "confirmDeleteList": "Really delete list? Places will not be deleted.",
+  "recommendedPlaces": "Recommended Places",
+  "deleteList": "Delete list",
+  "noPlacesInList": "No places in this list yet",
+  "createNewList": "Create new list",
+  "title": "Title",
+  "titlePlaceholder": "e.g. \"Restaurants\", \"Museums\"",
+  "icon": "Icon",
+  "color": "Color"
+}

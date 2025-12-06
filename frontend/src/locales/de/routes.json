@@ -1,0 +1,9 @@
+{
+  "pleaseEnterRouteName": "Bitte gib einen Routennamen ein",
+  "routeNeedsTwoPlaces": "Eine Route braucht mindestens 2 Orte",
+  "errorSavingRoute": "Fehler beim Speichern der Route",
+  "confirmDeleteRoute": "Möchtest du diese Route wirklich löschen?",
+  "routeDeleted": "Route gelöscht!",
+  "errorDeletingRoute": "Fehler beim Löschen der Route",
+  "allPlacesAddedToRoute": "Alle Orte zur Route hinzugefügt"
+}

@@ -33,7 +33,7 @@ export default function AdminPanel() {
   useEffect(() => {
     // Check if user is admin
     if (!user?.is_superuser) {
-      toast.error(t('admin.noPermission'))
+      toast.error(t('admin:noPermission'))
       navigate('/')
       return
     }
@@ -59,7 +59,7 @@ export default function AdminPanel() {
       })
       setSettings(settingsObj)
     } catch (error) {
-      toast.error(t('admin.errorLoadingData'))
+      toast.error(t('admin:errorLoadingData'))
     } finally {
       setLoading(false)
     }
@@ -78,11 +78,11 @@ export default function AdminPanel() {
   const handleUpdateUser = async (userId, data) => {
     try {
       await adminService.updateUser(userId, data)
-      toast.success(t('admin.userUpdated'))
+      toast.success(t('admin:userUpdated'))
       setEditingUser(null)
       loadData()
     } catch (error) {
-      const message = error.response?.data?.detail || t('admin.errorUpdating')
+      const message = error.response?.data?.detail || t('admin:errorUpdating')
       toast.error(message)
     }
   }
@@ -90,11 +90,11 @@ export default function AdminPanel() {
   const handleDeleteUser = async (userId) => {
     try {
       await adminService.deleteUser(userId)
-      toast.success(t('admin.userDeleted'))
+      toast.success(t('admin:userDeleted'))
       setDeleteConfirm(null)
       loadData()
     } catch (error) {
-      const message = error.response?.data?.detail || t('admin.errorDeleting')
+      const message = error.response?.data?.detail || t('admin:errorDeleting')
       toast.error(message)
     }
   }
@@ -102,20 +102,20 @@ export default function AdminPanel() {
   const handleToggleActive = async (userId, currentStatus) => {
     try {
       await adminService.updateUser(userId, { is_active: !currentStatus })
-      toast.success(currentStatus ? t('admin.userDeactivated') : t('admin.userActivated'))
+      toast.success(currentStatus ? t('admin:userDeactivated') : t('admin:userActivated'))
       loadData()
     } catch (error) {
-      toast.error(t('admin.errorUpdating'))
+      toast.error(t('admin:errorUpdating'))
     }
   }
 
   const handleToggleAdmin = async (userId, currentStatus) => {
     try {
       await adminService.updateUser(userId, { is_superuser: !currentStatus })
-      toast.success(currentStatus ? t('admin.adminRightsRemoved') : t('admin.adminRightsGranted'))
+      toast.success(currentStatus ? t('admin:adminRightsRemoved') : t('admin:adminRightsGranted'))
       loadData()
     } catch (error) {
-      const message = error.response?.data?.detail || t('admin.errorUpdating')
+      const message = error.response?.data?.detail || t('admin:errorUpdating')
       toast.error(message)
     }
   }
@@ -126,7 +126,7 @@ export default function AdminPanel() {
       toast.success(response.data.message)
       loadData()
     } catch (error) {
-      toast.error(t('admin.errorChangingRegistration'))
+      toast.error(t('admin:errorChangingRegistration'))
     }
   }
 
@@ -134,18 +134,18 @@ export default function AdminPanel() {
     e.preventDefault()
 
     if (newUserData.password.length < 8) {
-      toast.error(t('admin.passwordMinLength'))
+      toast.error(t('admin:passwordMinLength'))
       return
     }
 
     try {
       await adminService.createUser(newUserData)
-      toast.success(t('admin.userCreated'))
+      toast.success(t('admin:userCreated'))
       setShowCreateUser(false)
       setNewUserData({ username: '', email: '', password: '', full_name: '' })
       loadData()
     } catch (error) {
-      const message = error.response?.data?.detail || t('admin.errorCreatingUser')
+      const message = error.response?.data?.detail || t('admin:errorCreatingUser')
       toast.error(message)
     }
   }
@@ -156,30 +156,30 @@ export default function AdminPanel() {
         value: value.toString(),
         value_type: 'integer'
       })
-      toast.success(t('admin.userLimitUpdated'))
+      toast.success(t('admin:userLimitUpdated'))
       loadData()
     } catch (error) {
-      toast.error(t('admin.errorUpdatingLimit'))
+      toast.error(t('admin:errorUpdatingLimit'))
     }
   }
 
   const handleFixPlaceCoordinates = async () => {
-    const loadingToast = toast.loading(t('admin.geocodingPlaces'))
+    const loadingToast = toast.loading(t('admin:geocodingPlaces'))
     try {
       const response = await adminService.fixPlaceCoordinates()
       toast.dismiss(loadingToast)
       const { fixed_count, total_found, failed_count } = response.data
 
       if (fixed_count > 0) {
-        toast.success(t('admin.placesGeocoded').replace('{fixed_count}', fixed_count).replace('{total_found}', total_found))
+        toast.success(t('admin:placesGeocoded').replace('{fixed_count}', fixed_count).replace('{total_found}', total_found))
       } else if (total_found === 0) {
-        toast.success(t('admin.noPlacesNeedGeocode'))
+        toast.success(t('admin:noPlacesNeedGeocode'))
       } else {
-        toast.error(t('admin.geocodingFailed').replace('{failed_count}', failed_count))
+        toast.error(t('admin:geocodingFailed').replace('{failed_count}', failed_count))
       }
     } catch (error) {
       toast.dismiss(loadingToast)
-      const message = error.response?.data?.detail || t('admin.errorGeocoding')
+      const message = error.response?.data?.detail || t('admin:errorGeocoding')
       toast.error(message)
     }
   }
@@ -199,9 +199,9 @@ export default function AdminPanel() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold mb-2">{t('admin.title')}</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('admin:title')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          {t('admin.systemManagement')}
+          {t('admin:systemManagement')}
         </p>
       </motion.div>
 
@@ -219,7 +219,7 @@ export default function AdminPanel() {
                 <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin.users')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin:users')}</p>
                 <p className="text-2xl font-bold">{stats.total_users}</p>
               </div>
             </div>
@@ -236,7 +236,7 @@ export default function AdminPanel() {
                 <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin.active')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin:active')}</p>
                 <p className="text-2xl font-bold">{stats.active_users}</p>
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function AdminPanel() {
                 <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin.trips')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin:trips')}</p>
                 <p className="text-2xl font-bold">{stats.total_trips}</p>
               </div>
             </div>
@@ -270,7 +270,7 @@ export default function AdminPanel() {
                 <Book className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin.entries')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin:entries')}</p>
                 <p className="text-2xl font-bold">{stats.total_diary_entries}</p>
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function AdminPanel() {
                 <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin.places')}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('admin:places')}</p>
                 <p className="text-2xl font-bold">{stats.total_places}</p>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function AdminPanel() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Settings className="w-6 h-6" />
-              {t('admin.systemSettings')}
+              {t('admin:systemSettings')}
             </h2>
           </div>
 
@@ -320,7 +320,7 @@ export default function AdminPanel() {
                   ) : (
                     <Lock className="w-5 h-5 text-red-600 dark:text-red-400" />
                   )}
-                  <h3 className="font-semibold">{t('admin.registration')}</h3>
+                  <h3 className="font-semibold">{t('admin:registration')}</h3>
                 </div>
                 <button
                   onClick={handleToggleRegistration}
@@ -330,11 +330,11 @@ export default function AdminPanel() {
                       : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800'
                   }`}
                 >
-                  {settings.registration_open?.value === 'true' ? t('admin.open') : t('admin.closed')}
+                  {settings.registration_open?.value === 'true' ? t('admin:open') : t('admin:closed')}
                 </button>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {settings.registration_open?.description || t('admin.registrationDescription')}
+                {settings.registration_open?.description || t('admin:registrationDescription')}
               </p>
             </div>
 
@@ -343,7 +343,7 @@ export default function AdminPanel() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  <h3 className="font-semibold">{t('admin.userLimit')}</h3>
+                  <h3 className="font-semibold">{t('admin:userLimit')}</h3>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -356,7 +356,7 @@ export default function AdminPanel() {
                 </div>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('admin.currentUsers').replace('{count}', stats?.total_users || 0)} {settings.max_users?.value > 0 ? `/ ${settings.max_users.value}` : `(${t('admin.unlimited')})`}
+                {t('admin:currentUsers').replace('{count}', stats?.total_users || 0)} {settings.max_users?.value > 0 ? `/ ${settings.max_users.value}` : `(${t('admin:unlimited')})`}
               </p>
             </div>
 
@@ -367,7 +367,7 @@ export default function AdminPanel() {
                 className="btn-primary w-full flex items-center justify-center gap-2"
               >
                 <UserPlus className="w-5 h-5" />
-                {t('admin.createNewUser')}
+                {t('admin:createNewUser')}
               </button>
             </div>
 
@@ -378,10 +378,10 @@ export default function AdminPanel() {
                 className="btn-outline w-full flex items-center justify-center gap-2"
               >
                 <MapPin className="w-5 h-5" />
-                {t('admin.geocodePlaces')}
+                {t('admin:geocodePlaces')}
               </button>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                {t('admin.geocodePlacesDescription')}
+                {t('admin:geocodePlacesDescription')}
               </p>
             </div>
           </div>
@@ -395,7 +395,7 @@ export default function AdminPanel() {
         transition={{ delay: 0.4 }}
         className="card"
       >
-        <h2 className="text-xl font-bold mb-6">{t('admin.userManagement')}</h2>
+        <h2 className="text-xl font-bold mb-6">{t('admin:userManagement')}</h2>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -405,7 +405,7 @@ export default function AdminPanel() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={t('admin.searchPlaceholder')}
+              placeholder={t('admin:searchPlaceholder')}
               className="input w-full pl-10"
             />
           </div>
@@ -419,7 +419,7 @@ export default function AdminPanel() {
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
-              {t('admin.all')}
+              {t('admin:all')}
             </button>
             <button
               onClick={() => setFilterActive(true)}
@@ -429,7 +429,7 @@ export default function AdminPanel() {
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
-              {t('admin.activeFilter')}
+              {t('admin:activeFilter')}
             </button>
             <button
               onClick={() => setFilterActive(false)}
@@ -439,7 +439,7 @@ export default function AdminPanel() {
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
-              {t('admin.inactiveFilter')}
+              {t('admin:inactiveFilter')}
             </button>
           </div>
         </div>
@@ -449,11 +449,11 @@ export default function AdminPanel() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="text-left py-3 px-4 font-semibold text-sm">{t('admin.user')}</th>
-                <th className="text-left py-3 px-4 font-semibold text-sm">{t('admin.email')}</th>
-                <th className="text-center py-3 px-4 font-semibold text-sm">{t('admin.status')}</th>
-                <th className="text-center py-3 px-4 font-semibold text-sm">{t('admin.statistics')}</th>
-                <th className="text-right py-3 px-4 font-semibold text-sm">{t('admin.actions')}</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">{t('admin:user')}</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">{t('admin:email')}</th>
+                <th className="text-center py-3 px-4 font-semibold text-sm">{t('admin:status')}</th>
+                <th className="text-center py-3 px-4 font-semibold text-sm">{t('admin:statistics')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-sm">{t('admin:actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -491,16 +491,16 @@ export default function AdminPanel() {
                     <div className="flex items-center justify-center gap-2">
                       {u.is_active ? (
                         <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">
-                          {t('admin.active')}
+                          {t('admin:active')}
                         </span>
                       ) : (
                         <span className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">
-                          {t('admin.inactive')}
+                          {t('admin:inactive')}
                         </span>
                       )}
                       {u.is_superuser && (
                         <span className="px-2 py-1 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs font-medium rounded-full">
-                          {t('admin.admin')}
+                          {t('admin:admin')}
                         </span>
                       )}
                     </div>
@@ -529,7 +529,7 @@ export default function AdminPanel() {
                             ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-800'
                             : 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800'
                         }`}
-                        title={u.is_active ? t('admin.deactivate') : t('admin.activate')}
+                        title={u.is_active ? t('admin:deactivate') : t('admin:activate')}
                       >
                         {u.is_active ? <Check className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
                       </button>
@@ -543,7 +543,7 @@ export default function AdminPanel() {
                               ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-800'
                               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`}
-                          title={u.is_superuser ? t('admin.removeAdmin') : t('admin.makeAdmin')}
+                          title={u.is_superuser ? t('admin:removeAdmin') : t('admin:makeAdmin')}
                         >
                           <Shield className="w-4 h-4" />
                         </button>
@@ -554,7 +554,7 @@ export default function AdminPanel() {
                         <button
                           onClick={() => setDeleteConfirm(u.id)}
                           className="p-1.5 rounded-lg bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
-                          title={t('admin.delete')}
+                          title={t('admin:delete')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -568,7 +568,7 @@ export default function AdminPanel() {
 
           {users.length === 0 && (
             <div className="text-center py-12 text-gray-500">
-              {t('admin.noUsersFound')}
+              {t('admin:noUsersFound')}
             </div>
           )}
         </div>
@@ -582,22 +582,22 @@ export default function AdminPanel() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full"
           >
-            <h3 className="text-xl font-bold mb-4">{t('admin.deleteUser')}</h3>
+            <h3 className="text-xl font-bold mb-4">{t('admin:deleteUser')}</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {t('admin.deleteUserConfirm')}
+              {t('admin:deleteUserConfirm')}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="btn-outline flex-1"
               >
-                {t('admin.cancel')}
+                {t('admin:cancel')}
               </button>
               <button
                 onClick={() => handleDeleteUser(deleteConfirm)}
                 className="btn bg-red-600 hover:bg-red-700 text-white flex-1"
               >
-                {t('admin.delete')}
+                {t('admin:delete')}
               </button>
             </div>
           </motion.div>
@@ -614,11 +614,11 @@ export default function AdminPanel() {
           >
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <UserPlus className="w-6 h-6" />
-              {t('admin.createNewUser')}
+              {t('admin:createNewUser')}
             </h3>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">{t('admin.username')} *</label>
+                <label className="block text-sm font-medium mb-2">{t('admin:username')} *</label>
                 <input
                   type="text"
                   value={newUserData.username}
@@ -626,24 +626,24 @@ export default function AdminPanel() {
                   className="input w-full"
                   required
                   minLength={3}
-                  placeholder={t('admin.usernamePlaceholder')}
+                  placeholder={t('admin:usernamePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">{t('admin.email')} *</label>
+                <label className="block text-sm font-medium mb-2">{t('admin:email')} *</label>
                 <input
                   type="email"
                   value={newUserData.email}
                   onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
                   className="input w-full"
                   required
-                  placeholder={t('admin.emailPlaceholder')}
+                  placeholder={t('admin:emailPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">{t('admin.password')} *</label>
+                <label className="block text-sm font-medium mb-2">{t('admin:password')} *</label>
                 <input
                   type="password"
                   value={newUserData.password}
@@ -651,18 +651,18 @@ export default function AdminPanel() {
                   className="input w-full"
                   required
                   minLength={8}
-                  placeholder={t('admin.passwordMinChars')}
+                  placeholder={t('admin:passwordMinChars')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">{t('admin.fullName')}</label>
+                <label className="block text-sm font-medium mb-2">{t('admin:fullName')}</label>
                 <input
                   type="text"
                   value={newUserData.full_name}
                   onChange={(e) => setNewUserData({ ...newUserData, full_name: e.target.value })}
                   className="input w-full"
-                  placeholder={t('admin.fullNamePlaceholder')}
+                  placeholder={t('admin:fullNamePlaceholder')}
                 />
               </div>
 
@@ -675,13 +675,13 @@ export default function AdminPanel() {
                   }}
                   className="btn-outline flex-1"
                 >
-                  {t('admin.cancel')}
+                  {t('admin:cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn-primary flex-1"
                 >
-                  {t('admin.create')}
+                  {t('admin:create')}
                 </button>
               </div>
             </form>

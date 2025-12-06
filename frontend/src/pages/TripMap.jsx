@@ -122,15 +122,15 @@ export default function TripMap() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                   <Map className="w-16 h-16 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('map.noPlacesYet')}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('map:noPlacesYet')}</h3>
                   <p className="text-gray-600 mb-4">
-                    {t('map.addPlacesToSeeOnMap')}
+                    {t('map:addPlacesToSeeOnMap')}
                   </p>
                   <button
                     onClick={() => navigate(`/trips/${id}`)}
                     className="btn btn-primary"
                   >
-                    {t('map.addPlaces')}
+                    {t('map:addPlaces')}
                   </button>
                 </div>
               )}
@@ -152,16 +152,16 @@ export default function TripMap() {
                   <div className="text-center py-8">
                     <Map className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <h3 className="font-semibold text-gray-900 mb-2">
-                      {t('map.createRoutes')}
+                      {t('map:createRoutes')}
                     </h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      {t('map.needTwoPlacesForRoute')}
+                      {t('map:needTwoPlacesForRoute')}
                     </p>
                     <button
                       onClick={() => navigate(`/trips/${id}`)}
                       className="btn btn-primary btn-sm"
                     >
-                      {t('map.addMorePlaces')}
+                      {t('map:addMorePlaces')}
                     </button>
                   </div>
                 </div>
@@ -170,18 +170,18 @@ export default function TripMap() {
               {/* Quick Stats */}
               {places.length > 0 && (
                 <div className="card mt-4">
-                  <h3 className="font-semibold mb-3">{t('map.mapStatistics')}</h3>
+                  <h3 className="font-semibold mb-3">{t('map:mapStatistics')}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">{t('map.totalPlaces')}</span>
+                      <span className="text-gray-600">{t('map:totalPlaces')}</span>
                       <span className="font-medium">{places.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">{t('map.activeRoutes')}</span>
+                      <span className="text-gray-600">{t('map:activeRoutes')}</span>
                       <span className="font-medium">{routes.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">{t('map.visited')}</span>
+                      <span className="text-gray-600">{t('map:visited')}</span>
                       <span className="font-medium">
                         {places.filter(p => p.visited).length} / {places.length}
                       </span>
@@ -192,9 +192,9 @@ export default function TripMap() {
 
               {/* Help Section */}
               <div className="card mt-4 bg-indigo-50 border-indigo-200">
-                <h3 className="font-semibold text-indigo-900 mb-2">💡 {t('map.tip')}</h3>
+                <h3 className="font-semibold text-indigo-900 mb-2">💡 {t('map:tip')}</h3>
                 <p className="text-sm text-indigo-700">
-                  {t('map.dragPlacesToCreateRoutes')}
+                  {t('map:dragPlacesToCreateRoutes')}
                 </p>
               </div>
             </div>

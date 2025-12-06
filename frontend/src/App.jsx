@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import Layout from '@components/layout/Layout'
 import ProtectedRoute from '@components/ProtectedRoute'
 import OfflineIndicator from '@components/OfflineIndicator'
+import ErrorBoundary from '@components/ErrorBoundary'
 import Home from '@pages/Home'
 import Trips from '@pages/Trips'
 import TripDetail from '@pages/TripDetail'
@@ -20,9 +21,10 @@ import NotFound from '@pages/NotFound'
 
 function App() {
   return (
-    <AuthProvider>
-      <OfflineIndicator />
-      <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <OfflineIndicator />
+        <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -52,8 +54,9 @@ function App() {
           <Route path="admin" element={<AdminPanel />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-      </Routes>
-    </AuthProvider>
+        </Routes>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

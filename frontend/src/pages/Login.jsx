@@ -61,9 +61,9 @@ export default function Login() {
             >
               <LogIn className="w-8 h-8 text-white" />
             </motion.div>
-            <h1 className="text-3xl font-bold mb-2">{t('auth.welcomeBack')}</h1>
+            <h1 className="text-3xl font-bold mb-2">{t('auth:welcomeBack')}</h1>
             <p className="text-gray-600 dark:text-gray-400">
-              {t('auth.loginDescription')}
+              {t('auth:loginDescription')}
             </p>
           </div>
 
@@ -71,7 +71,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="username" className="block text-sm font-medium mb-2">
-                {t('auth.username')}
+                {t('auth:username')}
               </label>
               <input
                 type="text"
@@ -79,7 +79,7 @@ export default function Login() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                placeholder={t('auth.usernamePlaceholder')}
+                placeholder={t('auth:usernamePlaceholder')}
                 required
                 className="input"
                 autoComplete="username"
@@ -88,7 +88,7 @@ export default function Login() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                {t('auth.password')}
+                {t('auth:password')}
               </label>
               <input
                 type="password"
@@ -96,7 +96,7 @@ export default function Login() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder={t('auth.passwordPlaceholder')}
+                placeholder={t('auth:passwordPlaceholder')}
                 required
                 className="input"
                 autoComplete="current-password"
@@ -111,12 +111,12 @@ export default function Login() {
               {loading ? (
                 <>
                   <Loader className="w-5 h-5 animate-spin" />
-                  {t('auth.loggingIn')}
+                  {t('auth:loggingIn')}
                 </>
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  {t('auth.login')}
+                  {t('auth:login')}
                 </>
               )}
             </button>
@@ -125,12 +125,12 @@ export default function Login() {
           {/* Footer */}
           <div className="mt-6 text-center text-sm">
             <p className="text-gray-600 dark:text-gray-400">
-              {t('auth.noAccount')}{' '}
+              {t('auth:noAccount')}{' '}
               <Link
                 to="/register"
                 className="text-primary-500 hover:text-primary-600 font-medium"
               >
-                {t('auth.registerNow')}
+                {t('auth:registerNow')}
               </Link>
             </p>
           </div>

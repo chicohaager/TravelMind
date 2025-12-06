@@ -141,7 +141,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                           <MapPin className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {t('places.addressField')}
+                              {t('places:addressField')}
                             </div>
                             <div className="text-sm">{place.address}</div>
                           </div>
@@ -153,7 +153,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                           <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {t('places.openingHours')}
+                              {t('places:openingHours')}
                             </div>
                             <div className="text-sm whitespace-pre-line">{place.opening_hours}</div>
                           </div>
@@ -165,7 +165,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                           <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {t('places.phoneField')}
+                              {t('places:phoneField')}
                             </div>
                             <a
                               href={`tel:${place.phone}`}
@@ -182,7 +182,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                           <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {t('places.websiteField')}
+                              {t('places:websiteField')}
                             </div>
                             <a
                               href={place.website}
@@ -190,7 +190,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                               rel="noopener noreferrer"
                               className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
                             >
-                              {t('places.visitWebsite')}
+                              {t('places:visitWebsite')}
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           </div>
@@ -202,7 +202,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                           <DollarSign className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {t('places.costField')}
+                              {t('places:costField')}
                             </div>
                             <div className="text-sm">
                               {place.cost} {place.currency || 'EUR'}
@@ -216,7 +216,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                           <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {t('places.visitDateField')}
+                              {t('places:visitDateField')}
                             </div>
                             <div className="text-sm">
                               {new Date(place.visit_date).toLocaleDateString('de-DE', {
@@ -235,7 +235,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                     {hasExternalLinks && (
                       <div>
                         <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          {t('places.openIn')}
+                          {t('places:openIn')}
                         </h3>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(place.external_links).map(([service, url]) => (
@@ -258,7 +258,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                     {place.notes && (
                       <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-lg">
                         <div className="text-sm font-medium text-primary-900 dark:text-primary-100 mb-1">
-                          💡 {t('places.notesField')}
+                          💡 {t('places:notesField')}
                         </div>
                         <p className="text-sm text-primary-800 dark:text-primary-200">
                           {place.notes}
@@ -277,7 +277,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                           <img
                             key={index}
                             src={photo}
-                            alt={t('places.photoAlt').replace('{name}', place.name).replace('{index}', index + 1)}
+                            alt={t('places:photoAlt').replace('{name}', place.name).replace('{index}', index + 1)}
                             className="w-full h-48 object-cover rounded-lg"
                           />
                         ))}
@@ -286,7 +286,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                       <div className="text-center py-12">
                         <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-600 dark:text-gray-400">
-                          {t('places.noPhotosYet')}
+                          {t('places:noPhotosYet')}
                         </p>
                       </div>
                     )}
@@ -306,7 +306,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                   className="w-full btn-primary flex items-center justify-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
-                  {t('places.addToTrip')}
+                  {t('places:addToTrip')}
                 </button>
               </div>
             )}

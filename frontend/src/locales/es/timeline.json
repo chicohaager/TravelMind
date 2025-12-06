@@ -1,0 +1,11 @@
+{
+  "title": "Línea de tiempo",
+  "addActivity": "Añadir actividad",
+  "editActivity": "Editar actividad",
+  "deleteActivity": "Eliminar actividad",
+  "noActivities": "Aún no hay actividades planificadas",
+  "day": "Día {number}",
+  "morning": "Mañana",
+  "afternoon": "Tarde",
+  "evening": "Noche"
+}

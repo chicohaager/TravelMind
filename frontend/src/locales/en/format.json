@@ -1,0 +1,11 @@
+{
+  "date": {
+    "short": "MM/DD/YYYY",
+    "long": "MMMM DD, YYYY",
+    "withTime": "MM/DD/YYYY HH:mm"
+  },
+  "currency": {
+    "symbol": "$",
+    "position": "before"
+  }
+}
