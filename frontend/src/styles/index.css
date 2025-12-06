@@ -55,7 +55,7 @@
 @layer components {
   /* Button styles */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
+    @apply px-5 py-2.5 rounded-full font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
   }
 
   .btn-primary {

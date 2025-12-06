@@ -52,5 +52,9 @@
   "noDiaryEntriesTitle": "Noch keine Tagebucheinträge",
   "startCapturingExperiences": "Beginne damit, deine Reiseerlebnisse festzuhalten!",
   "noTripsPlannedTitle": "Noch keine Reisen geplant",
-  "selectTripAndStart": "Wähle eine Reise aus und beginne, deine Erlebnisse festzuhalten!"
+  "selectTripAndStart": "Wähle eine Reise aus und beginne, deine Erlebnisse festzuhalten!",
+  "updateError": "Fehler beim Aktualisieren des Eintrags",
+  "deleteError": "Fehler beim Löschen des Eintrags",
+  "confirmDelete": "Bist du sicher, dass du diesen Eintrag löschen möchtest?",
+  "photosDeleted": "{count} Foto(s) gelöscht"
 }
