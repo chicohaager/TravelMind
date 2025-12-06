@@ -52,5 +52,9 @@
   "noDiaryEntriesTitle": "Aún no hay entradas en el diario",
   "startCapturingExperiences": "¡Empieza a capturar tus experiencias de viaje!",
   "noTripsPlannedTitle": "Ningún viaje planificado",
-  "selectTripAndStart": "¡Selecciona un viaje y empieza a capturar tus experiencias!"
+  "selectTripAndStart": "¡Selecciona un viaje y empieza a capturar tus experiencias!",
+  "updateError": "Error al actualizar la entrada",
+  "deleteError": "Error al eliminar la entrada",
+  "confirmDelete": "¿Estás seguro de que quieres eliminar esta entrada?",
+  "photosDeleted": "{count} foto(s) eliminada(s)"
 }

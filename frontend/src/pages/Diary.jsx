@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Plus, Image, MapPin, Calendar, Star, Map as MapIcon } from 'lucide-react'
+import { Plus, Image, MapPin, Calendar, Star, Map as MapIcon, Edit2, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { diaryService, tripsService } from '@services/api'
@@ -16,6 +16,7 @@ export default function Diary() {
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState(null)
+  const [editingEntry, setEditingEntry] = useState(null)
   const [expandedEntries, setExpandedEntries] = useState(new Set())
   const [lightbox, setLightbox] = useState({ open: false, photos: [], index: 0 })
 
@@ -90,6 +91,61 @@ export default function Diary() {
 
   const handleCreateEntry = async (data) => {
     return createEntryMutation.mutateAsync(data)
+  }
+
+  // Mutation for updating diary entries
+  const updateEntryMutation = useMutation({
+    mutationFn: async ({ entryId, data }) => {
+      const response = await diaryService.update(entryId, data)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
+      queryClient.invalidateQueries({ queryKey: ['allDiaryEntries'] })
+      toast.success(t('diary:updateSuccess'))
+      setIsModalOpen(false)
+      setEditingEntry(null)
+    },
+    onError: (error) => {
+      console.error('Error updating diary entry:', error)
+      toast.error(t('diary:updateError'))
+    }
+  })
+
+  // Mutation for deleting diary entries
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (entryId) => {
+      await diaryService.delete(entryId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
+      queryClient.invalidateQueries({ queryKey: ['allDiaryEntries'] })
+      toast.success(t('diary:deleteSuccess'))
+    },
+    onError: (error) => {
+      console.error('Error deleting diary entry:', error)
+      toast.error(t('diary:deleteError'))
+    }
+  })
+
+  const handleUpdateEntry = async (data) => {
+    return updateEntryMutation.mutateAsync({ entryId: editingEntry.id, data })
+  }
+
+  const handleDeleteEntry = async (entryId) => {
+    if (window.confirm(t('diary:confirmDelete'))) {
+      deleteEntryMutation.mutate(entryId)
+    }
+  }
+
+  const openEditModal = (entry) => {
+    setEditingEntry(entry)
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setEditingEntry(null)
   }
 
   const moodEmojis = {
@@ -362,16 +418,32 @@ export default function Diary() {
                       )}
                     </div>
                   </div>
-                  {entry.rating && (
-                    <div className="flex items-center gap-1">
-                      {[...Array(entry.rating)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {entry.rating && (
+                      <div className="flex items-center gap-1 mr-2">
+                        {[...Array(entry.rating)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => openEditModal(entry)}
+                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      title={t('common:edit')}
+                    >
+                      <Edit2 className="w-4 h-4 text-gray-500" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteEntry(entry.id)}
+                      className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                      title={t('common:delete')}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Content - expandable */}
@@ -560,8 +632,10 @@ export default function Diary() {
       {/* Diary Modal */}
       <DiaryModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateEntry}
+        onClose={closeModal}
+        onSubmit={editingEntry ? handleUpdateEntry : handleCreateEntry}
+        initialData={editingEntry}
+        entryId={editingEntry?.id}
       />
     </div>
   )

@@ -52,5 +52,9 @@
   "noDiaryEntriesTitle": "No diary entries yet",
   "startCapturingExperiences": "Start capturing your travel experiences!",
   "noTripsPlannedTitle": "No trips planned yet",
-  "selectTripAndStart": "Select a trip and start capturing your experiences!"
+  "selectTripAndStart": "Select a trip and start capturing your experiences!",
+  "updateError": "Error updating diary entry",
+  "deleteError": "Error deleting diary entry",
+  "confirmDelete": "Are you sure you want to delete this entry?",
+  "photosDeleted": "{count} photo(s) deleted"
 }

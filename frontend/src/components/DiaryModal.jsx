@@ -29,6 +29,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
   const [newTag, setNewTag] = useState('')
   const [selectedFiles, setSelectedFiles] = useState([])
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [photosToDelete, setPhotosToDelete] = useState([])
 
   // Create preview URLs with automatic cleanup
   const previewUrls = useMemo(() => {
@@ -56,6 +57,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
         tags: initialData.tags || [],
         photos: initialData.photos || []
       })
+      setPhotosToDelete([])
     } else if (!isOpen) {
       // Reset form when modal closes
       setFormData({
@@ -69,6 +71,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
         photos: []
       })
       setSelectedFiles([])
+      setPhotosToDelete([])
     }
   }, [initialData, isOpen])
 
@@ -115,6 +118,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
   }
 
   const removeExistingPhoto = (photoUrl) => {
+    setPhotosToDelete((prev) => [...prev, photoUrl])
     setFormData((prev) => ({
       ...prev,
       photos: prev.photos.filter((p) => p !== photoUrl)
@@ -138,26 +142,38 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
       // Submit entry data
       const result = await onSubmit(entryData)
 
-      // Upload new photos if any
-      if (selectedFiles.length > 0) {
-        const savedEntryId = entryId || result?.data?.id || result?.id
+      const savedEntryId = entryId || result?.data?.id || result?.id
 
-        if (savedEntryId) {
-          setUploadingPhoto(true)
-
-          // Upload each photo
-          for (const file of selectedFiles) {
-            try {
-              await diaryService.uploadPhoto(savedEntryId, file)
-            } catch (error) {
-              console.error('Error uploading photo:', error)
-              toast.error(t('diary:photoUploadError').replace('{fileName}', file.name))
-            }
+      // Delete photos that were marked for deletion
+      if (photosToDelete.length > 0 && savedEntryId) {
+        for (const photoUrl of photosToDelete) {
+          try {
+            await diaryService.deletePhoto(savedEntryId, photoUrl)
+          } catch (error) {
+            console.error('Error deleting photo:', error)
           }
-
-          setUploadingPhoto(false)
-          toast.success(t('diary:photosUploaded').replace('{count}', selectedFiles.length))
         }
+        if (photosToDelete.length > 0) {
+          toast.success(t('diary:photosDeleted').replace('{count}', photosToDelete.length))
+        }
+      }
+
+      // Upload new photos if any
+      if (selectedFiles.length > 0 && savedEntryId) {
+        setUploadingPhoto(true)
+
+        // Upload each photo
+        for (const file of selectedFiles) {
+          try {
+            await diaryService.uploadPhoto(savedEntryId, file)
+          } catch (error) {
+            console.error('Error uploading photo:', error)
+            toast.error(t('diary:photoUploadError').replace('{fileName}', file.name))
+          }
+        }
+
+        setUploadingPhoto(false)
+        toast.success(t('diary:photosUploaded').replace('{count}', selectedFiles.length))
       }
 
       // Reset form
@@ -172,6 +188,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
         photos: []
       })
       setSelectedFiles([])
+      setPhotosToDelete([])
     } catch (error) {
       console.error('Error submitting diary entry:', error)
       setUploadingPhoto(false)
