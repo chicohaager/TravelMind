@@ -766,8 +766,8 @@ export default function TripDetail() {
             />
 
             {/* Map View */}
-            <div className="card h-96">
-              <h3 className="text-lg font-bold mb-3">Karte</h3>
+            <div className="card h-[70vh] min-h-[500px]">
+              <h3 className="text-lg font-bold mb-3">{t('map:title')}</h3>
               <div className="h-[calc(100%-2.5rem)] rounded-lg overflow-hidden">
                 <MapContainer
                   center={mapCenter}
