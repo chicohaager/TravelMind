@@ -53,13 +53,13 @@ export default function TripDetail() {
   const { t } = useTranslation()
 
   const tabs = [
-    { id: 'overview', name: t('tripDetail.overview'), icon: MapIcon },
-    { id: 'recommendations', name: t('tripDetail.recommendations'), icon: Sparkles },
-    { id: 'places', name: t('tripDetail.places'), icon: MapPin },
-    { id: 'diary', name: t('tripDetail.diary'), icon: BookOpen },
-    { id: 'timeline', name: t('tripDetail.timeline'), icon: Clock },
-    { id: 'budget', name: t('tripDetail.budget'), icon: DollarSign },
-    { id: 'participants', name: t('tripDetail.participants'), icon: Users },
+    { id: 'overview', name: t('tripDetail:overview'), icon: MapIcon },
+    { id: 'recommendations', name: t('tripDetail:recommendations'), icon: Sparkles },
+    { id: 'places', name: t('tripDetail:places'), icon: MapPin },
+    { id: 'diary', name: t('tripDetail:diary'), icon: BookOpen },
+    { id: 'timeline', name: t('tripDetail:timeline'), icon: Clock },
+    { id: 'budget', name: t('tripDetail:budget'), icon: DollarSign },
+    { id: 'participants', name: t('tripDetail:participants'), icon: Users },
   ]
 
   const AVAILABLE_INTERESTS = INTEREST_KEYS.map(key => t(`tripDetail.${key}`))
@@ -131,10 +131,10 @@ export default function TripDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries(['places', id])
       setIsPlaceModalOpen(false)
-      toast.success(t('tripDetail.placeAdded'))
+      toast.success(t('tripDetail:placeAdded'))
     },
     onError: () => {
-      toast.error(t('tripDetail.addError'))
+      toast.error(t('tripDetail:addError'))
     }
   })
 
@@ -148,10 +148,10 @@ export default function TripDetail() {
       queryClient.invalidateQueries(['places', id])
       setIsPlaceModalOpen(false)
       setEditingPlace(null)
-      toast.success(t('tripDetail.placeUpdated'))
+      toast.success(t('tripDetail:placeUpdated'))
     },
     onError: () => {
-      toast.error(t('tripDetail.updateError'))
+      toast.error(t('tripDetail:updateError'))
     }
   })
 
@@ -162,10 +162,10 @@ export default function TripDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['places', id])
-      toast.success(t('tripDetail.placeDeleted'))
+      toast.success(t('tripDetail:placeDeleted'))
     },
     onError: () => {
-      toast.error(t('tripDetail.deleteError'))
+      toast.error(t('tripDetail:deleteError'))
     }
   })
 
@@ -188,10 +188,10 @@ export default function TripDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries(['diary', id])
       setIsDiaryModalOpen(false)
-      toast.success(t('tripDetail.entryCreated'))
+      toast.success(t('tripDetail:entryCreated'))
     },
     onError: () => {
-      toast.error(t('tripDetail.addError'))
+      toast.error(t('tripDetail:addError'))
     }
   })
 
@@ -205,10 +205,10 @@ export default function TripDetail() {
       queryClient.invalidateQueries(['diary', id])
       setIsDiaryModalOpen(false)
       setEditingEntry(null)
-      toast.success(t('tripDetail.entryUpdated'))
+      toast.success(t('tripDetail:entryUpdated'))
     },
     onError: () => {
-      toast.error(t('tripDetail.updateError'))
+      toast.error(t('tripDetail:updateError'))
     }
   })
 
@@ -219,10 +219,10 @@ export default function TripDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['diary', id])
-      toast.success(t('tripDetail.entryDeleted'))
+      toast.success(t('tripDetail:entryDeleted'))
     },
     onError: () => {
-      toast.error(t('tripDetail.deleteError'))
+      toast.error(t('tripDetail:deleteError'))
     }
   })
 
@@ -241,7 +241,7 @@ export default function TripDetail() {
   }
 
   const handleDeletePlace = async (placeId) => {
-    if (confirm(t('tripDetail.deletePlace'))) {
+    if (confirm(t('tripDetail:deletePlace'))) {
       await deletePlaceMutation.mutateAsync(placeId)
     }
   }
@@ -270,7 +270,7 @@ export default function TripDetail() {
   }
 
   const handleDeleteEntry = async (entryId) => {
-    if (confirm(t('tripDetail.deleteEntry'))) {
+    if (confirm(t('tripDetail:deleteEntry'))) {
       await deleteDiaryMutation.mutateAsync(entryId)
     }
   }
@@ -288,9 +288,9 @@ export default function TripDetail() {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      toast.success(t('tripDetail.markdownDownloaded'))
+      toast.success(t('tripDetail:markdownDownloaded'))
     } catch (error) {
-      toast.error(formatError(error, t('tripDetail.exportError')))
+      toast.error(formatError(error, t('tripDetail:exportError')))
     }
   }
 
@@ -306,9 +306,9 @@ export default function TripDetail() {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      toast.success(t('tripDetail.pdfDownloaded'))
+      toast.success(t('tripDetail:pdfDownloaded'))
     } catch (error) {
-      toast.error(formatError(error, t('tripDetail.exportError')))
+      toast.error(formatError(error, t('tripDetail:exportError')))
     }
   }
 
@@ -344,10 +344,10 @@ export default function TripDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['trip', id])
-      toast.success(t('tripDetail.tripUpdated'))
+      toast.success(t('tripDetail:tripUpdated'))
     },
     onError: () => {
-      toast.error(t('tripDetail.updateError'))
+      toast.error(t('tripDetail:updateError'))
     }
   })
 
@@ -357,11 +357,11 @@ export default function TripDetail() {
       await tripsService.delete(id)
     },
     onSuccess: () => {
-      toast.success(t('tripDetail.tripDeleted'))
+      toast.success(t('tripDetail:tripDeleted'))
       navigate('/trips')
     },
     onError: () => {
-      toast.error(t('tripDetail.deleteError'))
+      toast.error(t('tripDetail:deleteError'))
     }
   })
 
@@ -376,9 +376,9 @@ export default function TripDetail() {
   if (error || !trip) {
     return (
       <div className="text-center py-16">
-        <h2 className="text-2xl font-bold mb-4">{t('tripDetail.tripNotFound')}</h2>
+        <h2 className="text-2xl font-bold mb-4">{t('tripDetail:tripNotFound')}</h2>
         <button onClick={() => navigate('/trips')} className="btn btn-primary">
-          {t('tripDetail.backToTrips')}
+          {t('tripDetail:backToTrips')}
         </button>
       </div>
     )
@@ -396,7 +396,7 @@ export default function TripDetail() {
         className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-primary-500 transition-colors"
       >
         <ArrowLeft className="w-5 h-5" />
-        {t('tripDetail.backToTrips')}
+        {t('tripDetail:backToTrips')}
       </button>
 
       {/* Hero Image */}
@@ -457,7 +457,7 @@ export default function TripDetail() {
                     {new Date(trip.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </>
                 ) : (
-                  t('common.notSet')
+                  t('common:notSet')
                 )}
               </div>
             </div>
@@ -472,7 +472,7 @@ export default function TripDetail() {
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Budget</div>
               <div className="font-semibold">
-                {trip.budget ? `${trip.budget.toLocaleString('de-DE')} ${trip.currency}` : t('common.notSet')}
+                {trip.budget ? `${trip.budget.toLocaleString('de-DE')} ${trip.currency}` : t('common:notSet')}
               </div>
             </div>
           </div>
@@ -484,8 +484,8 @@ export default function TripDetail() {
               <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="flex-1">
-              <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail.participants')}</div>
-              <div className="font-semibold">{participants.length || t('common.none')}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail:participants')}</div>
+              <div className="font-semibold">{participants.length || t('common:none')}</div>
             </div>
           </div>
           {/* Participant Avatars */}
@@ -570,7 +570,7 @@ export default function TripDetail() {
                       className="btn-outline btn-sm flex items-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
-                      {t('tripDetail.editInterests')}
+                      {t('tripDetail:editInterests')}
                     </button>
                   )}
                 </div>
@@ -578,7 +578,7 @@ export default function TripDetail() {
                 {isEditingInterests ? (
                   <>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      {t('tripDetail.selectInterestsPrompt')}
+                      {t('tripDetail:selectInterestsPrompt')}
                     </p>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {AVAILABLE_INTERESTS.map((interest) => {
@@ -608,7 +608,7 @@ export default function TripDetail() {
                         className="btn-primary btn-sm flex items-center gap-2"
                       >
                         <Check className="w-4 h-4" />
-                        {t('tripDetail.saveInterests')}
+                        {t('tripDetail:saveInterests')}
                       </button>
                       <button
                         onClick={handleCancelEditInterests}
@@ -616,7 +616,7 @@ export default function TripDetail() {
                         className="btn-outline btn-sm flex items-center gap-2"
                       >
                         <X className="w-4 h-4" />
-                        {t('common.cancel')}
+                        {t('common:cancel')}
                       </button>
                     </div>
                   </>
@@ -633,7 +633,7 @@ export default function TripDetail() {
                       ))
                     ) : (
                       <p className="text-gray-600 dark:text-gray-400 text-sm">
-                        {t('tripDetail.noInterestsYet')}
+                        {t('tripDetail:noInterestsYet')}
                       </p>
                     )}
                   </div>
@@ -714,7 +714,7 @@ export default function TripDetail() {
               </div>
             ) : (
               <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                {t('tripDetail.noDiaryEntriesYet')}
+                {t('tripDetail:noDiaryEntriesYet')}
               </p>
             )}
           </div>

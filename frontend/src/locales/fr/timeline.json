@@ -1,0 +1,11 @@
+{
+  "title": "Timeline",
+  "addActivity": "Ajouter une activité",
+  "editActivity": "Modifier l'activité",
+  "deleteActivity": "Supprimer l'activité",
+  "noActivities": "Pas encore d'activités planifiées",
+  "day": "Jour {number}",
+  "morning": "Matin",
+  "afternoon": "Après-midi",
+  "evening": "Soir"
+}

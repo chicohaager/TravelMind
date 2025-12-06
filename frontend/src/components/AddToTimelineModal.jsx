@@ -90,7 +90,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full">
               {/* Header */}
               <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
-                <h2 className="text-xl font-bold">{t('timeline.addToTimeline')}</h2>
+                <h2 className="text-xl font-bold">{t('timeline:addToTimeline')}</h2>
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -103,7 +103,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 {/* Place Selection */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('timeline.placeLabel')} *</label>
+                  <label className="block text-sm font-medium mb-2">{t('timeline:placeLabel')} *</label>
                   <select
                     name="place_id"
                     value={formData.place_id}
@@ -111,7 +111,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
                     required
                     className="input"
                   >
-                    <option value="">{t('timeline.placePlaceholder')}</option>
+                    <option value="">{t('timeline:placePlaceholder')}</option>
                     {availablePlaces.map((place) => (
                       <option key={place.id} value={place.id}>
                         {place.name}
@@ -124,7 +124,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Calendar className="w-4 h-4 inline mr-1" />
-                    {t('timeline.dayLabel')} *
+                    {t('timeline:dayLabel')} *
                   </label>
                   <input
                     type="date"
@@ -143,7 +143,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       <Clock className="w-4 h-4 inline mr-1" />
-                      {t('timeline.startTime')}
+                      {t('timeline:startTime')}
                     </label>
                     <input
                       type="time"
@@ -154,7 +154,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('timeline.endTime')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('timeline:endTime')}</label>
                     <input
                       type="time"
                       name="end_time"
@@ -167,13 +167,13 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
 
                 {/* Duration */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('timeline.duration')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('timeline:duration')}</label>
                   <input
                     type="number"
                     name="duration_minutes"
                     value={formData.duration_minutes}
                     onChange={handleChange}
-                    placeholder={t('timeline.durationPlaceholder')}
+                    placeholder={t('timeline:durationPlaceholder')}
                     min="0"
                     className="input"
                   />
@@ -181,12 +181,12 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('timeline.notesLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('timeline:notesLabel')}</label>
                   <textarea
                     name="notes"
                     value={formData.notes}
                     onChange={handleChange}
-                    placeholder={t('timeline.notesPlaceholder')}
+                    placeholder={t('timeline:notesPlaceholder')}
                     rows={2}
                     className="input"
                   />
@@ -195,10 +195,10 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
-                    {t('common.cancel')}
+                    {t('common:cancel')}
                   </button>
                   <button type="submit" className="btn btn-primary flex-1">
-                    {t('timeline.addButton')}
+                    {t('timeline:addButton')}
                   </button>
                 </div>
               </form>

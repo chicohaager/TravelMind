@@ -10,17 +10,17 @@ export default function Sidebar({ open, onClose }) {
   const [openMenus, setOpenMenus] = useState({})
 
   const navigation = [
-    { name: t('nav.home'), href: '/', icon: Home },
+    { name: t('nav:home'), href: '/', icon: Home },
     {
-      name: t('nav.trips'),
+      name: t('nav:trips'),
       icon: Map,
       children: [
-        { name: t('trips.title'), href: '/trips' },
-        { name: t('nav.ai'), href: '/ai', icon: Sparkles },
+        { name: t('trips:title'), href: '/trips' },
+        { name: t('nav:ai'), href: '/ai', icon: Sparkles },
       ]
     },
-    { name: t('budget.title'), href: '/budget', icon: DollarSign },
-    { name: t('nav.diary'), href: '/diary', icon: BookOpen },
+    { name: t('budget:title'), href: '/budget', icon: DollarSign },
+    { name: t('nav:diary'), href: '/diary', icon: BookOpen },
     { name: 'Transcription', href: '/transcribe', icon: Mic },
   ]
 

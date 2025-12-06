@@ -110,7 +110,7 @@ export default function Navbar({ onMenuClick }) {
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <User className="w-4 h-4" />
-                      {t('settings.profile')}
+                      {t('settings:profile')}
                     </Link>
 
                     <Link
@@ -119,7 +119,7 @@ export default function Navbar({ onMenuClick }) {
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <Settings className="w-4 h-4" />
-                      {t('nav.settings')}
+                      {t('nav:settings')}
                     </Link>
 
                     {user?.is_superuser && (
@@ -143,7 +143,7 @@ export default function Navbar({ onMenuClick }) {
                       className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400"
                     >
                       <LogOut className="w-4 h-4" />
-                      {t('nav.logout')}
+                      {t('nav:logout')}
                     </button>
                   </div>
                 )}
@@ -155,14 +155,14 @@ export default function Navbar({ onMenuClick }) {
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('nav.login')}</span>
+                  <span className="hidden sm:inline">{t('nav:login')}</span>
                 </Link>
                 <Link
                   to="/register"
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('nav.register')}</span>
+                  <span className="hidden sm:inline">{t('nav:register')}</span>
                 </Link>
               </div>
             )}

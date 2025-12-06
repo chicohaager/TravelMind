@@ -12,7 +12,7 @@
 [![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
 [![React](https://img.shields.io/badge/react-18-blue)](https://reactjs.org/)
 
-[🇬🇧 English](#english) | [🇩🇪 Deutsch](#deutsch)
+[🇬🇧 English](#english) | [🇩🇪 Deutsch](#deutsch) | [🇫🇷 Français](#français) | [🇪🇸 Español](#español)
 
 </div>
 
@@ -76,6 +76,12 @@ TravelMind is a **self-hosted web application** for planning, organizing and doc
 - Multiple currencies supported
 - Cost sharing for group trips
 - Visual budget overview with charts
+
+🌐 **Multi-Language Support**
+- 4 languages: English, German, French, Spanish
+- Automatic browser language detection
+- Easy language switching in the app
+- Namespace-based translations for easy extension
 
 ### 🚀 Quick Start
 
@@ -234,6 +240,12 @@ TravelMind ist eine **selbst gehostete Webanwendung** zur Planung, Organisation 
 - Kostenteilung für Gruppenreisen
 - Visuelle Budget-Übersicht mit Diagrammen
 
+🌐 **Mehrsprachige Unterstützung**
+- 4 Sprachen: Englisch, Deutsch, Französisch, Spanisch
+- Automatische Browserspracherkennung
+- Einfacher Sprachwechsel in der App
+- Namespace-basierte Übersetzungen für einfache Erweiterung
+
 ### 🚀 Schnellstart
 
 #### Option 1: Docker Hub (Empfohlen)
@@ -329,6 +341,60 @@ Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe [LICENSE](LICENSE) Da
 - **OpenAI** für GPT API
 - **Google** für Gemini API
 - FastAPI, React und alle Open-Source-Mitwirkenden
+
+---
+
+<a name="français"></a>
+
+## 🇫🇷 Français
+
+### 📖 À propos de TravelMind
+
+TravelMind est une **application web auto-hébergée** pour planifier, organiser et documenter vos voyages. Avec **support IA multi-fournisseurs** (Groq GRATUIT, Claude, OpenAI, Gemini), vous obtenez des recommandations personnalisées et des suggestions de voyage intelligentes.
+
+### ✨ Fonctionnalités principales
+
+🗺️ **Planification de voyage** - Créer des voyages avec destinations, dates et budgets
+🤖 **Assistant IA** - Choisissez votre fournisseur : Groq (GRATUIT!), Claude, OpenAI ou Gemini
+📍 **Lieux** - Collecter des lieux avec GPS et intégration Google Maps
+📓 **Journal de voyage** - Écrire des entrées avec photos et humeur
+💰 **Suivi budgétaire** - Suivre les dépenses par catégorie
+🌐 **4 langues** - Anglais, Allemand, Français, Espagnol
+
+### 🚀 Démarrage rapide
+
+```bash
+# Docker Hub (Recommandé)
+curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
+docker-compose -f docker-compose.hub.yml up -d
+```
+
+---
+
+<a name="español"></a>
+
+## 🇪🇸 Español
+
+### 📖 Acerca de TravelMind
+
+TravelMind es una **aplicación web autoalojada** para planificar, organizar y documentar tus viajes. Con **soporte de IA multi-proveedor** (Groq GRATIS, Claude, OpenAI, Gemini), obtienes recomendaciones personalizadas y sugerencias de viaje inteligentes.
+
+### ✨ Características principales
+
+🗺️ **Planificación de viajes** - Crear viajes con destinos, fechas y presupuestos
+🤖 **Asistente de IA** - Elige tu proveedor: Groq (¡GRATIS!), Claude, OpenAI o Gemini
+📍 **Lugares** - Coleccionar lugares con GPS e integración de Google Maps
+📓 **Diario de viaje** - Escribir entradas con fotos y estado de ánimo
+💰 **Control de presupuesto** - Seguir gastos por categoría
+🌐 **4 idiomas** - Inglés, Alemán, Francés, Español
+
+### 🚀 Inicio rápido
+
+```bash
+# Docker Hub (Recomendado)
+curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
+docker-compose -f docker-compose.hub.yml up -d
+```
 
 ---
 

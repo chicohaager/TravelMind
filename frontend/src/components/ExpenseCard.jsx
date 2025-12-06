@@ -33,7 +33,7 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
 
   const categoryClass = categoryColors[expense.category] || categoryColors.other
   const categoryIcon = categoryIcons[expense.category] || categoryIcons.other
-  const categoryLabel = t(`budget.categories.${expense.category}`) || t('budget.categories.other')
+  const categoryLabel = t(`budget.categories.${expense.category}`) || t('budget:categories.other')
 
   return (
     <motion.div
@@ -67,13 +67,13 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
 
             <div className="flex items-center gap-1">
               <User className="w-4 h-4" />
-              <span>{t('budget.paidBy')} <strong>{expense.paid_by_name}</strong></span>
+              <span>{t('budget:paidBy')} <strong>{expense.paid_by_name}</strong></span>
             </div>
 
             {expense.splits && expense.splits.length > 0 && (
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                <span>{t('budget.splitBetween').replace('{count}', expense.splits.length)}</span>
+                <span>{t('budget:splitBetween').replace('{count}', expense.splits.length)}</span>
               </div>
             )}
           </div>
@@ -81,13 +81,13 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
           {/* Splits Details */}
           {expense.splits && expense.splits.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('budget.splitDetails')}</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('budget:splitDetails')}</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {expense.splits.map((split) => {
                   const participant = participants.find((p) => p.id === split.participant_id)
                   return (
                     <div key={split.participant_id} className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/50 rounded px-2 py-1">
-                      <span>{participant?.name || t('budget.unknown')}</span>
+                      <span>{participant?.name || t('budget:unknown')}</span>
                       <span className="font-medium">{split.amount.toFixed(2)} {expense.currency}</span>
                     </div>
                   )
@@ -109,14 +109,14 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
           <button
             onClick={() => onEdit(expense)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title={t('budget.editExpenseButton')}
+            title={t('budget:editExpenseButton')}
           >
             <Edit className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(expense.id)}
             className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
-            title={t('budget.deleteExpenseButton')}
+            title={t('budget:deleteExpenseButton')}
           >
             <Trash2 className="w-4 h-4 text-red-600" />
           </button>

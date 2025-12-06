@@ -230,7 +230,7 @@ export const useOfflineMutation = (mutationFn, options = {}) => {
           metadata: options.metadata || {}
         })
 
-        toast.success(t('offline.changeWillSync'))
+        toast.success(t('offline:changeWillSync'))
 
         // Return optimistic data with temporary ID
         const tempId = `temp_${Date.now()}_${Math.random()}`
@@ -297,10 +297,10 @@ export const useClearOfflineData = () => {
       queryClient.clear()
     },
     onSuccess: () => {
-      toast.success(t('offline.dataDeleted'))
+      toast.success(t('offline:dataDeleted'))
     },
     onError: (error) => {
-      toast.error(t('offline.errorDeleting'))
+      toast.error(t('offline:errorDeleting'))
       console.error(error)
     }
   })

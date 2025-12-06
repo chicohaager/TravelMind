@@ -10,14 +10,14 @@ from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from utils.rate_limits import limiter
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import structlog
 
 # Import routes
-from routes import trips, diary, places, timeline, budget, ai, auth, users, participants, admin, user_settings, routes as route_routes
+from routes import trips, diary, places, timeline, budget, ai, auth, users, participants, admin, user_settings, routes as route_routes, health, data_export, password_reset
 
 # Import error handlers
 from utils.error_handlers import (
@@ -28,6 +28,19 @@ from utils.error_handlers import (
     sqlalchemy_error_handler,
     general_exception_handler
 )
+
+# Import security middleware
+from middleware.security import (
+    SecurityHeadersMiddleware,
+    RequestSizeLimitMiddleware
+)
+from middleware.request_id import RequestIDMiddleware
+
+# Import metrics middleware
+from middleware.metrics import MetricsMiddleware, metrics_collector
+
+# Import Sentry integration
+from utils.sentry import init_sentry, set_user_context
 
 # Load environment variables
 load_dotenv()
@@ -59,6 +72,10 @@ async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
     print("🌍 TravelMind Backend starting...")
+
+    # Initialize Sentry error tracking
+    if init_sentry():
+        print("✅ Sentry error tracking enabled")
 
     # Validate required environment variables
     jwt_secret = os.getenv("JWT_SECRET")
@@ -94,14 +111,90 @@ async def lifespan(app: FastAPI):
     print("👋 Shutting down TravelMind Backend...")
 
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# OpenAPI Tags for better API documentation
+tags_metadata = [
+    {
+        "name": "Authentication",
+        "description": "User registration, login, and token management",
+    },
+    {
+        "name": "Users",
+        "description": "User profile management and settings",
+    },
+    {
+        "name": "Trips",
+        "description": "Trip CRUD operations and management",
+    },
+    {
+        "name": "Diary",
+        "description": "Travel diary entries with photos and mood tracking",
+    },
+    {
+        "name": "Places",
+        "description": "Points of interest and location management",
+    },
+    {
+        "name": "Budget",
+        "description": "Expense tracking and budget management",
+    },
+    {
+        "name": "Timeline",
+        "description": "Chronological view of trip activities",
+    },
+    {
+        "name": "AI Assistant",
+        "description": "AI-powered travel recommendations and planning (requires user API key)",
+    },
+    {
+        "name": "Admin",
+        "description": "Admin-only endpoints for system management",
+    },
+]
 
 # Initialize FastAPI app
 app = FastAPI(
     title="TravelMind API",
-    description="A self-hosted travel planning and diary app with AI assistance",
+    description="""
+## TravelMind - Self-hosted Travel Planning & Diary App
+
+A comprehensive travel planning application with AI assistance.
+
+### Features
+
+* **Trip Planning**: Create and manage your trips with detailed itineraries
+* **Travel Diary**: Document your experiences with photos, mood, and ratings
+* **Places**: Track places to visit and places visited with GPS coordinates
+* **Budget Tracking**: Monitor expenses and stay within budget
+* **AI Assistance**: Get personalized recommendations powered by your own AI provider
+* **Multi-language**: Interface available in German and English
+
+### Authentication
+
+Most endpoints require authentication via JWT tokens. Obtain a token via `/api/auth/login`.
+
+Include the token in requests:
+```
+Authorization: Bearer <your_token>
+```
+
+### Rate Limiting
+
+API endpoints are rate-limited to prevent abuse. Default limits:
+- Authentication: 10 requests/minute
+- Read operations: 60 requests/minute
+- Write operations: 30 requests/minute
+- AI endpoints: 10-20 requests/minute
+""",
     version="1.0.0",
+    contact={
+        "name": "TravelMind Support",
+        "url": "https://github.com/your-repo/TravelMind",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=tags_metadata,
     lifespan=lifespan,
     redirect_slashes=False  # Accept URLs with or without trailing slashes
 )
@@ -128,11 +221,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Security Middleware (order matters: applied in reverse order)
+# 1. Request size limit - prevent large payload DoS attacks
+max_request_size = int(os.getenv("MAX_REQUEST_SIZE_MB", "10")) * 1024 * 1024
+app.add_middleware(RequestSizeLimitMiddleware, max_size=max_request_size)
+
+# 2. Security headers - add security headers to all responses
+app.add_middleware(SecurityHeadersMiddleware, enable_hsts=True)
+
+# 3. Metrics collection - collect request metrics for Prometheus
+if os.getenv("ENABLE_METRICS", "true").lower() == "true":
+    app.add_middleware(MetricsMiddleware)
+
+# 4. Request ID - add unique request ID for tracing
+app.add_middleware(RequestIDMiddleware)
+
 # Mount static files (uploads)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(password_reset.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(user_settings.router, prefix="/api/user", tags=["User Settings"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
@@ -144,6 +253,8 @@ app.include_router(route_routes.router, tags=["Routes"])  # prefix already defin
 app.include_router(timeline.router, prefix="/api/timeline", tags=["Timeline"])
 app.include_router(budget.router, prefix="/api/budget", tags=["Budget"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI Assistant"])
+app.include_router(health.router, prefix="/api", tags=["System"])
+app.include_router(data_export.router, prefix="/api/users", tags=["Data Export"])
 
 
 @app.get("/")
@@ -165,6 +276,21 @@ async def health_check():
         "status": "healthy",
         "service": "travelmind-backend"
     }
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    """
+    Prometheus metrics endpoint.
+
+    Returns application metrics in Prometheus text format.
+    Useful for monitoring with Prometheus/Grafana stack.
+    """
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(
+        content=metrics_collector.get_prometheus_metrics(),
+        media_type="text/plain; version=0.0.4; charset=utf-8"
+    )
 
 
 @app.get("/api/status")

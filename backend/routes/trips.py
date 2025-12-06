@@ -14,9 +14,8 @@ import os
 import uuid
 import magic
 from pathlib import Path
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from services.geocoding import geocoding_service
+from utils.rate_limits import limiter, RateLimits
 from models.database import get_db
 from models.trip import Trip
 from models.user import User
@@ -24,11 +23,11 @@ from models.place import Place
 from models.diary import DiaryEntry
 from models.expense import Expense
 from routes.auth import get_current_user, get_optional_user, get_current_active_user
+from services.audit_service import audit_service
 import structlog
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 # Upload configuration
 UPLOAD_DIR = Path("./uploads/trips")
@@ -56,37 +55,64 @@ class TripCreate(BaseModel):
 
 
 class TripUpdate(BaseModel):
-    title: Optional[str] = None
-    destination: Optional[str] = None
-    description: Optional[str] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    interests: Optional[List[str]] = None
-    budget: Optional[float] = None
-    currency: Optional[str] = None
-    cover_image: Optional[str] = None
+    title: Optional[str] = Field(None, example="Portugal Abenteuer")
+    destination: Optional[str] = Field(None, example="Porto")
+    description: Optional[str] = Field(None, example="Aktualisierte Beschreibung...")
+    start_date: Optional[datetime] = Field(None, example="2025-07-15T00:00:00Z")
+    end_date: Optional[datetime] = Field(None, example="2025-07-22T00:00:00Z")
+    latitude: Optional[float] = Field(None, example=41.1579)
+    longitude: Optional[float] = Field(None, example=-8.6291)
+    interests: Optional[List[str]] = Field(None, example=["wine", "architecture"])
+    budget: Optional[float] = Field(None, example=2000.0)
+    currency: Optional[str] = Field(None, example="EUR")
+    cover_image: Optional[str] = Field(None, example="/uploads/trips/1_newimage.jpg")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "title": "Portugal Abenteuer",
+                "budget": 2000.0,
+                "interests": ["wine", "architecture", "history"]
+            }
+        }
 
 
 class TripResponse(BaseModel):
-    id: int
-    title: str
-    destination: str
-    description: Optional[str]
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
-    latitude: Optional[float]
-    longitude: Optional[float]
-    interests: List[str]
-    budget: Optional[float]
-    currency: str
-    cover_image: Optional[str]
-    created_at: datetime
-    updated_at: Optional[datetime]
+    id: int = Field(..., example=1)
+    title: str = Field(..., example="Sommer in Portugal")
+    destination: str = Field(..., example="Lissabon")
+    description: Optional[str] = Field(None, example="Eine entspannte Reise durch die Hauptstadt Portugals...")
+    start_date: Optional[datetime] = Field(None, example="2025-07-15T00:00:00Z")
+    end_date: Optional[datetime] = Field(None, example="2025-07-22T00:00:00Z")
+    latitude: Optional[float] = Field(None, example=38.7223)
+    longitude: Optional[float] = Field(None, example=-9.1393)
+    interests: List[str] = Field(default=[], example=["culture", "food", "photography"])
+    budget: Optional[float] = Field(None, example=1500.0)
+    currency: str = Field(default="EUR", example="EUR")
+    cover_image: Optional[str] = Field(None, example="/uploads/trips/1_abc123.jpg")
+    created_at: datetime = Field(..., example="2025-01-15T10:30:00Z")
+    updated_at: Optional[datetime] = Field(None, example="2025-01-16T14:45:00Z")
 
     class Config:
         from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "title": "Sommer in Portugal",
+                "destination": "Lissabon",
+                "description": "Eine entspannte Reise durch die Hauptstadt Portugals...",
+                "start_date": "2025-07-15T00:00:00Z",
+                "end_date": "2025-07-22T00:00:00Z",
+                "latitude": 38.7223,
+                "longitude": -9.1393,
+                "interests": ["culture", "food", "photography"],
+                "budget": 1500.0,
+                "currency": "EUR",
+                "cover_image": "/uploads/trips/1_abc123.jpg",
+                "created_at": "2025-01-15T10:30:00Z",
+                "updated_at": "2025-01-16T14:45:00Z"
+            }
+        }
 
 
 # Helper functions
@@ -198,7 +224,7 @@ async def verify_trip_ownership(trip: Trip, user: User) -> None:
 # Endpoints
 @router.get("", response_model=List[TripResponse])
 @router.get("/", response_model=List[TripResponse])
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.TRIP_LIST)
 async def get_trips(
     request: Request,
     skip: int = 0,
@@ -249,7 +275,7 @@ async def get_trips(
 
 
 @router.get("/{trip_id}", response_model=TripResponse)
-@limiter.limit("120/minute")
+@limiter.limit(RateLimits.TRIP_READ)
 async def get_trip(
     request: Request,
     trip_id: int,
@@ -284,7 +310,7 @@ async def get_trip(
 
 @router.post("", response_model=TripResponse, status_code=201)
 @router.post("/", response_model=TripResponse, status_code=201)
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.TRIP_CREATE)
 async def create_trip(
     request: Request,
     trip: TripCreate,
@@ -329,11 +355,23 @@ async def create_trip(
 
     logger.info("trip_created", trip_id=new_trip.id, user_id=user.id, destination=new_trip.destination)
 
+    # Audit log: trip creation
+    await audit_service.log_data_event(
+        db=db,
+        action="create",
+        resource_type="trip",
+        resource_id=new_trip.id,
+        user_id=user.id,
+        username=user.username,
+        request=request,
+        details={"destination": new_trip.destination, "title": new_trip.title}
+    )
+
     return new_trip
 
 
 @router.put("/{trip_id}", response_model=TripResponse)
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def update_trip(
     request: Request,
     trip_id: int,
@@ -368,11 +406,23 @@ async def update_trip(
 
     logger.info("trip_updated", trip_id=trip_id, user_id=current_user.id)
 
+    # Audit log: trip update
+    await audit_service.log_data_event(
+        db=db,
+        action="update",
+        resource_type="trip",
+        resource_id=trip_id,
+        user_id=current_user.id,
+        username=current_user.username,
+        request=request,
+        details={"updated_fields": list(update_data.keys())}
+    )
+
     return existing_trip
 
 
 @router.delete("/{trip_id}", status_code=204)
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.TRIP_DELETE)
 async def delete_trip(
     request: Request,
     trip_id: int,
@@ -394,16 +444,32 @@ async def delete_trip(
     # Verify ownership
     await verify_trip_ownership(trip, current_user)
 
+    # Store trip info for audit before deletion
+    trip_title = trip.title
+    trip_destination = trip.destination
+
     await db.delete(trip)
     await db.commit()
 
     logger.info("trip_deleted", trip_id=trip_id, user_id=current_user.id)
 
+    # Audit log: trip deletion
+    await audit_service.log_data_event(
+        db=db,
+        action="delete",
+        resource_type="trip",
+        resource_id=trip_id,
+        user_id=current_user.id,
+        username=current_user.username,
+        request=request,
+        details={"title": trip_title, "destination": trip_destination}
+    )
+
     return None
 
 
 @router.post("/{trip_id}/upload-image", response_model=TripResponse)
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.TRIP_UPLOAD)
 async def upload_trip_image(
     request: Request,
     trip_id: int,
@@ -442,7 +508,7 @@ async def upload_trip_image(
 
 
 @router.get("/{trip_id}/summary")
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.TRIP_READ)
 async def get_trip_summary(
     request: Request,
     trip_id: int,
@@ -505,7 +571,7 @@ async def get_trip_summary(
 
 
 @router.get("/geocode/{location}")
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.GEOCODE)
 async def geocode_location(request: Request, location: str):
     """
     Get coordinates for a location name.

@@ -48,7 +48,7 @@ export default function BudgetView({ tripId, participants }) {
       toast.success('Ausgabe hinzugefügt')
     },
     onError: (error) => {
-      toast.error(formatError(error, t('budget.errorAdding')))
+      toast.error(formatError(error, t('budget:errorAdding')))
     }
   })
 
@@ -66,7 +66,7 @@ export default function BudgetView({ tripId, participants }) {
       toast.success('Ausgabe aktualisiert')
     },
     onError: (error) => {
-      toast.error(formatError(error, t('budget.errorUpdating')))
+      toast.error(formatError(error, t('budget:errorUpdating')))
     }
   })
 
@@ -81,7 +81,7 @@ export default function BudgetView({ tripId, participants }) {
       toast.success('Ausgabe gelöscht')
     },
     onError: (error) => {
-      toast.error(formatError(error, t('budget.errorDeleting')))
+      toast.error(formatError(error, t('budget:errorDeleting')))
     }
   })
 
@@ -229,7 +229,7 @@ export default function BudgetView({ tripId, participants }) {
             <div className="text-center py-12">
               <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {t('budget.noExpensesYet')}
+                {t('budget:noExpensesYet')}
               </p>
               {participants && participants.length > 0 ? (
                 <button

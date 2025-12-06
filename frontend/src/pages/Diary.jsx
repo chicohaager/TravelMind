@@ -4,9 +4,10 @@ import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { diaryService, tripsService } from '@services/api'
 import toast from 'react-hot-toast'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import DiaryModal from '@components/DiaryModal'
 import { useTranslation } from 'react-i18next'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function Diary() {
   const { t } = useTranslation()
@@ -14,6 +15,9 @@ export default function Diary() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState(null)
+  const [expandedEntries, setExpandedEntries] = useState(new Set())
+  const [lightbox, setLightbox] = useState({ open: false, photos: [], index: 0 })
 
   // Fetch all trips
   const { data: trips = [], isLoading: isLoadingTrips } = useQuery({
@@ -34,7 +38,7 @@ export default function Diary() {
     enabled: !!tripId,
     onError: (error) => {
       console.error('Error loading diary entries:', error)
-      toast.error(t('diary.errorLoadingEntries'))
+      toast.error(t('diary:errorLoadingEntries'))
     }
   })
 
@@ -75,12 +79,12 @@ export default function Diary() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
       queryClient.invalidateQueries({ queryKey: ['allDiaryEntries'] })
-      toast.success(t('diary.createSuccess'))
+      toast.success(t('diary:createSuccess'))
       setIsModalOpen(false)
     },
     onError: (error) => {
       console.error('Error creating diary entry:', error)
-      toast.error(t('tripDetail.addError'))
+      toast.error(t('tripDetail:addError'))
     }
   })
 
@@ -96,14 +100,70 @@ export default function Diary() {
     'tired': '😴'
   }
 
+  const toggleExpand = (entryId) => {
+    setExpandedEntries(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(entryId)) {
+        newSet.delete(entryId)
+      } else {
+        newSet.add(entryId)
+      }
+      return newSet
+    })
+  }
+
+  const openEntryModal = (entry) => {
+    setSelectedEntry(entry)
+    setIsModalOpen(true)
+  }
+
+  const openLightbox = (photos, index) => {
+    setLightbox({ open: true, photos, index })
+  }
+
+  const closeLightbox = () => {
+    setLightbox({ open: false, photos: [], index: 0 })
+  }
+
+  const nextPhoto = () => {
+    setLightbox(prev => ({
+      ...prev,
+      index: (prev.index + 1) % prev.photos.length
+    }))
+  }
+
+  const prevPhoto = () => {
+    setLightbox(prev => ({
+      ...prev,
+      index: (prev.index - 1 + prev.photos.length) % prev.photos.length
+    }))
+  }
+
+  const getPhotoUrl = (photo) => {
+    return photo.startsWith('http') ? photo : `${import.meta.env.VITE_API_URL}${photo}`
+  }
+
+  // Keyboard navigation for lightbox
+  const handleKeyDown = useCallback((e) => {
+    if (!lightbox.open) return
+    if (e.key === 'Escape') closeLightbox()
+    if (e.key === 'ArrowLeft') prevPhoto()
+    if (e.key === 'ArrowRight') nextPhoto()
+  }, [lightbox.open])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-bold mb-2">{t('diary.title')}</h1>
+          <h1 className="text-4xl font-bold mb-2">{t('diary:title')}</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {tripId ? t('diary.captureMemories') : t('diary.allMemoriesInOnePlace')}
+            {tripId ? t('diary:captureMemories') : t('diary:allMemoriesInOnePlace')}
           </p>
         </div>
         {tripId && (
@@ -112,7 +172,7 @@ export default function Diary() {
             onClick={() => setIsModalOpen(true)}
           >
             <Plus className="w-5 h-5" />
-            {t('diary.newEntry')}
+            {t('diary:newEntry')}
           </button>
         )}
       </div>
@@ -121,7 +181,7 @@ export default function Diary() {
       {isLoading && (
         <div className="card text-center py-16">
           <div className="animate-spin w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">{t('diary.loadingEntries')}</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('diary:loadingEntries')}</p>
         </div>
       )}
 
@@ -185,7 +245,7 @@ export default function Diary() {
                   onClick={() => navigate(`/diary/${trip.id}`)}
                   className="text-sm text-primary-500 hover:text-primary-600 font-medium"
                 >
-                  {t('common.showAll')}
+                  {t('common:showAll')}
                 </button>
               </div>
 
@@ -247,7 +307,7 @@ export default function Diary() {
                 ))}
                 {tripEntries.length > 3 && (
                   <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                    {t('diary.moreEntries').replace('{count}', tripEntries.length - 3)}
+                    {t('diary:moreEntries').replace('{count}', tripEntries.length - 3)}
                   </div>
                 )}
               </div>
@@ -281,7 +341,7 @@ export default function Diary() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 card hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex-1 card hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="text-xl font-bold mb-1">{entry.title}</h3>
@@ -314,33 +374,51 @@ export default function Diary() {
                   )}
                 </div>
 
-                {/* Preview Content */}
-                <p className="text-gray-700 dark:text-gray-300 mb-3 line-clamp-3">
+                {/* Content - expandable */}
+                <p className={`text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap ${expandedEntries.has(entry.id) ? '' : 'line-clamp-3'}`}>
                   {entry.content}
                 </p>
 
                 {/* Photos */}
-                {entry.photos.length > 0 && (
-                  <div className="flex gap-2 mb-3">
-                    {entry.photos.slice(0, 3).map((photo, i) => (
-                      <div
+                {entry.photos && entry.photos.length > 0 && (
+                  <div className={`flex flex-wrap gap-2 mb-3`}>
+                    {(expandedEntries.has(entry.id) ? entry.photos : entry.photos.slice(0, 3)).map((photo, i) => (
+                      <img
                         key={i}
-                        className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center"
-                      >
-                        <Image className="w-8 h-8 text-gray-400" />
-                      </div>
+                        src={getPhotoUrl(photo)}
+                        alt={`Photo ${i + 1}`}
+                        onClick={() => openLightbox(entry.photos, i)}
+                        className={`${expandedEntries.has(entry.id) ? 'w-32 h-32' : 'w-20 h-20'} object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
+                      />
                     ))}
-                    {entry.photos.length > 3 && (
-                      <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-sm text-gray-500">
+                    {!expandedEntries.has(entry.id) && entry.photos.length > 3 && (
+                      <div
+                        onClick={() => openLightbox(entry.photos, 3)}
+                        className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-sm text-gray-500 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
                         +{entry.photos.length - 3}
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="text-sm text-primary-500 hover:text-primary-600 font-medium">
-                  Weiterlesen →
-                </div>
+                {/* Tags */}
+                {expandedEntries.has(entry.id) && entry.tags && entry.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {entry.tags.map((tag, i) => (
+                      <span key={i} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => toggleExpand(entry.id)}
+                  className="text-sm text-primary-500 hover:text-primary-600 font-medium cursor-pointer"
+                >
+                  {expandedEntries.has(entry.id) ? t('diary:showLess') : t('diary:readMore')} {expandedEntries.has(entry.id) ? '↑' : '→'}
+                </button>
               </div>
             </div>
           </motion.div>
@@ -358,16 +436,16 @@ export default function Diary() {
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <Image className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">{t('diary.noEntriesYetTitle')}</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('diary:noEntriesYetTitle')}</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {t('diary.startCapturingExperiences')}
+            {t('diary:startCapturingExperiences')}
           </p>
           <button
             className="btn btn-primary"
             onClick={() => setIsModalOpen(true)}
           >
             <Plus className="w-5 h-5" />
-            {t('diary.createFirstEntry')}
+            {t('diary:createFirstEntry')}
           </button>
         </motion.div>
       )}
@@ -382,16 +460,16 @@ export default function Diary() {
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <MapIcon className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">{t('diary.noTripsPlannedTitle')}</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('diary:noTripsPlannedTitle')}</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {t('diary.createTripForDiary')}
+            {t('diary:createTripForDiary')}
           </p>
           <button
             onClick={() => navigate('/trips')}
             className="btn btn-primary"
           >
             <Plus className="w-5 h-5" />
-            {t('trips.createTrip')}
+            {t('trips:createTrip')}
           </button>
         </motion.div>
       )}
@@ -406,11 +484,77 @@ export default function Diary() {
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <Image className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">{t('diary.noDiaryEntriesTitle')}</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('diary:noDiaryEntriesTitle')}</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {t('diary.selectTripAndStart')}
+            {t('diary:selectTripAndStart')}
           </p>
         </motion.div>
+      )}
+
+      {/* Lightbox Modal */}
+      {lightbox.open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+          >
+            <X className="w-8 h-8" />
+          </button>
+
+          {/* Photo Counter */}
+          <div className="absolute top-4 left-4 text-white text-sm">
+            {lightbox.index + 1} / {lightbox.photos.length}
+          </div>
+
+          {/* Previous Button */}
+          {lightbox.photos.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+              className="absolute left-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </button>
+          )}
+
+          {/* Image */}
+          <img
+            src={getPhotoUrl(lightbox.photos[lightbox.index])}
+            alt={`Photo ${lightbox.index + 1}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+          />
+
+          {/* Next Button */}
+          {lightbox.photos.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+              className="absolute right-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
+            >
+              <ChevronRight className="w-8 h-8" />
+            </button>
+          )}
+
+          {/* Thumbnails */}
+          {lightbox.photos.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              {lightbox.photos.map((photo, i) => (
+                <img
+                  key={i}
+                  src={getPhotoUrl(photo)}
+                  alt={`Thumbnail ${i + 1}`}
+                  onClick={(e) => { e.stopPropagation(); setLightbox(prev => ({ ...prev, index: i })); }}
+                  className={`w-12 h-12 object-cover rounded cursor-pointer transition-all ${
+                    i === lightbox.index ? 'ring-2 ring-white opacity-100' : 'opacity-50 hover:opacity-75'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Diary Modal */}

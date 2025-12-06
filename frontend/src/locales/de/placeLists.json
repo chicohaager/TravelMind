@@ -1,0 +1,18 @@
+{
+  "listCreated": "Liste erstellt",
+  "errorCreating": "Fehler beim Erstellen",
+  "listUpdated": "Liste aktualisiert",
+  "errorUpdating": "Fehler beim Aktualisieren",
+  "listDeleted": "Liste gelöscht",
+  "errorDeleting": "Fehler beim Löschen",
+  "pleaseEnterTitle": "Bitte einen Titel eingeben",
+  "confirmDeleteList": "Liste wirklich löschen? Orte werden nicht gelöscht.",
+  "recommendedPlaces": "Empfohlene Orte",
+  "deleteList": "Liste löschen",
+  "noPlacesInList": "Noch keine Orte in dieser Liste",
+  "createNewList": "Neue Liste erstellen",
+  "title": "Titel",
+  "titlePlaceholder": "z.B. \"Restaurants\", \"Museen\"",
+  "icon": "Icon",
+  "color": "Farbe"
+}

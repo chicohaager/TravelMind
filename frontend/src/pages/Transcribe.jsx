@@ -22,12 +22,12 @@ export default function Transcribe() {
     }
     setHistory(prev => [newEntry, ...prev])
 
-    toast.success(t('transcribe.audioTranscribedSuccess'))
+    toast.success(t('transcribe:audioTranscribedSuccess'))
   }
 
   const handleCopyText = () => {
     navigator.clipboard.writeText(transcribedText)
-    toast.success(t('transcribe.textCopied'))
+    toast.success(t('transcribe:textCopied'))
   }
 
   const handleDownloadText = () => {
@@ -40,22 +40,22 @@ export default function Transcribe() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toast.success(t('transcribe.textDownloaded'))
+    toast.success(t('transcribe:textDownloaded'))
   }
 
   const handleClearText = () => {
     setTranscribedText('')
-    toast.success(t('transcribe.textDeleted'))
+    toast.success(t('transcribe:textDeleted'))
   }
 
   const handleLoadFromHistory = (text) => {
     setTranscribedText(text)
-    toast.success(t('transcribe.textLoadedFromHistory'))
+    toast.success(t('transcribe:textLoadedFromHistory'))
   }
 
   const handleClearHistory = () => {
     setHistory([])
-    toast.success(t('transcribe.historyCleared'))
+    toast.success(t('transcribe:historyCleared'))
   }
 
   return (
@@ -65,9 +65,9 @@ export default function Transcribe() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold mb-2">{t('transcribe.title')}</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('transcribe:title')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          {t('transcribe.description')}
+          {t('transcribe:description')}
         </p>
       </motion.div>
 
@@ -80,7 +80,7 @@ export default function Transcribe() {
       >
         <div className="flex items-center gap-2 mb-4">
           <Mic className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-          <h2 className="text-xl font-bold">{t('transcribe.record')}</h2>
+          <h2 className="text-xl font-bold">{t('transcribe:record')}</h2>
         </div>
 
         <AudioRecorder onTranscriptReceived={handleTranscriptReceived} />
@@ -95,26 +95,26 @@ export default function Transcribe() {
           className="card mb-8"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">{t('transcribe.transcribedText')}</h2>
+            <h2 className="text-xl font-bold">{t('transcribe:transcribedText')}</h2>
             <div className="flex gap-2">
               <button
                 onClick={handleCopyText}
                 className="btn-outline flex items-center gap-2"
-                title={t('transcribe.copyText')}
+                title={t('transcribe:copyText')}
               >
                 <Copy className="w-4 h-4" />
               </button>
               <button
                 onClick={handleDownloadText}
                 className="btn-outline flex items-center gap-2"
-                title={t('transcribe.downloadText')}
+                title={t('transcribe:downloadText')}
               >
                 <Download className="w-4 h-4" />
               </button>
               <button
                 onClick={handleClearText}
                 className="btn-outline text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                title={t('transcribe.deleteText')}
+                title={t('transcribe:deleteText')}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -125,11 +125,11 @@ export default function Transcribe() {
             value={transcribedText}
             onChange={(e) => setTranscribedText(e.target.value)}
             className="input w-full min-h-[200px] font-mono text-sm"
-            placeholder={t('transcribe.placeholder')}
+            placeholder={t('transcribe:placeholder')}
           />
 
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {t('transcribe.charactersWords', {
+            {t('transcribe:charactersWords', {
               chars: transcribedText.length,
               words: transcribedText.split(/\s+/).filter(w => w).length
             })}
@@ -148,13 +148,13 @@ export default function Transcribe() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <FileAudio className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              <h2 className="text-xl font-bold">{t('transcribe.history')}</h2>
+              <h2 className="text-xl font-bold">{t('transcribe:history')}</h2>
             </div>
             <button
               onClick={handleClearHistory}
               className="btn-outline text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm"
             >
-              {t('transcribe.clearHistory')}
+              {t('transcribe:clearHistory')}
             </button>
           </div>
 
@@ -170,7 +170,7 @@ export default function Transcribe() {
                     {entry.timestamp}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
-                    {t('transcribe.characters', { count: entry.length })}
+                    {t('transcribe:characters', { count: entry.length })}
                   </div>
                 </div>
                 <p className="text-sm line-clamp-2">
@@ -191,24 +191,24 @@ export default function Transcribe() {
           className="card bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800"
         >
           <h3 className="font-semibold mb-2 text-primary-900 dark:text-primary-100">
-            {t('transcribe.howItWorks')}
+            {t('transcribe:howItWorks')}
           </h3>
           <ul className="space-y-2 text-sm text-primary-800 dark:text-primary-200">
             <li className="flex items-start gap-2">
               <Mic className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{t('transcribe.clickMicrophone')}</span>
+              <span>{t('transcribe:clickMicrophone')}</span>
             </li>
             <li className="flex items-start gap-2">
               <Upload className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{t('transcribe.uploadFile')}</span>
+              <span>{t('transcribe:uploadFile')}</span>
             </li>
             <li className="flex items-start gap-2">
               <FileAudio className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{t('transcribe.autoTranscribe')}</span>
+              <span>{t('transcribe:autoTranscribe')}</span>
             </li>
           </ul>
           <div className="mt-4 pt-4 border-t border-primary-200 dark:border-primary-800 text-xs text-primary-700 dark:text-primary-300">
-            {t('transcribe.poweredBy')}
+            {t('transcribe:poweredBy')}
           </div>
         </motion.div>
       )}

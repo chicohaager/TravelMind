@@ -100,7 +100,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
       ...prev,
       content: prev.content ? prev.content + '\n\n' + text : text
     }))
-    toast.success(t('diary.audioTranscribed'))
+    toast.success(t('diary:audioTranscribed'))
   }
 
   const handleFileSelect = (e) => {
@@ -151,12 +151,12 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
               await diaryService.uploadPhoto(savedEntryId, file)
             } catch (error) {
               console.error('Error uploading photo:', error)
-              toast.error(t('diary.photoUploadError').replace('{fileName}', file.name))
+              toast.error(t('diary:photoUploadError').replace('{fileName}', file.name))
             }
           }
 
           setUploadingPhoto(false)
-          toast.success(t('diary.photosUploaded').replace('{count}', selectedFiles.length))
+          toast.success(t('diary:photosUploaded').replace('{count}', selectedFiles.length))
         }
       }
 
@@ -204,7 +204,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
               {/* Header */}
               <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-10">
                 <h2 className="text-lg sm:text-2xl font-bold truncate pr-2">
-                  {initialData ? t('diary.editEntry') : t('diary.newEntry')}
+                  {initialData ? t('diary:editEntry') : t('diary:newEntry')}
                 </h2>
                 <button
                   onClick={onClose}
@@ -218,13 +218,13 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
               <form onSubmit={handleSubmit} className="p-3 sm:p-6 space-y-4 sm:space-y-6">
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('diary.entryTitle')} *</label>
+                  <label className="block text-sm font-medium mb-2">{t('diary:entryTitle')} *</label>
                   <input
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
-                    placeholder={t('diary.titlePlaceholder')}
+                    placeholder={t('diary:titlePlaceholder')}
                     required
                     className="input"
                   />
@@ -235,7 +235,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       <Calendar className="w-4 h-4 inline mr-1" />
-                      {t('diary.entryDate')}
+                      {t('diary:entryDate')}
                     </label>
                     <input
                       type="date"
@@ -248,14 +248,14 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       <MapPin className="w-4 h-4 inline mr-1" />
-                      {t('diary.location')}
+                      {t('diary:location')}
                     </label>
                     <input
                       type="text"
                       name="location_name"
                       value={formData.location_name}
                       onChange={handleChange}
-                      placeholder={t('diary.locationPlaceholder')}
+                      placeholder={t('diary:locationPlaceholder')}
                       className="input"
                     />
                   </div>
@@ -263,12 +263,12 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
 
                 {/* Content */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('diary.content')} *</label>
+                  <label className="block text-sm font-medium mb-2">{t('diary:content')} *</label>
                   <textarea
                     name="content"
                     value={formData.content}
                     onChange={handleChange}
-                    placeholder={t('diary.entryPlaceholder')}
+                    placeholder={t('diary:entryPlaceholder')}
                     rows={8}
                     required
                     className="input"
@@ -276,14 +276,14 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
 
                   {/* Audio Recording */}
                   <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <label className="block text-sm font-medium mb-3">{t('diary.voiceInputLabel')}</label>
+                    <label className="block text-sm font-medium mb-3">{t('diary:voiceInputLabel')}</label>
                     <AudioRecorder onTranscriptReceived={handleTranscriptReceived} />
                   </div>
                 </div>
 
                 {/* Mood */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('diary.mood')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('diary:mood')}</label>
                   <div className="flex gap-4">
                     {moodOptions.map((mood) => (
                       <button
@@ -310,7 +310,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
 
                 {/* Rating */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('diary.rating')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('diary:rating')}</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -340,7 +340,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Tag className="w-4 h-4 inline mr-1" />
-                    {t('diary.tags')}
+                    {t('diary:tags')}
                   </label>
 
                   {/* Selected Tags */}
@@ -370,7 +370,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                       type="text"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
-                      placeholder={t('diary.addTagPlaceholder')}
+                      placeholder={t('diary:addTagPlaceholder')}
                       className="input flex-1"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
@@ -380,7 +380,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                       }}
                     />
                     <button type="button" onClick={addTag} className="btn btn-secondary">
-                      {t('common.add')}
+                      {t('common:add')}
                     </button>
                   </div>
                 </div>
@@ -389,7 +389,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Image className="w-4 h-4 inline mr-1" />
-                    {t('diary.photos')}
+                    {t('diary:photos')}
                   </label>
 
                   {/* Existing Photos */}
@@ -399,7 +399,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                         <div key={index} className="relative group">
                           <img
                             src={photoUrl}
-                            alt={t('diary.photoLabel').replace('{index}', index + 1)}
+                            alt={t('diary:photoLabel').replace('{index}', index + 1)}
                             className="w-full h-24 object-cover rounded-lg"
                           />
                           <button
@@ -421,7 +421,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                         <div key={index} className="relative group">
                           <img
                             src={previewUrls[index]}
-                            alt={`${t('diary.newPhotoLabel')} ${index + 1}`}
+                            alt={`${t('diary:newPhotoLabel')} ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg border-2 border-blue-500"
                           />
                           <button
@@ -432,7 +432,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                             <X className="w-4 h-4" />
                           </button>
                           <span className="absolute bottom-1 left-1 px-2 py-1 bg-blue-500 text-white text-xs rounded">
-                            {t('diary.newPhotoLabel')}
+                            {t('diary:newPhotoLabel')}
                           </span>
                         </div>
                       ))}
@@ -442,7 +442,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                   {/* File Input */}
                   <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
                     <Upload className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm text-gray-600">{t('diary.selectPhotos')}</span>
+                    <span className="text-sm text-gray-600">{t('diary:selectPhotos')}</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
@@ -461,17 +461,17 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                   </div>
 
                   <p className="text-xs text-gray-500 mt-2">
-                    {t('diary.fileTypesInfo')}
+                    {t('diary:fileTypesInfo')}
                   </p>
                 </div>
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
-                    {t('common.cancel')}
+                    {t('common:cancel')}
                   </button>
                   <button type="submit" className="btn btn-primary flex-1">
-                    {initialData ? t('diary.saveEntry') : t('diary.createEntryButton')}
+                    {initialData ? t('diary:saveEntry') : t('diary:createEntryButton')}
                   </button>
                 </div>
               </form>

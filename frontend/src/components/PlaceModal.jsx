@@ -65,10 +65,10 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
         longitude: data.longitude,
         address: prev.address || data.display_name
       }))
-      toast.success(t('places.coordinatesFound'))
+      toast.success(t('places:coordinatesFound'))
     },
     onError: () => {
-      toast.error(t('places.coordinatesNotFound'))
+      toast.error(t('places:coordinatesNotFound'))
     }
   })
 
@@ -90,13 +90,13 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
       if (data.tips && Array.isArray(data.tips)) {
         setAiSuggestions(data.tips)
         setShowSuggestions(true)
-        toast.success(t('places.aiSuggestionsLoaded').replace('{count}', data.tips.length))
+        toast.success(t('places:aiSuggestionsLoaded').replace('{count}', data.tips.length))
       } else {
-        toast.error(t('places.noSuggestionsFound'))
+        toast.error(t('places:noSuggestionsFound'))
       }
     },
     onError: () => {
-      toast.error(t('places.aiSuggestionsError'))
+      toast.error(t('places:aiSuggestionsError'))
     }
   })
 
@@ -158,7 +158,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
   const handleAiSuggestions = () => {
     if (!tripDestination) {
-      toast.error(t('places.noDestination'))
+      toast.error(t('places:noDestination'))
       return
     }
     aiSuggestionsMutation.mutate({
@@ -178,7 +178,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
       notes: suggestion.insider_tip || prev.notes
     }))
     setShowSuggestions(false)
-    toast.success(t('places.suggestionApplied'))
+    toast.success(t('places:suggestionApplied'))
   }
 
   const handleFileSelect = (e) => {
@@ -232,12 +232,12 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
               await placesService.uploadPhoto(savedPlaceId, file)
             } catch (error) {
               console.error('Error uploading photo:', error)
-              toast.error(t('places.photoUploadError').replace('{fileName}', file.name))
+              toast.error(t('places:photoUploadError').replace('{fileName}', file.name))
             }
           }
 
           setUploadingPhoto(false)
-          toast.success(t('places.photosUploaded').replace('{count}', selectedFiles.length))
+          toast.success(t('places:photosUploaded').replace('{count}', selectedFiles.length))
         }
       }
 
@@ -292,7 +292,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
               {/* Header */}
               <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-10">
                 <h2 className="text-lg sm:text-2xl font-bold truncate pr-2">
-                  {initialData ? t('places.editPlace') : t('places.newPlace')}
+                  {initialData ? t('places:editPlace') : t('places:newPlace')}
                 </h2>
                 <div className="flex gap-2">
                   {!initialData && tripDestination && (
@@ -301,14 +301,14 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                       onClick={handleAiSuggestions}
                       disabled={aiSuggestionsMutation.isPending}
                       className="btn btn-secondary"
-                      title={t('places.aiSuggestionsButton')}
+                      title={t('places:aiSuggestionsButton')}
                     >
                       {aiSuggestionsMutation.isPending ? (
                         <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
                       ) : (
                         <>
                           <Lightbulb className="w-4 h-4" />
-                          <span className="hidden sm:inline ml-2">{t('places.aiSuggestionsButton')}</span>
+                          <span className="hidden sm:inline ml-2">{t('places:aiSuggestionsButton')}</span>
                         </>
                       )}
                     </button>
@@ -328,14 +328,14 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg flex items-center gap-2">
                       <Lightbulb className="w-5 h-5 text-blue-600" />
-                      {t('places.aiSuggestionsTitle').replace('{destination}', tripDestination)}
+                      {t('places:aiSuggestionsTitle').replace('{destination}', tripDestination)}
                     </h3>
                     <button
                       type="button"
                       onClick={() => setShowSuggestions(false)}
                       className="text-sm text-gray-500 hover:text-gray-700"
                     >
-                      {t('places.hideButton')}
+                      {t('places:hideButton')}
                     </button>
                   </div>
                   <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
@@ -368,19 +368,19 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                 {/* Name & Category */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places.placeName')} *</label>
+                    <label className="block text-sm font-medium mb-2">{t('places:placeName')} *</label>
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      placeholder={t('places.namePlaceholder')}
+                      placeholder={t('places:namePlaceholder')}
                       required
                       className="input"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places.categoryLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('places:categoryLabel')}</label>
                     <select name="category" value={formData.category} onChange={handleChange} className="input">
                       {categories.map((cat) => (
                         <option key={cat.value} value={cat.value}>
@@ -393,12 +393,12 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('places.descriptionLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('places:descriptionLabel')}</label>
                   <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    placeholder={t('places.descriptionPlaceholder')}
+                    placeholder={t('places:descriptionPlaceholder')}
                     rows={3}
                     className="input"
                   />
@@ -408,7 +408,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <MapPin className="w-4 h-4 inline mr-1" />
-                    {t('places.addressLabel')}
+                    {t('places:addressLabel')}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -416,7 +416,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                       name="address"
                       value={formData.address}
                       onChange={handleChange}
-                      placeholder={t('places.addressPlaceholder')}
+                      placeholder={t('places:addressPlaceholder')}
                       className="input flex-1"
                     />
                     <button
@@ -424,7 +424,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                       onClick={handleGeocode}
                       disabled={geocodeMutation.isPending}
                       className="btn btn-secondary"
-                      title={t('places.findCoordinatesTitle')}
+                      title={t('places:findCoordinatesTitle')}
                     >
                       {geocodeMutation.isPending ? (
                         <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
@@ -438,7 +438,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                 {/* Coordinates */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places.latitude')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('places:latitude')}</label>
                     <input
                       type="number"
                       name="latitude"
@@ -449,7 +449,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places.longitude')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('places:longitude')}</label>
                     <input
                       type="number"
                       name="longitude"
@@ -466,7 +466,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       <Calendar className="w-4 h-4 inline mr-1" />
-                      {t('places.visitDateLabel')}
+                      {t('places:visitDateLabel')}
                     </label>
                     <input
                       type="date"
@@ -479,7 +479,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       <DollarSign className="w-4 h-4 inline mr-1" />
-                      {t('places.costLabel')}
+                      {t('places:costLabel')}
                     </label>
                     <input
                       type="number"
@@ -492,7 +492,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places.currencyLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('places:currencyLabel')}</label>
                     <select name="currency" value={formData.currency} onChange={handleChange} className="input">
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
@@ -503,7 +503,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
                 {/* Rating */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('places.ratingLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('places:ratingLabel')}</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -527,24 +527,24 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                 {/* Website & Phone */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places.websiteLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('places:websiteLabel')}</label>
                     <input
                       type="url"
                       name="website"
                       value={formData.website}
                       onChange={handleChange}
-                      placeholder={t('places.websitePlaceholder')}
+                      placeholder={t('places:websitePlaceholder')}
                       className="input"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places.phoneLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">{t('places:phoneLabel')}</label>
                     <input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      placeholder={t('places.phonePlaceholder')}
+                      placeholder={t('places:phonePlaceholder')}
                       className="input"
                     />
                   </div>
@@ -552,12 +552,12 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('places.notesLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">{t('places:notesLabel')}</label>
                   <textarea
                     name="notes"
                     value={formData.notes}
                     onChange={handleChange}
-                    placeholder={t('places.notesPlaceholder')}
+                    placeholder={t('places:notesPlaceholder')}
                     rows={2}
                     className="input"
                   />
@@ -567,7 +567,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Image className="w-4 h-4 inline mr-1" />
-                    {t('places.photos')}
+                    {t('places:photos')}
                   </label>
 
                   {/* Existing Photos */}
@@ -577,7 +577,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                         <div key={index} className="relative group">
                           <img
                             src={photoUrl}
-                            alt={t('places.photoLabel').replace('{index}', index + 1)}
+                            alt={t('places:photoLabel').replace('{index}', index + 1)}
                             className="w-full h-24 object-cover rounded-lg"
                           />
                           <button
@@ -599,7 +599,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                         <div key={index} className="relative group">
                           <img
                             src={previewUrls[index]}
-                            alt={`${t('places.newPhotoLabel')} ${index + 1}`}
+                            alt={`${t('places:newPhotoLabel')} ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg border-2 border-blue-500"
                           />
                           <button
@@ -610,7 +610,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                             <X className="w-4 h-4" />
                           </button>
                           <span className="absolute bottom-1 left-1 px-2 py-1 bg-blue-500 text-white text-xs rounded">
-                            {t('places.newPhotoLabel')}
+                            {t('places:newPhotoLabel')}
                           </span>
                         </div>
                       ))}
@@ -620,7 +620,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                   {/* File Input */}
                   <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
                     <Upload className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm text-gray-600">{t('places.selectPhotos')}</span>
+                    <span className="text-sm text-gray-600">{t('places:selectPhotos')}</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
@@ -639,7 +639,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                   </div>
 
                   <p className="text-xs text-gray-500 mt-2">
-                    {t('places.fileTypesInfo')}
+                    {t('places:fileTypesInfo')}
                   </p>
                 </div>
 
@@ -652,16 +652,16 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                     onChange={handleChange}
                     className="w-4 h-4 rounded border-gray-300"
                   />
-                  <label className="text-sm font-medium">{t('places.alreadyVisited')}</label>
+                  <label className="text-sm font-medium">{t('places:alreadyVisited')}</label>
                 </div>
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
-                    {t('common.cancel')}
+                    {t('common:cancel')}
                   </button>
                   <button type="submit" className="btn btn-primary flex-1">
-                    {initialData ? t('places.savePlace') : t('places.addPlace')}
+                    {initialData ? t('places:savePlace') : t('places:addPlace')}
                   </button>
                 </div>
               </form>

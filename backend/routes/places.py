@@ -9,8 +9,7 @@ from sqlalchemy import select, func
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from utils.rate_limits import limiter, RateLimits
 import structlog
 import uuid
 import magic
@@ -27,7 +26,6 @@ from utils.geocoding import geocode_if_missing
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 # Upload configuration
 UPLOAD_DIR = Path("./uploads/places")
@@ -148,7 +146,7 @@ class PlaceResponse(BaseModel):
 
 
 @router.get("/{trip_id}/places", response_model=List[PlaceResponse])
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PLACE_LIST)
 async def get_places(
     request: Request,
     trip_id: int,
@@ -185,7 +183,7 @@ async def get_places(
 
 
 @router.post("/{trip_id}/places", response_model=PlaceResponse, status_code=201)
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def create_place(
     request: Request,
     trip_id: int,
@@ -249,7 +247,7 @@ async def create_place(
 
 
 @router.put("/places/{place_id}", response_model=PlaceResponse)
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def update_place(
     request: Request,
     place_id: int,
@@ -300,7 +298,7 @@ async def update_place(
 
 
 @router.delete("/places/{place_id}", status_code=204)
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.PLACE_DELETE)
 async def delete_place(
     request: Request,
     place_id: int,
@@ -327,7 +325,7 @@ async def delete_place(
 
 
 @router.put("/places/{place_id}/visited")
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def mark_as_visited(
     request: Request,
     place_id: int,
@@ -357,7 +355,7 @@ async def mark_as_visited(
 
 
 @router.post("/{trip_id}/places/reorder")
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def reorder_places(
     request: Request,
     trip_id: int,
@@ -391,7 +389,7 @@ async def reorder_places(
 # ============ Custom Place Lists Endpoints ============
 
 @router.get("/{trip_id}/lists", response_model=List[PlaceListResponse])
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PLACE_LIST)
 async def get_place_lists(
     request: Request,
     trip_id: int,
@@ -436,7 +434,7 @@ async def get_place_lists(
 
 
 @router.post("/{trip_id}/lists", response_model=PlaceListResponse, status_code=201)
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def create_place_list(
     request: Request,
     trip_id: int,
@@ -476,7 +474,7 @@ async def create_place_list(
 
 
 @router.put("/lists/{list_id}", response_model=PlaceListResponse)
-@limiter.limit("30/minute")
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def update_place_list(
     request: Request,
     list_id: int,
@@ -527,7 +525,7 @@ async def update_place_list(
 
 
 @router.delete("/lists/{list_id}", status_code=204)
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.PLACE_DELETE)
 async def delete_place_list(
     request: Request,
     list_id: int,
@@ -555,7 +553,7 @@ async def delete_place_list(
 
 
 @router.patch("/lists/{list_id}/toggle-collapse")
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PLACE_LIST)
 async def toggle_list_collapse(
     request: Request,
     list_id: int,
@@ -770,8 +768,12 @@ Wichtig:
         )
 
     except json.JSONDecodeError as e:
-        print(f"❌ JSON Parse Error for {request.destination}: {str(e)}")
-        print(f"   AI Response (first 500 chars): {response[:500] if 'response' in locals() else 'N/A'}")
+        logger.error(
+            "guide_search_json_parse_error",
+            destination=request.destination,
+            error=str(e),
+            response_preview=response[:500] if 'response' in locals() else 'N/A'
+        )
         return GuideSearchResponse(
             success=False,
             destination=request.destination,
@@ -780,9 +782,12 @@ Wichtig:
             places=[]
         )
     except Exception as e:
-        print(f"❌ Error in search-guides for {request.destination}: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.exception(
+            "guide_search_error",
+            destination=request.destination,
+            error_type=type(e).__name__,
+            error=str(e)
+        )
         return GuideSearchResponse(
             success=False,
             destination=request.destination,
@@ -917,7 +922,7 @@ async def import_places_bulk(
 # ==================== PHOTO UPLOAD ENDPOINTS ====================
 
 @router.post("/places/{place_id}/upload-photo")
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.PLACE_BULK_IMPORT)
 async def upload_place_photo(
     request: Request,
     place_id: int,
@@ -985,7 +990,7 @@ async def upload_place_photo(
 
 
 @router.delete("/places/{place_id}/photo")
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.PLACE_DELETE)
 async def delete_place_photo(
     request: Request,
     place_id: int,

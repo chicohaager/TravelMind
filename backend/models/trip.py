@@ -39,7 +39,7 @@ class Trip(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Foreign Keys
-    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Relationships
     owner = relationship("User", back_populates="trips")

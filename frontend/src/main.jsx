@@ -4,9 +4,13 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import App from './App.jsx'
+import { initSentry } from './utils/sentry'
 import './i18n' // Import i18n configuration
 import './styles/index.css'
 import './styles/mobile.css'
+
+// Initialize Sentry error tracking (before app renders)
+initSentry()
 
 // Create a React Query client
 const queryClient = new QueryClient({

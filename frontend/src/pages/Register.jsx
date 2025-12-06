@@ -59,13 +59,13 @@ export default function Register() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError(t('auth.passwordsDoNotMatch'))
+      setError(t('auth:passwordsDoNotMatch'))
       return
     }
 
     // Validate password length
     if (formData.password.length < 8) {
-      setError(t('auth.passwordTooShort'))
+      setError(t('auth:passwordTooShort'))
       return
     }
 
@@ -125,12 +125,12 @@ export default function Register() {
               )}
             </motion.div>
             <h1 className="text-3xl font-bold mb-2">
-              {isRegistrationClosed ? t('auth.registrationClosed') : t('auth.createYourAccount')}
+              {isRegistrationClosed ? t('auth:registrationClosed') : t('auth:createYourAccount')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
               {isRegistrationClosed
                 ? registrationStatus.message
-                : `${t('auth.startYourJourney')} ${registrationStatus?.app_name || 'TravelMind'}`}
+                : `${t('auth:startYourJourney')} ${registrationStatus?.app_name || 'TravelMind'}`}
             </p>
           </div>
 
@@ -141,8 +141,8 @@ export default function Register() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-orange-600 dark:text-orange-400">
-                    <p className="font-medium mb-1">{t('auth.registrationNotPossible')}</p>
-                    <p>{t('auth.registrationClosedMessage')}</p>
+                    <p className="font-medium mb-1">{t('auth:registrationNotPossible')}</p>
+                    <p>{t('auth:registrationClosedMessage')}</p>
                   </div>
                 </div>
               </div>
@@ -152,7 +152,7 @@ export default function Register() {
                   to="/login"
                   className="btn btn-primary w-full"
                 >
-                  {t('auth.toLogin')}
+                  {t('auth:toLogin')}
                 </Link>
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="username" className="block text-sm font-medium mb-2">
-                {t('auth.username')} *
+                {t('auth:username')} *
               </label>
               <input
                 type="text"
@@ -175,7 +175,7 @@ export default function Register() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                placeholder={t('auth.usernamePlaceholder')}
+                placeholder={t('auth:usernamePlaceholder')}
                 required
                 minLength={3}
                 maxLength={50}
@@ -186,7 +186,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
-                {t('auth.email')} *
+                {t('auth:email')} *
               </label>
               <input
                 type="email"
@@ -194,7 +194,7 @@ export default function Register() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder={t('auth.emailPlaceholder')}
+                placeholder={t('auth:emailPlaceholder')}
                 required
                 className="input"
                 autoComplete="email"
@@ -203,7 +203,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium mb-2">
-                {t('auth.fullName')} ({t('auth.optional')})
+                {t('auth:fullName')} ({t('auth:optional')})
               </label>
               <input
                 type="text"
@@ -211,7 +211,7 @@ export default function Register() {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder={t('auth.fullNamePlaceholder')}
+                placeholder={t('auth:fullNamePlaceholder')}
                 className="input"
                 autoComplete="name"
               />
@@ -219,7 +219,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                {t('auth.password')} *
+                {t('auth:password')} *
               </label>
               <input
                 type="password"
@@ -227,20 +227,20 @@ export default function Register() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder={t('auth.passwordPlaceholder')}
+                placeholder={t('auth:passwordPlaceholder')}
                 required
                 minLength={8}
                 className="input"
                 autoComplete="new-password"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {t('auth.minCharacters')}
+                {t('auth:minCharacters')}
               </p>
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
-                {t('auth.confirmPassword')} *
+                {t('auth:confirmPassword')} *
               </label>
               <input
                 type="password"
@@ -248,7 +248,7 @@ export default function Register() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder={t('auth.passwordPlaceholder')}
+                placeholder={t('auth:passwordPlaceholder')}
                 required
                 className="input"
                 autoComplete="new-password"
@@ -263,12 +263,12 @@ export default function Register() {
               {loading ? (
                 <>
                   <Loader className="w-5 h-5 animate-spin" />
-                  {t('auth.registering')}
+                  {t('auth:registering')}
                 </>
               ) : (
                 <>
                   <UserPlus className="w-5 h-5" />
-                  {t('auth.register')}
+                  {t('auth:register')}
                 </>
               )}
             </button>
@@ -279,12 +279,12 @@ export default function Register() {
           {!isRegistrationClosed && (
             <div className="mt-6 text-center text-sm">
               <p className="text-gray-600 dark:text-gray-400">
-                {t('auth.haveAccount')}{' '}
+                {t('auth:haveAccount')}{' '}
                 <Link
                   to="/login"
                   className="text-primary-500 hover:text-primary-600 font-medium"
                 >
-                  {t('auth.loginNow')}
+                  {t('auth:loginNow')}
                 </Link>
               </p>
             </div>

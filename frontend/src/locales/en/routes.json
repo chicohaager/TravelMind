@@ -1,0 +1,9 @@
+{
+  "pleaseEnterRouteName": "Please enter a route name",
+  "routeNeedsTwoPlaces": "A route needs at least 2 places",
+  "errorSavingRoute": "Error saving route",
+  "confirmDeleteRoute": "Do you really want to delete this route?",
+  "routeDeleted": "Route deleted!",
+  "errorDeletingRoute": "Error deleting route",
+  "allPlacesAddedToRoute": "All places added to route"
+}

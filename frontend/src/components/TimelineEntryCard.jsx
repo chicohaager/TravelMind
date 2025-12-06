@@ -61,7 +61,7 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
 
                 {entry.duration_minutes && (
                   <div className="flex items-center gap-1">
-                    <span className="font-medium">{entry.duration_minutes} {t('timeline.minutes')}</span>
+                    <span className="font-medium">{entry.duration_minutes} {t('timeline:minutes')}</span>
                   </div>
                 )}
               </div>
@@ -75,7 +75,7 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
             <button
               onClick={() => onDelete(entry.id)}
               className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-all"
-              title={t('timeline.removeFromTimeline')}
+              title={t('timeline:removeFromTimeline')}
             >
               <Trash2 className="w-4 h-4 text-red-600" />
             </button>

@@ -1,0 +1,6 @@
+{
+  "dateShort": "DD/MM/YYYY",
+  "dateLong": "D MMMM YYYY",
+  "time": "HH:mm",
+  "currency": "{amount} {currency}"
+}
