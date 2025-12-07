@@ -2,5 +2,21 @@
   "title": "Mapa",
   "showPlaces": "Mostrar lugares",
   "showRoute": "Mostrar ruta",
-  "yourLocation": "Tu ubicación"
+  "yourLocation": "Tu ubicación",
+  "noPlacesYet": "Aún no hay lugares",
+  "addPlacesToSeeOnMap": "Añade lugares a tu viaje para verlos en el mapa",
+  "addPlaces": "Añadir lugares",
+  "createRoutes": "Crear rutas",
+  "needTwoPlacesForRoute": "Necesitas al menos 2 lugares para crear una ruta",
+  "addMorePlaces": "Añadir más lugares",
+  "mapStatistics": "Estadísticas del mapa",
+  "totalPlaces": "Total de lugares:",
+  "activeRoutes": "Rutas activas:",
+  "visited": "Visitados:",
+  "tip": "Consejo",
+  "dragPlacesToCreateRoutes": "Arrastra lugares de la lista izquierda al orden de ruta a la derecha para crear tus propias rutas. ¡Cambia colores y estilos para organizar diferentes días o temas!",
+  "legend": "Leyenda",
+  "places": "Lugares",
+  "routes": "Rutas",
+  "moreRoutes": "+{{count}} más"
 }

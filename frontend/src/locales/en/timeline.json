@@ -4,6 +4,8 @@
   "activity": "Activity",
   "time": "Time",
   "addActivity": "Add Activity",
+  "editActivity": "Edit Activity",
+  "deleteActivity": "Delete Activity",
   "noActivities": "No activities planned yet.",
   "addToTimeline": "Add to Timeline",
   "placeLabel": "Place",
@@ -21,5 +23,16 @@
   "errorAdding": "Error adding",
   "errorDeleting": "Error deleting",
   "errorOptimizing": "Error optimizing",
-  "noEntriesYet": "No entries in the day planner yet."
+  "noEntriesYet": "No entries in the day planner yet.",
+  "dayPlanner": "Day Planner",
+  "addToDayPlan": "Add to day plan",
+  "addFirstEntry": "Add first entry",
+  "addPlacesFirst": "Add places first to plan them.",
+  "addedToTimeline": "Added to timeline",
+  "removedFromTimeline": "Removed from timeline",
+  "removeFromTimelineConfirm": "Remove from timeline?",
+  "routeOptimized": "Route optimized",
+  "morning": "Morning",
+  "afternoon": "Afternoon",
+  "evening": "Evening"
 }

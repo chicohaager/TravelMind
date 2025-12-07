@@ -11,5 +11,9 @@
   "activeRoutes": "Active routes:",
   "visited": "Visited:",
   "tip": "Tip",
-  "dragPlacesToCreateRoutes": "Drag places from the left list into the route order on the right to create your own routes. Change colors and styles to organize different days or themes!"
+  "dragPlacesToCreateRoutes": "Drag places from the left list into the route order on the right to create your own routes. Change colors and styles to organize different days or themes!",
+  "legend": "Legend",
+  "places": "Places",
+  "routes": "Routes",
+  "moreRoutes": "+{{count}} more"
 }

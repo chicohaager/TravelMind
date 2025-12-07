@@ -1,6 +1,21 @@
 {
   "title": "Listes de lieux",
+  "listCreated": "Liste créée",
+  "errorCreating": "Erreur lors de la création",
+  "listUpdated": "Liste mise à jour",
+  "errorUpdating": "Erreur lors de la mise à jour",
+  "listDeleted": "Liste supprimée",
+  "errorDeleting": "Erreur lors de la suppression",
+  "pleaseEnterTitle": "Veuillez entrer un titre",
+  "confirmDeleteList": "Supprimer la liste ? Les lieux ne seront pas supprimés.",
+  "recommendedPlaces": "Lieux recommandés",
+  "deleteList": "Supprimer la liste",
+  "noPlacesInList": "Pas encore de lieux dans cette liste",
+  "createNewList": "Créer une nouvelle liste",
   "createList": "Créer une liste",
   "editList": "Modifier la liste",
-  "deleteList": "Supprimer la liste"
+  "titleLabel": "Titre",
+  "titlePlaceholder": "ex. \"Restaurants\", \"Musées\"",
+  "icon": "Icône",
+  "color": "Couleur"
 }

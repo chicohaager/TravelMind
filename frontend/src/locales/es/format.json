@@ -1,6 +1,14 @@
 {
+  "date": {
+    "short": "DD/MM/YYYY",
+    "long": "D [de] MMMM [de] YYYY",
+    "withTime": "DD/MM/YYYY HH:mm"
+  },
+  "currency": {
+    "symbol": "€",
+    "position": "after"
+  },
   "dateShort": "DD/MM/YYYY",
   "dateLong": "D de MMMM de YYYY",
-  "time": "HH:mm",
-  "currency": "{amount} {currency}"
+  "time": "HH:mm"
 }

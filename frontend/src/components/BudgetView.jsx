@@ -45,7 +45,7 @@ export default function BudgetView({ tripId, participants }) {
       queryClient.invalidateQueries(['expenses', tripId])
       queryClient.invalidateQueries(['budget-summary', tripId])
       setIsExpenseModalOpen(false)
-      toast.success('Ausgabe hinzugefügt')
+      toast.success(t('budget:expenseAdded'))
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorAdding')))
@@ -63,7 +63,7 @@ export default function BudgetView({ tripId, participants }) {
       queryClient.invalidateQueries(['budget-summary', tripId])
       setIsExpenseModalOpen(false)
       setEditingExpense(null)
-      toast.success('Ausgabe aktualisiert')
+      toast.success(t('budget:expenseUpdated'))
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorUpdating')))
@@ -78,7 +78,7 @@ export default function BudgetView({ tripId, participants }) {
     onSuccess: () => {
       queryClient.invalidateQueries(['expenses', tripId])
       queryClient.invalidateQueries(['budget-summary', tripId])
-      toast.success('Ausgabe gelöscht')
+      toast.success(t('budget:expenseDeleted'))
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorDeleting')))
@@ -99,7 +99,7 @@ export default function BudgetView({ tripId, participants }) {
   }
 
   const handleDeleteExpense = async (expenseId) => {
-    if (confirm('Möchtest du diese Ausgabe wirklich löschen?')) {
+    if (confirm(t('budget:confirmDeleteExpense'))) {
       await deleteExpenseMutation.mutateAsync(expenseId)
     }
   }
@@ -115,12 +115,12 @@ export default function BudgetView({ tripId, participants }) {
   }
 
   const categoryLabels = {
-    food: 'Essen & Trinken',
-    transport: 'Transport',
-    accommodation: 'Unterkunft',
-    activities: 'Aktivitäten',
-    shopping: 'Shopping',
-    other: 'Sonstiges'
+    food: t('budget:categories.food'),
+    transport: t('budget:categories.transport'),
+    accommodation: t('budget:categories.accommodation'),
+    activities: t('budget:categories.activities'),
+    shopping: t('budget:categories.shopping'),
+    other: t('budget:categories.other')
   }
 
   return (
@@ -129,11 +129,11 @@ export default function BudgetView({ tripId, participants }) {
         {/* Budget Summary */}
         {summary && (
           <div className="card">
-            <h2 className="text-2xl font-bold mb-4">Budget-Übersicht</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('budget:budgetSummary')}</h2>
 
             {/* Total */}
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-6 mb-6">
-              <div className="text-sm opacity-90 mb-1">Gesamtausgaben</div>
+              <div className="text-sm opacity-90 mb-1">{t('budget:totalExpenses')}</div>
               <div className="text-4xl font-bold">
                 {summary.total_expenses.toFixed(2)} {summary.currency}
               </div>
@@ -142,7 +142,7 @@ export default function BudgetView({ tripId, participants }) {
             {/* By Category */}
             {Object.keys(summary.by_category).length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">Nach Kategorie</h3>
+                <h3 className="text-lg font-semibold mb-3">{t('budget:byCategory')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {Object.entries(summary.by_category).map(([category, amount]) => (
                     <div key={category} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
@@ -161,7 +161,7 @@ export default function BudgetView({ tripId, participants }) {
             {/* By Participant - Balances */}
             {Object.keys(summary.by_participant).length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-3">Teilnehmer-Übersicht</h3>
+                <h3 className="text-lg font-semibold mb-3">{t('budget:participantOverview')}</h3>
                 <div className="space-y-2">
                   {Object.entries(summary.by_participant).map(([participantId, data]) => {
                     const balance = data.balance
@@ -182,17 +182,17 @@ export default function BudgetView({ tripId, participants }) {
                             {isPositive && <TrendingUp className="w-4 h-4" />}
                             {!isPositive && !isNeutral && <TrendingDown className="w-4 h-4" />}
                             <span>
-                              {isNeutral ? 'Ausgeglichen' : `${isPositive ? '+' : ''}${balance.toFixed(2)} ${summary.currency}`}
+                              {isNeutral ? t('budget:balanced') : `${isPositive ? '+' : ''}${balance.toFixed(2)} ${summary.currency}`}
                             </span>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">Bezahlt:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('budget:paid')}:</span>
                             <span className="ml-2 font-medium">{data.paid.toFixed(2)} {summary.currency}</span>
                           </div>
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">Schuldet:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{t('budget:owes')}:</span>
                             <span className="ml-2 font-medium">{data.owes.toFixed(2)} {summary.currency}</span>
                           </div>
                         </div>
@@ -210,7 +210,7 @@ export default function BudgetView({ tripId, participants }) {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <DollarSign className="w-6 h-6" />
-              Ausgaben
+              {t('budget:expenses')}
             </h2>
             <button
               onClick={() => {
@@ -221,7 +221,7 @@ export default function BudgetView({ tripId, participants }) {
               disabled={!participants || participants.length === 0}
             >
               <Plus className="w-4 h-4" />
-              Ausgabe hinzufügen
+              {t('budget:addExpense')}
             </button>
           </div>
 
@@ -240,11 +240,11 @@ export default function BudgetView({ tripId, participants }) {
                   className="btn btn-primary"
                 >
                   <Plus className="w-4 h-4" />
-                  Erste Ausgabe hinzufügen
+                  {t('budget:addFirstExpense')}
                 </button>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-500">
-                  Füge zuerst Teilnehmer hinzu, um Ausgaben zu erfassen.
+                  {t('budget:addParticipantsFirst')}
                 </p>
               )}
             </div>

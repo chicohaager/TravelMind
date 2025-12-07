@@ -4,6 +4,8 @@
   "activity": "Aktivität",
   "time": "Zeit",
   "addActivity": "Aktivität hinzufügen",
+  "editActivity": "Aktivität bearbeiten",
+  "deleteActivity": "Aktivität löschen",
   "noActivities": "Noch keine Aktivitäten geplant.",
   "addToTimeline": "Zur Timeline hinzufügen",
   "placeLabel": "Ort",
@@ -21,5 +23,16 @@
   "errorAdding": "Fehler beim Hinzufügen",
   "errorDeleting": "Fehler beim Löschen",
   "errorOptimizing": "Fehler beim Optimieren",
-  "noEntriesYet": "Noch keine Einträge im Tagesplaner."
+  "noEntriesYet": "Noch keine Einträge im Tagesplaner.",
+  "dayPlanner": "Tagesplaner",
+  "addToDayPlan": "Zum Tagesplan hinzufügen",
+  "addFirstEntry": "Ersten Eintrag hinzufügen",
+  "addPlacesFirst": "Füge zuerst Orte hinzu, um sie zu planen.",
+  "addedToTimeline": "Zur Timeline hinzugefügt",
+  "removedFromTimeline": "Aus Timeline entfernt",
+  "removeFromTimelineConfirm": "Aus Timeline entfernen?",
+  "routeOptimized": "Route optimiert",
+  "morning": "Morgen",
+  "afternoon": "Nachmittag",
+  "evening": "Abend"
 }

@@ -3,5 +3,12 @@
   "syncNow": "Sincronizar ahora",
   "lastSync": "Última sincronización",
   "pendingChanges": "Cambios pendientes",
-  "noConnection": "Sin conexión a internet"
+  "noConnection": "Sin conexión a internet",
+  "changeWillSync": "Sin conexión: El cambio se sincronizará cuando estés en línea",
+  "dataDeleted": "Datos sin conexión eliminados",
+  "errorDeleting": "Error al eliminar datos sin conexión",
+  "changesSynced": "{{count}} cambio(s) sincronizado(s)",
+  "changesFailedToSync": "{{count}} cambio(s) no pudieron sincronizarse",
+  "retryingFailedOperations": "Reintentando {{count}} operaciones fallidas",
+  "queueCleared": "Cola de sincronización limpiada"
 }

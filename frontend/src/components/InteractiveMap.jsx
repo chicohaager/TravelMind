@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin, Hotel, Coffee, UtensilsCrossed, Camera, Mountain, Ship, Plane } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // Fix Leaflet default marker icon issue
 delete L.Icon.Default.prototype._getIconUrl
@@ -62,6 +63,23 @@ function MapCenterController({ places }) {
   return null
 }
 
+// Category colors for legend
+const categoryColors = {
+  restaurant: '#ef4444',
+  attraction: '#8b5cf6',
+  hotel: '#3b82f6',
+  museum: '#f59e0b',
+  park: '#22c55e',
+  beach: '#06b6d4',
+  shopping: '#ec4899',
+  viewpoint: '#6366f1',
+  nightlife: '#a855f7',
+  other: '#6b7280',
+  sight: '#8b5cf6',
+  activity: '#f97316',
+  transport: '#64748b'
+}
+
 export default function InteractiveMap({
   places = [],
   routes = [],
@@ -71,6 +89,7 @@ export default function InteractiveMap({
   center = [51.505, -0.09],
   zoom = 13
 }) {
+  const { t } = useTranslation(['map', 'places'])
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [selectedRoute, setSelectedRoute] = useState(null)
 
@@ -191,17 +210,24 @@ export default function InteractiveMap({
 
       {/* Map Legend */}
       {(places.length > 0 || routes.length > 0) && (
-        <div className="absolute bottom-4 right-4 bg-white p-3 rounded-lg shadow-lg max-w-xs z-[1000]">
-          <h4 className="font-semibold text-sm mb-2">Legend</h4>
+        <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-xl max-w-xs z-[1000] border border-gray-100">
+          <h4 className="font-bold text-sm mb-3 text-gray-800">{t('map:legend')}</h4>
 
           {/* Places legend */}
           {places.length > 0 && (
-            <div className="mb-2">
-              <div className="text-xs text-gray-600 mb-1">Places: {places.length}</div>
-              <div className="flex flex-wrap gap-1">
+            <div className="mb-3">
+              <div className="text-xs font-medium text-gray-500 mb-2">{t('map:places')}: {places.length}</div>
+              <div className="flex flex-wrap gap-1.5">
                 {Array.from(new Set(places.map(p => p.category))).filter(Boolean).map(category => (
-                  <span key={category} className="inline-block px-2 py-1 text-xs bg-gray-100 rounded-full">
-                    {category}
+                  <span
+                    key={category}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-white rounded-full shadow-sm"
+                    style={{ backgroundColor: categoryColors[category] || '#6b7280' }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-white/40"
+                    />
+                    {t(`places:categories.${category}`, category)}
                   </span>
                 ))}
               </div>
@@ -211,19 +237,21 @@ export default function InteractiveMap({
           {/* Routes legend */}
           {routes.length > 0 && (
             <div>
-              <div className="text-xs text-gray-600 mb-1">Routes: {routes.length}</div>
-              {routes.slice(0, 3).map(route => (
-                <div key={route.id} className="flex items-center gap-2 text-xs mb-1">
-                  <div
-                    className="w-4 h-0.5"
-                    style={{ backgroundColor: route.color || '#6366F1' }}
-                  />
-                  <span className="truncate">{route.name}</span>
-                </div>
-              ))}
-              {routes.length > 3 && (
-                <div className="text-xs text-gray-500 mt-1">+{routes.length - 3} more</div>
-              )}
+              <div className="text-xs font-medium text-gray-500 mb-2">{t('map:routes')}: {routes.length}</div>
+              <div className="space-y-1.5">
+                {routes.slice(0, 3).map(route => (
+                  <div key={route.id} className="flex items-center gap-2 text-xs">
+                    <div
+                      className="w-5 h-1 rounded-full"
+                      style={{ backgroundColor: route.color || '#6366F1' }}
+                    />
+                    <span className="truncate text-gray-700 font-medium">{route.name}</span>
+                  </div>
+                ))}
+                {routes.length > 3 && (
+                  <div className="text-xs text-gray-400 mt-1">{t('map:moreRoutes', { count: routes.length - 3 })}</div>
+                )}
+              </div>
             </div>
           )}
         </div>

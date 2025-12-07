@@ -1,8 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { Camera, X, FlipHorizontal, ImagePlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
 const NativeCamera = ({ onPhotoTaken, disabled = false, className = '' }) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
   const [isCameraSupported, setIsCameraSupported] = useState(true);
   const previewUrlsRef = useRef([]);
@@ -19,14 +21,14 @@ const NativeCamera = ({ onPhotoTaken, disabled = false, className = '' }) => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Bitte wähle ein Bild aus');
+      toast.error(t('common:camera.pleaseSelectImage'));
       return;
     }
 
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('Bild ist zu groß (max. 10MB)');
+      toast.error(t('common:camera.imageTooLarge'));
       return;
     }
 
@@ -46,13 +48,13 @@ const NativeCamera = ({ onPhotoTaken, disabled = false, className = '' }) => {
         type: file.type
       });
 
-      toast.success('Foto aufgenommen!');
+      toast.success(t('common:camera.photoTaken'));
 
       // Reset input
       event.target.value = '';
     } catch (error) {
       console.error('Error processing photo:', error);
-      toast.error('Fehler beim Verarbeiten des Fotos');
+      toast.error(t('common:camera.errorProcessing'));
     }
   };
 
@@ -93,13 +95,13 @@ const NativeCamera = ({ onPhotoTaken, disabled = false, className = '' }) => {
         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
       >
         <Camera size={20} />
-        <span>Foto aufnehmen</span>
+        <span>{t('common:camera.takePhoto')}</span>
       </button>
 
       <p className="text-xs text-gray-500 mt-2">
         {isCameraSupported
-          ? '📸 Öffnet deine Kamera oder Galerie'
-          : '📁 Wähle ein Foto aus deiner Galerie'}
+          ? `📸 ${t('common:camera.opensCamera')}`
+          : `📁 ${t('common:camera.selectFromGallery')}`}
       </p>
     </div>
   );

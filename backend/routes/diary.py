@@ -174,7 +174,7 @@ async def _create_diary_entry_handler(
 
 @router.post("/{trip_id}", response_model=DiaryEntryResponse, status_code=201)
 @router.post("/{trip_id}/", response_model=DiaryEntryResponse, status_code=201)
-@limiter.limit(RateLimits.DIARY_DELETE)
+@limiter.limit(RateLimits.DIARY_CREATE)
 async def create_diary_entry(
     request: Request,
     trip_id: int,
@@ -187,7 +187,7 @@ async def create_diary_entry(
 
 
 @router.put("/{entry_id}", response_model=DiaryEntryResponse)
-@limiter.limit(RateLimits.DIARY_CREATE)
+@limiter.limit(RateLimits.DIARY_UPDATE)
 async def update_diary_entry(
     request: Request,
     entry_id: int,
@@ -262,9 +262,9 @@ async def delete_diary_entry(
 async def export_diary_markdown(
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Export diary entries as Markdown"""
+    """Export diary entries as Markdown. Requires authentication."""
     # Get trip info
     result = await db.execute(select(Trip).where(Trip.id == trip_id))
     trip = result.scalar_one_or_none()
@@ -273,7 +273,7 @@ async def export_diary_markdown(
         raise HTTPException(status_code=404, detail="Trip not found")
 
     # Verify ownership
-    if current_user and trip.owner_id != current_user.id:
+    if trip.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Get diary entries
@@ -349,9 +349,9 @@ async def export_diary_markdown(
 async def export_diary_pdf(
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Export diary entries as PDF"""
+    """Export diary entries as PDF. Requires authentication."""
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -372,7 +372,7 @@ async def export_diary_pdf(
         raise HTTPException(status_code=404, detail="Trip not found")
 
     # Verify ownership
-    if current_user and trip.owner_id != current_user.id:
+    if trip.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Get diary entries
@@ -623,13 +623,15 @@ async def upload_diary_photo(
 
 
 @router.delete("/{entry_id}/photo")
+@limiter.limit(RateLimits.DIARY_DELETE)
 async def delete_diary_photo(
+    request: Request,
     entry_id: int,
     photo_url: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Delete a photo from a diary entry"""
+    """Delete a photo from a diary entry. Requires authentication."""
     # Get entry
     result = await db.execute(select(DiaryEntry).where(DiaryEntry.id == entry_id))
     entry = result.scalar_one_or_none()
@@ -638,7 +640,7 @@ async def delete_diary_photo(
         raise HTTPException(status_code=404, detail="Diary entry not found")
 
     # Verify ownership
-    if current_user and entry.author_id != current_user.id:
+    if entry.author_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Check if photo exists in entry
@@ -659,9 +661,10 @@ async def delete_diary_photo(
         file_path = UPLOAD_DIR / filename
         if file_path.exists():
             os.remove(file_path)
+            logger.info("diary_photo_file_deleted", entry_id=entry_id, filename=filename)
     except Exception as e:
         # Log error but don't fail the request
-        print(f"Error deleting file: {e}")
+        logger.warning("diary_photo_file_deletion_failed", entry_id=entry_id, error=str(e))
 
     return {
         "message": "Photo deleted successfully",
@@ -671,7 +674,7 @@ async def delete_diary_photo(
 # ==================== Audio Transcription ====================
 
 @router.post("/transcribe-audio")
-@limiter.limit(RateLimits.DIARY_DELETE)
+@limiter.limit(RateLimits.DIARY_UPLOAD)
 async def transcribe_audio(
     request: Request,
     audio: UploadFile = File(...),

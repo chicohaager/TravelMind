@@ -56,5 +56,19 @@
   "errorAdding": "Error adding",
   "errorUpdating": "Error updating",
   "errorDeleting": "Error deleting",
-  "noExpensesYet": "No expenses recorded yet."
+  "noExpensesYet": "No expenses recorded yet.",
+  "expenseAdded": "Expense added",
+  "expenseUpdated": "Expense updated",
+  "expenseDeleted": "Expense deleted",
+  "confirmDeleteExpense": "Do you really want to delete this expense?",
+  "budgetSummary": "Budget Summary",
+  "totalExpenses": "Total Expenses",
+  "byCategory": "By Category",
+  "participantOverview": "Participant Overview",
+  "balanced": "Balanced",
+  "paid": "Paid",
+  "owes": "Owes",
+  "expenses": "Expenses",
+  "addFirstExpense": "Add first expense",
+  "addParticipantsFirst": "Add participants first to record expenses."
 }

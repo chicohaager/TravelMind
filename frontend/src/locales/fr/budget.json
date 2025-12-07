@@ -56,5 +56,19 @@
   "errorAdding": "Erreur lors de l'ajout",
   "errorUpdating": "Erreur lors de la mise à jour",
   "errorDeleting": "Erreur lors de la suppression",
-  "noExpensesYet": "Aucune dépense enregistrée."
+  "noExpensesYet": "Aucune dépense enregistrée.",
+  "expenseAdded": "Dépense ajoutée",
+  "expenseUpdated": "Dépense mise à jour",
+  "expenseDeleted": "Dépense supprimée",
+  "confirmDeleteExpense": "Voulez-vous vraiment supprimer cette dépense ?",
+  "budgetSummary": "Résumé du budget",
+  "totalExpenses": "Dépenses totales",
+  "byCategory": "Par catégorie",
+  "participantOverview": "Aperçu des participants",
+  "balanced": "Équilibré",
+  "paid": "Payé",
+  "owes": "Doit",
+  "expenses": "Dépenses",
+  "addFirstExpense": "Ajouter la première dépense",
+  "addParticipantsFirst": "Ajoutez d'abord des participants pour enregistrer des dépenses."
 }

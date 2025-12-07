@@ -21,5 +21,36 @@
   "days": "jours",
   "showAll": "Tout afficher →",
   "notSet": "Non défini",
-  "none": "Aucun"
+  "none": "Aucun",
+  "camera": {
+    "takePhoto": "Prendre une photo",
+    "photoTaken": "Photo prise !",
+    "pleaseSelectImage": "Veuillez sélectionner une image",
+    "imageTooLarge": "L'image est trop grande (max. 10 Mo)",
+    "errorProcessing": "Erreur lors du traitement de la photo",
+    "opensCamera": "Ouvre votre appareil photo ou galerie",
+    "selectFromGallery": "Sélectionnez une photo de votre galerie"
+  },
+  "audioRecorder": {
+    "microphoneDenied": "Accès au microphone refusé. Veuillez autoriser l'accès dans votre navigateur.",
+    "transcriptionFailed": "La transcription a échoué.",
+    "transcriptionError": "Erreur de transcription. Veuillez vérifier que OPENAI_API_KEY est configuré.",
+    "startRecording": "Démarrer l'enregistrement",
+    "stop": "Arrêter",
+    "recording": "Enregistrement",
+    "transcribing": "Transcription...",
+    "transcribe": "Transcrire",
+    "tip": "Conseil : Cliquez sur \"Démarrer l'enregistrement\", dictez votre entrée de journal, puis cliquez sur \"Transcrire\". Le texte sera automatiquement inséré."
+  },
+  "interactiveMap": "Carte Interactive",
+  "share": {
+    "share": "Partager",
+    "shareTrip": "Partager le voyage",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié !",
+    "copyFailed": "Échec de la copie",
+    "email": "E-mail",
+    "tripTo": "Mon voyage à {{destination}}",
+    "checkOutTrip": "Découvrez mon voyage !"
+  }
 }

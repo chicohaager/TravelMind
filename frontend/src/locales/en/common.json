@@ -21,5 +21,36 @@
   "days": "days",
   "showAll": "Show all →",
   "notSet": "Not specified",
-  "none": "None"
+  "none": "None",
+  "camera": {
+    "takePhoto": "Take photo",
+    "photoTaken": "Photo taken!",
+    "pleaseSelectImage": "Please select an image",
+    "imageTooLarge": "Image is too large (max. 10MB)",
+    "errorProcessing": "Error processing photo",
+    "opensCamera": "Opens your camera or gallery",
+    "selectFromGallery": "Select a photo from your gallery"
+  },
+  "audioRecorder": {
+    "microphoneDenied": "Microphone access denied. Please allow access in your browser.",
+    "transcriptionFailed": "Transcription failed.",
+    "transcriptionError": "Transcription error. Please check if OPENAI_API_KEY is configured.",
+    "startRecording": "Start recording",
+    "stop": "Stop",
+    "recording": "Recording",
+    "transcribing": "Transcribing...",
+    "transcribe": "Transcribe",
+    "tip": "Tip: Click \"Start recording\", speak your diary entry, then click \"Transcribe\". The text will be automatically inserted."
+  },
+  "interactiveMap": "Interactive Map",
+  "share": {
+    "share": "Share",
+    "shareTrip": "Share Trip",
+    "copyLink": "Copy Link",
+    "linkCopied": "Link copied!",
+    "copyFailed": "Copy failed",
+    "email": "Email",
+    "tripTo": "My trip to {{destination}}",
+    "checkOutTrip": "Check out my trip!"
+  }
 }

@@ -1,5 +1,8 @@
 {
   "title": "Page non trouvée",
+  "subtitle": "Oups ! Cette page ne semble pas exister. Vous vous êtes peut-être perdu ?",
+  "description": "Remettons-vous sur la bonne voie.",
   "message": "La page que vous recherchez n'existe pas.",
-  "backHome": "Retour à l'accueil"
+  "backHome": "Retour à l'accueil",
+  "toTrips": "Mes voyages"
 }

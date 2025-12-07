@@ -3,5 +3,12 @@
   "syncNow": "Synchroniser maintenant",
   "lastSync": "Dernière synchronisation",
   "pendingChanges": "Modifications en attente",
-  "noConnection": "Pas de connexion internet"
+  "noConnection": "Pas de connexion internet",
+  "changeWillSync": "Hors ligne : Le changement sera synchronisé une fois connecté",
+  "dataDeleted": "Données hors ligne supprimées",
+  "errorDeleting": "Erreur lors de la suppression des données hors ligne",
+  "changesSynced": "{{count}} modification(s) synchronisée(s)",
+  "changesFailedToSync": "{{count}} modification(s) n'ont pas pu être synchronisées",
+  "retryingFailedOperations": "{{count}} opérations échouées en cours de réessai",
+  "queueCleared": "File de synchronisation vidée"
 }

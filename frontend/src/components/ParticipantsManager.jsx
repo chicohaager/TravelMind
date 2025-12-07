@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { X, Upload, UserPlus, Users as UsersIcon } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { participantsService } from '@services/api'
 import toast from 'react-hot-toast'
 
 export default function ParticipantsManager({ tripId, participants = [], isEditing = false }) {
+  const { t } = useTranslation()
   const [newParticipant, setNewParticipant] = useState({ name: '', email: '', role: '' })
   const [selectedPhoto, setSelectedPhoto] = useState(null)
   const [uploadingForId, setUploadingForId] = useState(null)
@@ -29,10 +31,10 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
 
       setNewParticipant({ name: '', email: '', role: '' })
       setSelectedPhoto(null)
-      toast.success('Teilnehmer hinzugefügt')
+      toast.success(t('tripDetail:participantAdded'))
     },
     onError: () => {
-      toast.error('Fehler beim Hinzufügen')
+      toast.error(t('tripDetail:participantAddError'))
     }
   })
 
@@ -45,10 +47,10 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
     onSuccess: () => {
       queryClient.invalidateQueries(['participants', tripId])
       setUploadingForId(null)
-      toast.success('Foto hochgeladen')
+      toast.success(t('tripDetail:participantPhotoUploaded'))
     },
     onError: () => {
-      toast.error('Fehler beim Hochladen')
+      toast.error(t('tripDetail:participantPhotoUploadError'))
       setUploadingForId(null)
     }
   })
@@ -60,10 +62,10 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['participants', tripId])
-      toast.success('Teilnehmer entfernt')
+      toast.success(t('tripDetail:participantRemoved'))
     },
     onError: () => {
-      toast.error('Fehler beim Entfernen')
+      toast.error(t('tripDetail:participantRemoveError'))
     }
   })
 
@@ -73,11 +75,11 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
       // Validate
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
       if (!allowedTypes.includes(file.type)) {
-        toast.error('Nur Bilder erlaubt')
+        toast.error(t('tripDetail:participantOnlyImages'))
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Bild zu groß (max. 5MB)')
+        toast.error(t('tripDetail:participantImageTooLarge'))
         return
       }
 
@@ -91,11 +93,11 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
     if (file) {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
       if (!allowedTypes.includes(file.type)) {
-        toast.error('Nur Bilder erlaubt')
+        toast.error(t('tripDetail:participantOnlyImages'))
         return
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Bild zu groß (max. 5MB)')
+        toast.error(t('tripDetail:participantImageTooLarge'))
         return
       }
       setSelectedPhoto(file)
@@ -104,7 +106,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
 
   const handleAddParticipant = () => {
     if (!newParticipant.name.trim()) {
-      toast.error('Name erforderlich')
+      toast.error(t('tripDetail:participantNameRequired'))
       return
     }
     addParticipantMutation.mutate(newParticipant)
@@ -118,7 +120,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
     <div>
       <label className="block text-sm font-medium mb-3">
         <UsersIcon className="w-4 h-4 inline mr-2" />
-        Teilnehmer
+        {t('tripDetail:participantsLabel')}
       </label>
 
       {/* Existing Participants */}
@@ -192,7 +194,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
             <div>
               <input
                 type="text"
-                placeholder="Name *"
+                placeholder={t('tripDetail:participantNamePlaceholder')}
                 value={newParticipant.name}
                 onChange={(e) => setNewParticipant({ ...newParticipant, name: e.target.value })}
                 className="input"
@@ -201,7 +203,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
             <div>
               <input
                 type="email"
-                placeholder="E-Mail (optional)"
+                placeholder={t('tripDetail:participantEmailPlaceholder')}
                 value={newParticipant.email}
                 onChange={(e) => setNewParticipant({ ...newParticipant, email: e.target.value })}
                 className="input"
@@ -212,7 +214,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
           <div className="flex gap-3">
             <input
               type="text"
-              placeholder="Rolle (z.B. Freund, Familie)"
+              placeholder={t('tripDetail:participantRolePlaceholder')}
               value={newParticipant.role}
               onChange={(e) => setNewParticipant({ ...newParticipant, role: e.target.value })}
               className="input flex-1"
@@ -236,13 +238,13 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
               className="btn btn-primary"
             >
               <UserPlus className="w-4 h-4" />
-              Hinzufügen
+              {t('common:add')}
             </button>
           </div>
 
           {selectedPhoto && (
             <div className="text-xs text-gray-600 dark:text-gray-400">
-              Foto ausgewählt: {selectedPhoto.name}
+              {t('tripDetail:participantPhotoSelected', { fileName: selectedPhoto.name })}
             </div>
           )}
         </div>

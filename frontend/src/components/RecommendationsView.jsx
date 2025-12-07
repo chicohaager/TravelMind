@@ -224,7 +224,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={toggleSelectAll}
-              className="btn-outline btn-sm flex items-center gap-2 rounded-full"
+              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium text-sm rounded-full flex items-center gap-2 transition-colors border border-gray-200"
             >
               <CheckCircle className="w-4 h-4" />
               {selectedRecommendations.length === recommendations.length ? t('recommendations:deselectAll') : t('recommendations:selectAll')}
@@ -234,7 +234,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
               <button
                 onClick={handleAddSelectedPlaces}
                 disabled={isAddingMultiple}
-                className="btn-primary btn-sm flex items-center gap-2 rounded-full"
+                className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium text-sm rounded-full flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
               >
                 {isAddingMultiple ? (
                   <>

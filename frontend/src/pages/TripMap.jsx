@@ -64,13 +64,13 @@ export default function TripMap() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Trip not found</h2>
-          <p className="text-gray-600 mb-4">The trip you're looking for doesn't exist.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('tripDetail:tripNotFound')}</h2>
+          <p className="text-gray-600 mb-4">{t('notFound:subtitle')}</p>
           <button
             onClick={() => navigate('/trips')}
             className="btn btn-primary"
           >
-            Back to Trips
+            {t('tripDetail:backToTrips')}
           </button>
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function TripMap() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <Map className="w-6 h-6 text-indigo-600" />
-                  {trip.title} - Interactive Map
+                  {trip.title} - {t('common:interactiveMap')}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
                   {places.length} places • {routes.length} routes
