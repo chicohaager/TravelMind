@@ -20,6 +20,17 @@ from models.database import Base, get_db
 from models.user import User
 from utils.rate_limits import limiter
 
+# Import all models to register them with Base.metadata
+from models.trip import Trip
+from models.diary import DiaryEntry
+from models.place import Place
+from models.expense import Expense
+from models.participant import Participant
+from models.settings import Settings
+from models.audit_log import AuditLog
+from models.route import Route
+from models.place_list import PlaceList
+
 # Test database URL (in-memory SQLite for speed)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
