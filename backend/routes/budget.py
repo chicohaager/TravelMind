@@ -18,24 +18,18 @@ from models.participant import Participant
 from models.trip import Trip
 from models.user import User
 from routes.auth import get_current_active_user
+from utils.access_control import verify_trip_access as shared_verify_trip_access
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
-async def verify_trip_access(trip_id: int, current_user: User, db: AsyncSession) -> Trip:
-    """Verify user has access to the trip and return the trip object."""
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    if trip.owner_id != current_user.id:
-        logger.warning("unauthorized_budget_access", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-    return trip
+async def verify_trip_access(trip_id: int, current_user: User, db: AsyncSession, require_edit: bool = False) -> Trip:
+    """
+    Verify user has access to the trip and return the trip object.
+    Uses shared access control that checks owner OR accepted participant.
+    """
+    return await shared_verify_trip_access(trip_id, current_user, db, require_edit=require_edit)
 
 
 class ExpenseCategory(str, Enum):

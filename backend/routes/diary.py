@@ -24,6 +24,7 @@ from models.diary import DiaryEntry
 from models.trip import Trip
 from models.user import User
 from routes.auth import get_current_active_user, get_optional_user
+from utils.access_control import verify_trip_access
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -93,21 +94,12 @@ async def get_diary_entries(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get all diary entries for a trip with pagination. Requires authentication and trip ownership."""
+    """Get all diary entries for a trip with pagination. Requires authentication and trip access."""
     # Enforce maximum limit
     limit = min(limit, 500)
 
-    # Verify trip exists and user has access
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # Verify ownership
-    if trip.owner_id != current_user.id:
-        logger.warning("unauthorized_diary_access", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    # Verify trip exists and user has access (owner or participant)
+    await verify_trip_access(trip_id, current_user, db, require_edit=False)
 
     # Get diary entries with pagination
     result = await db.execute(
@@ -131,18 +123,9 @@ async def _create_diary_entry_handler(
     db: AsyncSession,
     current_user: User
 ):
-    """Create a new diary entry. Requires authentication and trip ownership."""
-    # Verify trip exists
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # Verify ownership
-    if trip.owner_id != current_user.id:
-        logger.warning("unauthorized_diary_create", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    """Create a new diary entry. Requires authentication and edit permission."""
+    # Verify trip exists and user has edit access (owner or editor participant)
+    await verify_trip_access(trip_id, current_user, db, require_edit=True)
 
     # Set author
     author_id = current_user.id
@@ -264,17 +247,9 @@ async def export_diary_markdown(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Export diary entries as Markdown. Requires authentication."""
-    # Get trip info
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # Verify ownership
-    if trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    """Export diary entries as Markdown. Requires authentication and trip access."""
+    # Verify trip exists and user has access
+    trip = await verify_trip_access(trip_id, current_user, db, require_edit=False)
 
     # Get diary entries
     result = await db.execute(
@@ -351,7 +326,7 @@ async def export_diary_pdf(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Export diary entries as PDF. Requires authentication."""
+    """Export diary entries as PDF. Requires authentication and trip access."""
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -364,16 +339,8 @@ async def export_diary_pdf(
             detail="PDF export requires reportlab library. Install with: pip install reportlab"
         )
 
-    # Get trip info
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # Verify ownership
-    if trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Verify trip exists and user has access
+    trip = await verify_trip_access(trip_id, current_user, db, require_edit=False)
 
     # Get diary entries
     result = await db.execute(
@@ -655,10 +622,23 @@ async def delete_diary_photo(
     await db.commit()
     await db.refresh(entry)
 
-    # Delete file if exists
+    # Delete file if exists (with path traversal protection)
     try:
-        filename = photo_url.split('/')[-1]
+        # Security: Extract only the filename, reject any path manipulation
+        filename = Path(photo_url).name
+
+        # Validate filename doesn't contain path traversal sequences
+        if '/' in filename or '\\' in filename or '..' in filename or not filename:
+            logger.warning("photo_delete_path_traversal_attempt", entry_id=entry_id, photo_url=photo_url)
+            raise HTTPException(status_code=400, detail="Invalid photo URL")
+
         file_path = UPLOAD_DIR / filename
+
+        # Verify the resolved path is within UPLOAD_DIR
+        if not str(file_path.resolve()).startswith(str(UPLOAD_DIR.resolve())):
+            logger.warning("photo_delete_path_escape_attempt", entry_id=entry_id, photo_url=photo_url)
+            raise HTTPException(status_code=400, detail="Invalid file path")
+
         if file_path.exists():
             os.remove(file_path)
             logger.info("diary_photo_file_deleted", entry_id=entry_id, filename=filename)
@@ -674,7 +654,7 @@ async def delete_diary_photo(
 # ==================== Audio Transcription ====================
 
 @router.post("/transcribe-audio")
-@limiter.limit(RateLimits.DIARY_UPLOAD)
+@limiter.limit(RateLimits.DIARY_TRANSCRIBE)
 async def transcribe_audio(
     request: Request,
     audio: UploadFile = File(...),

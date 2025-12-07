@@ -130,7 +130,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # Validate CSRF token for state-changing requests from browser
         csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
-        csrf_header = request.headers.get(CSRF_TOKEN_NAME)
+        csrf_header = request.headers.get(CSRF_HEADER_NAME)
 
         if not csrf_cookie or not csrf_header:
             logger.warning(
