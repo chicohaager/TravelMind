@@ -56,5 +56,19 @@
   "errorAdding": "Error al añadir",
   "errorUpdating": "Error al actualizar",
   "errorDeleting": "Error al eliminar",
-  "noExpensesYet": "Aún no hay gastos registrados."
+  "noExpensesYet": "Aún no hay gastos registrados.",
+  "expenseAdded": "Gasto añadido",
+  "expenseUpdated": "Gasto actualizado",
+  "expenseDeleted": "Gasto eliminado",
+  "confirmDeleteExpense": "¿Realmente quieres eliminar este gasto?",
+  "budgetSummary": "Resumen del presupuesto",
+  "totalExpenses": "Gastos totales",
+  "byCategory": "Por categoría",
+  "participantOverview": "Resumen de participantes",
+  "balanced": "Equilibrado",
+  "paid": "Pagado",
+  "owes": "Debe",
+  "expenses": "Gastos",
+  "addFirstExpense": "Añadir primer gasto",
+  "addParticipantsFirst": "Añade participantes primero para registrar gastos."
 }

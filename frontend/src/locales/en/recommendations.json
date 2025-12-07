@@ -1,9 +1,10 @@
 {
+  "title": "Recommendations",
   "noRecommendationsSelected": "No recommendations selected",
   "aiRecommendation": "AI Recommendation",
-  "recommendationsAdded": "{count} recommendations added!",
+  "recommendationsAdded": "{{count}} recommendations added!",
   "errorAdding": "Error adding",
-  "placeAdded": "{name} added!",
+  "placeAdded": "{{name}} added!",
   "analyzingTrip": "Analyzing your trip and creating personalized recommendations...",
   "errorLoading": "Error loading",
   "recommendationsCouldNotBeLoaded": "Recommendations could not be loaded",
@@ -13,11 +14,13 @@
   "refresh": "Refresh",
   "deselectAll": "Deselect all",
   "selectAll": "Select all",
-  "addingCount": "Adding {count}...",
-  "addSelectedCount": "{count} selected add",
-  "selectedOfTotal": "{selected} of {total} selected",
+  "addingCount": "Adding {{count}}...",
+  "addSelectedCount": "Add {{count}} selected",
+  "selectedOfTotal": "{{selected}} of {{total}} selected",
   "openInGoogleMaps": "Open in Google Maps",
   "addToTrip": "Add to trip",
   "noRecommendationsAvailable": "No recommendations available",
-  "addInterestsAndPlaces": "Add interests and places to get personalized recommendations"
+  "addInterestsAndPlaces": "Add interests and places to get personalized recommendations",
+  "popular": "Popular",
+  "nearYou": "Near you"
 }

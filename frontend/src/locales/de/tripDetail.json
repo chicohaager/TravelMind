@@ -52,5 +52,19 @@
   "art": "Kunst",
   "selectInterestsPrompt": "Wähle deine Interessen aus, um personalisierte Empfehlungen zu erhalten",
   "noInterestsYet": "Noch keine Interessen ausgewählt. Klicke auf \"Bearbeiten\" um welche hinzuzufügen.",
-  "noDiaryEntriesYet": "Noch keine Tagebucheinträge. Halte deine Reiseerlebnisse fest!"
+  "noDiaryEntriesYet": "Noch keine Tagebucheinträge. Halte deine Reiseerlebnisse fest!",
+  "participantAdded": "Teilnehmer hinzugefügt",
+  "participantRemoved": "Teilnehmer entfernt",
+  "participantAddError": "Fehler beim Hinzufügen",
+  "participantRemoveError": "Fehler beim Entfernen",
+  "participantPhotoUploaded": "Foto hochgeladen",
+  "participantPhotoUploadError": "Fehler beim Hochladen",
+  "participantOnlyImages": "Nur Bilder erlaubt",
+  "participantImageTooLarge": "Bild zu groß (max. 5MB)",
+  "participantNameRequired": "Name erforderlich",
+  "participantsLabel": "Teilnehmer",
+  "participantNamePlaceholder": "Name *",
+  "participantEmailPlaceholder": "E-Mail (optional)",
+  "participantRolePlaceholder": "Rolle (z.B. Freund, Familie)",
+  "participantPhotoSelected": "Foto ausgewählt: {fileName}"
 }

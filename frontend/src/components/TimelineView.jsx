@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, CalendarDays } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -33,7 +33,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     onSuccess: () => {
       queryClient.invalidateQueries(['timeline', tripId])
       setIsAddModalOpen(false)
-      toast.success('Zur Timeline hinzugefügt')
+      toast.success(t('timeline:addedToTimeline'))
     },
     onError: (error) => {
       toast.error(error.response?.data?.detail || t('timeline:errorAdding'))
@@ -47,7 +47,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['timeline', tripId])
-      toast.success('Aus Timeline entfernt')
+      toast.success(t('timeline:removedFromTimeline'))
     },
     onError: () => {
       toast.error(t('timeline:errorDeleting'))
@@ -72,7 +72,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries(['timeline', tripId])
-      toast.success(data.message || 'Route optimiert')
+      toast.success(data.message || t('timeline:routeOptimized'))
     },
     onError: () => {
       toast.error(t('timeline:errorOptimizing'))
@@ -84,7 +84,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
   }
 
   const handleDeleteEntry = async (entryId) => {
-    if (confirm('Aus Timeline entfernen?')) {
+    if (confirm(t('timeline:removeFromTimelineConfirm'))) {
       await deleteEntryMutation.mutateAsync(entryId)
     }
   }
@@ -111,10 +111,12 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     })
   }
 
-  // Expand first day by default
-  if (timeline.length > 0 && expandedDays.size === 0) {
-    setExpandedDays(new Set([timeline[0].day_date]))
-  }
+  // Expand first day by default (moved to useEffect to avoid setState during render)
+  useEffect(() => {
+    if (timeline.length > 0 && expandedDays.size === 0) {
+      setExpandedDays(new Set([timeline[0].day_date]))
+    }
+  }, [timeline])
 
   if (isLoading) {
     return (
@@ -132,7 +134,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <CalendarDays className="w-6 h-6" />
-            Tagesplaner
+            {t('timeline:dayPlanner')}
           </h2>
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -140,7 +142,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
             disabled={!places || places.length === 0}
           >
             <Plus className="w-4 h-4" />
-            Zum Tagesplan hinzufügen
+            {t('timeline:addToDayPlan')}
           </button>
         </div>
 
@@ -156,11 +158,11 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
                 className="btn btn-primary"
               >
                 <Plus className="w-4 h-4" />
-                Ersten Eintrag hinzufügen
+                {t('timeline:addFirstEntry')}
               </button>
             ) : (
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                Füge zuerst Orte hinzu, um sie zu planen.
+                {t('timeline:addPlacesFirst')}
               </p>
             )}
           </div>

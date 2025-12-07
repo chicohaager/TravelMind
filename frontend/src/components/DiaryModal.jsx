@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { X, Calendar, MapPin, Star, Tag, Smile, Meh, Frown, Image, Upload } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { diaryService } from '@services/api'
@@ -31,17 +31,26 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photosToDelete, setPhotosToDelete] = useState([])
 
-  // Create preview URLs with automatic cleanup
+  // Track created blob URLs to properly clean them up
+  const createdUrlsRef = useRef([])
+
+  // Create preview URLs with proper cleanup to prevent memory leaks
   const previewUrls = useMemo(() => {
-    return selectedFiles.map(file => URL.createObjectURL(file))
+    // Revoke old URLs first before creating new ones
+    createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url))
+
+    // Create new URLs for current files
+    const newUrls = selectedFiles.map(file => URL.createObjectURL(file))
+    createdUrlsRef.current = newUrls
+    return newUrls
   }, [selectedFiles])
 
-  // Cleanup blob URLs on unmount or when files change
+  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
-      previewUrls.forEach(url => URL.revokeObjectURL(url))
+      createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url))
     }
-  }, [previewUrls])
+  }, [])
 
   useEffect(() => {
     if (initialData) {

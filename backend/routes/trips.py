@@ -22,8 +22,10 @@ from models.user import User
 from models.place import Place
 from models.diary import DiaryEntry
 from models.expense import Expense
+from models.participant import Participant, PermissionLevel, InvitationStatus
 from routes.auth import get_current_user, get_optional_user, get_current_active_user
 from services.audit_service import audit_service
+from sqlalchemy import or_
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -208,11 +210,89 @@ async def get_or_create_demo_user(db: AsyncSession) -> Optional[User]:
     return user
 
 
-async def verify_trip_ownership(trip: Trip, user: User) -> None:
+async def check_trip_access(
+    trip: Trip,
+    user: User,
+    db: AsyncSession,
+    require_edit: bool = False
+) -> Optional[str]:
     """
-    Verify that the user owns the trip.
+    Check if user has access to the trip.
+    Returns the permission level if access is granted, None otherwise.
+
+    Args:
+        trip: The trip to check access for
+        user: The user requesting access
+        db: Database session
+        require_edit: If True, requires edit permission (owner/editor)
+
+    Returns:
+        Permission level string or None
+    """
+    # Admin has full access to all trips
+    if user.is_superuser:
+        return PermissionLevel.OWNER.value
+
+    # Owner has full access
+    if trip.owner_id == user.id:
+        return PermissionLevel.OWNER.value
+
+    # Check if user is a participant with accepted invitation
+    result = await db.execute(
+        select(Participant).where(
+            Participant.trip_id == trip.id,
+            Participant.user_id == user.id,
+            Participant.invitation_status == InvitationStatus.ACCEPTED.value
+        )
+    )
+    participant = result.scalar_one_or_none()
+
+    if participant:
+        if require_edit and participant.permission == PermissionLevel.VIEWER.value:
+            return None
+        return participant.permission
+
+    return None
+
+
+async def verify_trip_access(
+    trip: Trip,
+    user: User,
+    db: AsyncSession,
+    require_edit: bool = False
+) -> str:
+    """
+    Verify that the user has access to the trip.
+    Raises HTTPException if access check fails.
+    Returns the permission level.
+    """
+    permission = await check_trip_access(trip, user, db, require_edit)
+
+    if permission is None:
+        logger.warning(
+            "unauthorized_trip_access",
+            trip_id=trip.id,
+            user_id=user.id,
+            owner_id=trip.owner_id,
+            require_edit=require_edit
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this trip"
+        )
+
+    return permission
+
+
+async def verify_trip_ownership(trip: Trip, user: User, db: AsyncSession = None) -> None:
+    """
+    Verify that the user owns the trip (or is admin).
     Raises HTTPException if ownership check fails.
     """
+    # Admin can do anything
+    if user.is_superuser:
+        return
+
     if trip.owner_id != user.id:
         logger.warning("unauthorized_trip_access", trip_id=trip.id, user_id=user.id, owner_id=trip.owner_id)
         raise HTTPException(
@@ -243,18 +323,47 @@ async def get_trips(
     limit = min(limit, 500)
 
     if current_user:
-        # Return only user's trips with eager loading
-        query = (
-            select(Trip)
-            .options(selectinload(Trip.places))
-            .where(Trip.owner_id == current_user.id)
-            .order_by(Trip.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-        )
-        result = await db.execute(query)
-        trips = result.scalars().all()
-        logger.info("trips_fetched", user_id=current_user.id, count=len(trips))
+        # Admin sees all trips
+        if current_user.is_superuser:
+            query = (
+                select(Trip)
+                .options(selectinload(Trip.places))
+                .order_by(Trip.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(query)
+            trips = result.scalars().all()
+            logger.info("admin_trips_fetched", user_id=current_user.id, count=len(trips))
+        else:
+            # Get trip IDs where user is participant with accepted status
+            participant_query = (
+                select(Participant.trip_id)
+                .where(
+                    Participant.user_id == current_user.id,
+                    Participant.invitation_status == InvitationStatus.ACCEPTED.value
+                )
+            )
+            participant_result = await db.execute(participant_query)
+            shared_trip_ids = [row[0] for row in participant_result.fetchall()]
+
+            # Return user's own trips + shared trips
+            query = (
+                select(Trip)
+                .options(selectinload(Trip.places))
+                .where(
+                    or_(
+                        Trip.owner_id == current_user.id,
+                        Trip.id.in_(shared_trip_ids) if shared_trip_ids else False
+                    )
+                )
+                .order_by(Trip.created_at.desc())
+                .offset(skip)
+                .limit(limit)
+            )
+            result = await db.execute(query)
+            trips = result.scalars().all()
+            logger.info("trips_fetched", user_id=current_user.id, count=len(trips), shared=len(shared_trip_ids))
     else:
         # Return demo trips if demo mode enabled
         if not ENABLE_DEMO_MODE:
@@ -274,6 +383,52 @@ async def get_trips(
     return trips
 
 
+@router.get("/invitations/pending", response_model=List[dict])
+@limiter.limit(RateLimits.TRIP_LIST)
+async def get_pending_invitations(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get all pending trip invitations for the current user.
+
+    Returns list of trips the user has been invited to but hasn't responded yet.
+    """
+    # Get pending invitations
+    result = await db.execute(
+        select(Participant, Trip)
+        .join(Trip, Participant.trip_id == Trip.id)
+        .where(
+            Participant.user_id == current_user.id,
+            Participant.invitation_status == InvitationStatus.PENDING.value
+        )
+        .order_by(Participant.created_at.desc())
+    )
+    rows = result.all()
+
+    invitations = []
+    for participant, trip in rows:
+        # Get owner info
+        owner_result = await db.execute(
+            select(User).where(User.id == trip.owner_id)
+        )
+        owner = owner_result.scalar_one_or_none()
+
+        invitations.append({
+            "participant_id": participant.id,
+            "trip_id": trip.id,
+            "trip_title": trip.title,
+            "trip_destination": trip.destination,
+            "trip_cover_image": trip.cover_image,
+            "permission": participant.permission,
+            "invited_at": participant.invited_at,
+            "invited_by": owner.username if owner else "Unknown"
+        })
+
+    return invitations
+
+
 @router.get("/{trip_id}", response_model=TripResponse)
 @limiter.limit(RateLimits.TRIP_READ)
 async def get_trip(
@@ -286,6 +441,7 @@ async def get_trip(
     Get a specific trip by ID with eager-loaded relationships.
 
     Returns detailed information about a single trip including places.
+    Access is granted if user is owner, participant, or admin.
     """
     query = select(Trip).options(
         selectinload(Trip.places),
@@ -298,11 +454,13 @@ async def get_trip(
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
-    # If user is authenticated, verify ownership
-    if current_user and trip.owner_id != current_user.id:
+    # If user is authenticated, verify access (owner, participant, or admin)
+    if current_user:
+        await verify_trip_access(trip, current_user, db, require_edit=False)
+    elif not ENABLE_DEMO_MODE:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this trip"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
         )
 
     return trip
@@ -590,3 +748,303 @@ async def geocode_location(request: Request, location: str):
     logger.info("location_geocoded", location=location, success=True)
 
     return result
+
+
+# ============================================================
+# Trip Sharing / Invitation Endpoints
+# ============================================================
+
+class ShareTripRequest(BaseModel):
+    """Request body for sharing a trip"""
+    username_or_email: str = Field(..., description="Username or email of user to invite")
+    permission: str = Field(default="viewer", description="Permission level: viewer, editor")
+
+
+class ShareParticipantResponse(BaseModel):
+    """Response model for participant in sharing context"""
+    id: int
+    trip_id: int
+    user_id: Optional[int]
+    name: str
+    email: Optional[str]
+    role: Optional[str]
+    permission: str
+    invitation_status: str
+    invited_at: Optional[datetime]
+    accepted_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+@router.post("/{trip_id}/share", response_model=ShareParticipantResponse, status_code=201)
+@limiter.limit(RateLimits.TRIP_CREATE)
+async def share_trip(
+    request: Request,
+    trip_id: int,
+    share_request: ShareTripRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Invite a user to a trip.
+
+    Creates an invitation for another user to join the trip.
+    Only owner or admin can invite others.
+    """
+    # Get trip
+    result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = result.scalar_one_or_none()
+
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    # Only owner or admin can share
+    await verify_trip_ownership(trip, current_user)
+
+    # Validate permission level
+    if share_request.permission not in [PermissionLevel.EDITOR.value, PermissionLevel.VIEWER.value]:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid permission level. Use 'editor' or 'viewer'."
+        )
+
+    # Find user by username or email
+    result = await db.execute(
+        select(User).where(
+            or_(
+                User.username == share_request.username_or_email,
+                User.email == share_request.username_or_email
+            )
+        )
+    )
+    invited_user = result.scalar_one_or_none()
+
+    if not invited_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found. Please check the username or email."
+        )
+
+    # Cannot invite yourself
+    if invited_user.id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot invite yourself to your own trip."
+        )
+
+    # Check if user is already a participant
+    result = await db.execute(
+        select(Participant).where(
+            Participant.trip_id == trip_id,
+            Participant.user_id == invited_user.id
+        )
+    )
+    existing_participant = result.scalar_one_or_none()
+
+    if existing_participant:
+        raise HTTPException(
+            status_code=400,
+            detail="User is already invited to this trip."
+        )
+
+    # Create participant invitation
+    participant = Participant(
+        trip_id=trip_id,
+        user_id=invited_user.id,
+        name=invited_user.full_name or invited_user.username,
+        email=invited_user.email,
+        permission=share_request.permission,
+        invitation_status=InvitationStatus.PENDING.value
+    )
+
+    db.add(participant)
+    await db.commit()
+    await db.refresh(participant)
+
+    logger.info(
+        "trip_shared",
+        trip_id=trip_id,
+        inviter_id=current_user.id,
+        invited_user_id=invited_user.id,
+        permission=share_request.permission
+    )
+
+    # Audit log
+    await audit_service.log_data_event(
+        db=db,
+        action="share",
+        resource_type="trip",
+        resource_id=trip_id,
+        user_id=current_user.id,
+        username=current_user.username,
+        request=request,
+        details={
+            "invited_user": invited_user.username,
+            "permission": share_request.permission
+        }
+    )
+
+    return participant
+
+
+@router.post("/{trip_id}/share/accept")
+@limiter.limit(RateLimits.TRIP_UPDATE)
+async def accept_trip_invitation(
+    request: Request,
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Accept an invitation to a trip.
+
+    Changes invitation status from pending to accepted.
+    """
+    # Find participant record for current user
+    result = await db.execute(
+        select(Participant).where(
+            Participant.trip_id == trip_id,
+            Participant.user_id == current_user.id
+        )
+    )
+    participant = result.scalar_one_or_none()
+
+    if not participant:
+        raise HTTPException(
+            status_code=404,
+            detail="No invitation found for this trip."
+        )
+
+    if participant.invitation_status == InvitationStatus.ACCEPTED.value:
+        raise HTTPException(
+            status_code=400,
+            detail="Invitation already accepted."
+        )
+
+    if participant.invitation_status == InvitationStatus.DECLINED.value:
+        raise HTTPException(
+            status_code=400,
+            detail="Invitation was already declined. Contact the trip owner for a new invitation."
+        )
+
+    # Accept invitation
+    participant.invitation_status = InvitationStatus.ACCEPTED.value
+    participant.accepted_at = datetime.now(timezone.utc)
+
+    await db.commit()
+
+    logger.info(
+        "trip_invitation_accepted",
+        trip_id=trip_id,
+        user_id=current_user.id
+    )
+
+    return {"success": True, "message": "Invitation accepted."}
+
+
+@router.post("/{trip_id}/share/decline")
+@limiter.limit(RateLimits.TRIP_UPDATE)
+async def decline_trip_invitation(
+    request: Request,
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Decline an invitation to a trip.
+
+    Changes invitation status from pending to declined.
+    """
+    # Find participant record for current user
+    result = await db.execute(
+        select(Participant).where(
+            Participant.trip_id == trip_id,
+            Participant.user_id == current_user.id
+        )
+    )
+    participant = result.scalar_one_or_none()
+
+    if not participant:
+        raise HTTPException(
+            status_code=404,
+            detail="No invitation found for this trip."
+        )
+
+    if participant.invitation_status != InvitationStatus.PENDING.value:
+        raise HTTPException(
+            status_code=400,
+            detail="Invitation is not pending."
+        )
+
+    # Decline invitation
+    participant.invitation_status = InvitationStatus.DECLINED.value
+
+    await db.commit()
+
+    logger.info(
+        "trip_invitation_declined",
+        trip_id=trip_id,
+        user_id=current_user.id
+    )
+
+    return {"success": True, "message": "Invitation declined."}
+
+
+@router.delete("/{trip_id}/participants/{participant_id}", status_code=204)
+@limiter.limit(RateLimits.TRIP_DELETE)
+async def remove_participant(
+    request: Request,
+    trip_id: int,
+    participant_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Remove a participant from a trip.
+
+    Owner can remove any participant.
+    Participants can remove themselves (leave trip).
+    """
+    # Get trip
+    result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = result.scalar_one_or_none()
+
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    # Get participant
+    result = await db.execute(
+        select(Participant).where(
+            Participant.id == participant_id,
+            Participant.trip_id == trip_id
+        )
+    )
+    participant = result.scalar_one_or_none()
+
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant not found")
+
+    # Check permission: Owner can remove anyone, users can remove themselves
+    is_owner = trip.owner_id == current_user.id or current_user.is_superuser
+    is_self = participant.user_id == current_user.id
+
+    if not is_owner and not is_self:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only remove yourself or participants if you're the owner."
+        )
+
+    await db.delete(participant)
+    await db.commit()
+
+    logger.info(
+        "participant_removed",
+        trip_id=trip_id,
+        participant_id=participant_id,
+        removed_by=current_user.id
+    )
+
+    return None
+
+

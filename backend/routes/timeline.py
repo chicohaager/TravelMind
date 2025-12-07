@@ -1,38 +1,24 @@
 """
 Timeline/Tagesplaner Router
-Day-by-day schedule management for trips
+Day-by-day schedule management for trips using Place visit_date
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, date, time
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_
+from sqlalchemy.orm import selectinload
 import math
 
+from models.database import get_db
+from models.place import Place
+from models.trip import Trip
+from models.user import User
+from routes.auth import get_current_active_user
+
 router = APIRouter()
-
-# In-Memory Storage
-timeline_entries_db = {}
-timeline_id_counter = 1
-
-
-class TimelineEntryCreate(BaseModel):
-    place_id: int = Field(..., description="ID of the place")
-    day_date: date = Field(..., description="Date for this entry")
-    start_time: Optional[time] = Field(None, description="Start time (optional)")
-    end_time: Optional[time] = Field(None, description="End time (optional)")
-    duration_minutes: Optional[int] = Field(None, description="Estimated duration in minutes")
-    notes: Optional[str] = Field(None, description="Notes for this timeline entry")
-    order: int = Field(default=0, description="Order within the day")
-
-
-class TimelineEntryUpdate(BaseModel):
-    day_date: Optional[date] = None
-    start_time: Optional[time] = None
-    end_time: Optional[time] = None
-    duration_minutes: Optional[int] = None
-    notes: Optional[str] = None
-    order: Optional[int] = None
 
 
 class TimelineEntryResponse(BaseModel):
@@ -44,9 +30,9 @@ class TimelineEntryResponse(BaseModel):
     place_latitude: float
     place_longitude: float
     day_date: date
-    start_time: Optional[time]
-    end_time: Optional[time]
-    duration_minutes: Optional[int]
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    duration_minutes: Optional[int] = None
     notes: Optional[str]
     order: int
     created_at: datetime
@@ -60,6 +46,12 @@ class DaySchedule(BaseModel):
     day_date: date
     entries: List[TimelineEntryResponse]
     total_duration_minutes: int
+
+
+class TimelineEntryUpdate(BaseModel):
+    visit_date: Optional[date] = None
+    order: Optional[int] = None
+    notes: Optional[str] = None
 
 
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -78,239 +70,317 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 @router.get("/{trip_id}/timeline", response_model=List[DaySchedule])
-async def get_timeline(trip_id: int):
-    """Get timeline for a trip, grouped by day"""
-    from routes.places import places_db
+async def get_timeline(
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get timeline for a trip, grouped by day. Requires authentication and trip ownership."""
+    # Verify trip exists and user has access
+    result = await db.execute(
+        select(Trip).where(Trip.id == trip_id)
+    )
+    trip = result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
 
-    # Get all timeline entries for this trip
-    entries = [e for e in timeline_entries_db.values() if e.get("trip_id") == trip_id]
+    # Verify trip ownership
+    if trip.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
-    # Enrich with place data
-    enriched_entries = []
-    for entry in entries:
-        place_id = entry.get("place_id")
-        place = places_db.get(place_id)
-
-        if place:
-            enriched_entries.append({
-                "id": entry["id"],
-                "trip_id": entry["trip_id"],
-                "place_id": place_id,
-                "place_name": place.get("name", "Unbekannter Ort"),
-                "place_category": place.get("category"),
-                "place_latitude": place.get("latitude", 0),
-                "place_longitude": place.get("longitude", 0),
-                "day_date": entry["day_date"],
-                "start_time": entry.get("start_time"),
-                "end_time": entry.get("end_time"),
-                "duration_minutes": entry.get("duration_minutes"),
-                "notes": entry.get("notes"),
-                "order": entry.get("order", 0),
-                "created_at": entry["created_at"]
-            })
+    # Get all places with visit_date set
+    result = await db.execute(
+        select(Place)
+        .where(and_(Place.trip_id == trip_id, Place.visit_date.isnot(None)))
+        .order_by(Place.visit_date, Place.order)
+    )
+    places = result.scalars().all()
 
     # Group by day
     days = {}
-    for entry in enriched_entries:
-        day_str = entry["day_date"]
+    for place in places:
+        day_date = place.visit_date.date() if isinstance(place.visit_date, datetime) else place.visit_date
+        day_str = day_date.isoformat()
+
         if day_str not in days:
             days[day_str] = []
+
+        entry = TimelineEntryResponse(
+            id=place.id,
+            trip_id=trip_id,
+            place_id=place.id,
+            place_name=place.name,
+            place_category=place.category,
+            place_latitude=place.latitude,
+            place_longitude=place.longitude,
+            day_date=day_date,
+            start_time=None,
+            end_time=None,
+            duration_minutes=None,
+            notes=place.notes,
+            order=place.order or 0,
+            created_at=place.created_at or datetime.now()
+        )
         days[day_str].append(entry)
 
     # Sort entries within each day by order
     for day in days.values():
-        day.sort(key=lambda x: x["order"])
+        day.sort(key=lambda x: x.order)
 
     # Build response
     result = []
-    for day_date, entries in sorted(days.items()):
-        total_duration = sum(e.get("duration_minutes", 0) for e in entries)
-        result.append({
-            "day_date": day_date,
-            "entries": entries,
-            "total_duration_minutes": total_duration
-        })
+    for day_date_str, entries in sorted(days.items()):
+        total_duration = sum(e.duration_minutes or 0 for e in entries)
+        result.append(DaySchedule(
+            day_date=date.fromisoformat(day_date_str),
+            entries=entries,
+            total_duration_minutes=total_duration
+        ))
 
     return result
 
 
-@router.post("/{trip_id}/timeline", response_model=TimelineEntryResponse, status_code=201)
-async def create_timeline_entry(trip_id: int, entry: TimelineEntryCreate):
-    """Add a place to the timeline"""
-    from routes.places import places_db
+@router.put("/{trip_id}/timeline/{place_id}")
+async def update_timeline_entry(
+    trip_id: int,
+    place_id: int,
+    update_data: TimelineEntryUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update a place's timeline data (visit_date, order, notes). Requires authentication."""
+    # Verify trip ownership first
+    trip_result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = trip_result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if trip.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
-    global timeline_id_counter
+    result = await db.execute(
+        select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id))
+    )
+    place = result.scalar_one_or_none()
 
-    # Validate place exists
-    if entry.place_id not in places_db:
+    if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
-    place = places_db[entry.place_id]
+    if update_data.visit_date is not None:
+        place.visit_date = datetime.combine(update_data.visit_date, datetime.min.time())
+    if update_data.order is not None:
+        place.order = update_data.order
+    if update_data.notes is not None:
+        place.notes = update_data.notes
 
-    # Validate place belongs to trip
-    if place.get("trip_id") != trip_id:
-        raise HTTPException(status_code=400, detail="Place does not belong to this trip")
+    await db.commit()
+    await db.refresh(place)
+
+    return {"success": True, "place_id": place.id}
+
+
+class TimelineEntryCreate(BaseModel):
+    """Request body for creating a timeline entry"""
+    place_id: int
+    day_date: date
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    notes: Optional[str] = None
+    order: Optional[int] = 0
+
+
+@router.post("/{trip_id}/timeline", response_model=TimelineEntryResponse, status_code=201)
+async def create_timeline_entry(
+    trip_id: int,
+    entry: TimelineEntryCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Add a place to the timeline by setting its visit_date. Requires authentication."""
+    # Verify trip ownership first
+    trip_result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = trip_result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if trip.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Get the place
+    result = await db.execute(
+        select(Place).where(and_(Place.id == entry.place_id, Place.trip_id == trip_id))
+    )
+    place = result.scalar_one_or_none()
+
+    if not place:
+        raise HTTPException(status_code=404, detail="Place not found")
 
     # Get max order for this day
-    day_entries = [
-        e for e in timeline_entries_db.values()
-        if e.get("trip_id") == trip_id and e.get("day_date") == entry.day_date
-    ]
-    max_order = max([e.get("order", 0) for e in day_entries], default=-1)
+    result = await db.execute(
+        select(Place)
+        .where(and_(
+            Place.trip_id == trip_id,
+            Place.visit_date.isnot(None)
+        ))
+    )
+    all_places = result.scalars().all()
 
-    new_entry = {
-        "id": timeline_id_counter,
-        "trip_id": trip_id,
-        "place_id": entry.place_id,
-        "day_date": entry.day_date.isoformat(),
-        "start_time": entry.start_time.isoformat() if entry.start_time else None,
-        "end_time": entry.end_time.isoformat() if entry.end_time else None,
-        "duration_minutes": entry.duration_minutes,
-        "notes": entry.notes,
-        "order": max_order + 1,
-        "created_at": datetime.now().isoformat()
-    }
+    day_places = [p for p in all_places if p.visit_date and p.visit_date.date() == entry.day_date]
+    max_order = max([p.order or 0 for p in day_places], default=-1)
 
-    timeline_entries_db[timeline_id_counter] = new_entry
-    timeline_id_counter += 1
+    # Update place with timeline data
+    place.visit_date = datetime.combine(entry.day_date, datetime.min.time())
+    place.order = entry.order if entry.order else max_order + 1
+    if entry.notes:
+        place.notes = entry.notes
 
-    # Build response with place data
-    return {
-        "id": new_entry["id"],
-        "trip_id": trip_id,
-        "place_id": entry.place_id,
-        "place_name": place.get("name"),
-        "place_category": place.get("category"),
-        "place_latitude": place.get("latitude", 0),
-        "place_longitude": place.get("longitude", 0),
-        "day_date": entry.day_date,
-        "start_time": entry.start_time,
-        "end_time": entry.end_time,
-        "duration_minutes": entry.duration_minutes,
-        "notes": entry.notes,
-        "order": new_entry["order"],
-        "created_at": new_entry["created_at"]
-    }
+    await db.commit()
+    await db.refresh(place)
 
-
-@router.put("/timeline/{entry_id}", response_model=TimelineEntryResponse)
-async def update_timeline_entry(entry_id: int, entry: TimelineEntryUpdate):
-    """Update a timeline entry"""
-    from routes.places import places_db
-
-    if entry_id not in timeline_entries_db:
-        raise HTTPException(status_code=404, detail="Timeline entry not found")
-
-    existing = timeline_entries_db[entry_id]
-
-    # Update fields
-    if entry.day_date is not None:
-        existing["day_date"] = entry.day_date.isoformat()
-    if entry.start_time is not None:
-        existing["start_time"] = entry.start_time.isoformat()
-    if entry.end_time is not None:
-        existing["end_time"] = entry.end_time.isoformat()
-    if entry.duration_minutes is not None:
-        existing["duration_minutes"] = entry.duration_minutes
-    if entry.notes is not None:
-        existing["notes"] = entry.notes
-    if entry.order is not None:
-        existing["order"] = entry.order
-
-    # Get place data for response
-    place = places_db.get(existing["place_id"], {})
-
-    return {
-        "id": existing["id"],
-        "trip_id": existing["trip_id"],
-        "place_id": existing["place_id"],
-        "place_name": place.get("name", "Unbekannter Ort"),
-        "place_category": place.get("category"),
-        "place_latitude": place.get("latitude", 0),
-        "place_longitude": place.get("longitude", 0),
-        "day_date": existing["day_date"],
-        "start_time": existing.get("start_time"),
-        "end_time": existing.get("end_time"),
-        "duration_minutes": existing.get("duration_minutes"),
-        "notes": existing.get("notes"),
-        "order": existing.get("order", 0),
-        "created_at": existing["created_at"]
-    }
+    # Return TimelineEntryResponse
+    return TimelineEntryResponse(
+        id=place.id,
+        trip_id=trip_id,
+        place_id=place.id,
+        place_name=place.name,
+        place_category=place.category,
+        place_latitude=place.latitude,
+        place_longitude=place.longitude,
+        day_date=entry.day_date,
+        start_time=entry.start_time,
+        end_time=entry.end_time,
+        duration_minutes=entry.duration_minutes,
+        notes=place.notes,
+        order=place.order or 0,
+        created_at=place.created_at or datetime.now()
+    )
 
 
-@router.delete("/timeline/{entry_id}", status_code=204)
-async def delete_timeline_entry(entry_id: int):
-    """Remove a place from the timeline"""
-    if entry_id not in timeline_entries_db:
-        raise HTTPException(status_code=404, detail="Timeline entry not found")
+@router.delete("/{trip_id}/timeline/{place_id}")
+async def remove_from_timeline(
+    trip_id: int,
+    place_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Remove a place from the timeline by clearing its visit_date. Requires authentication."""
+    # Verify trip ownership first
+    trip_result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = trip_result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if trip.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
-    del timeline_entries_db[entry_id]
-    return None
+    result = await db.execute(
+        select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id))
+    )
+    place = result.scalar_one_or_none()
 
+    if not place:
+        raise HTTPException(status_code=404, detail="Place not found")
 
-@router.post("/{trip_id}/timeline/reorder")
-async def reorder_timeline(trip_id: int, entry_ids: List[int]):
-    """Reorder timeline entries (e.g., after drag & drop)"""
-    for index, entry_id in enumerate(entry_ids):
-        if entry_id in timeline_entries_db and timeline_entries_db[entry_id].get("trip_id") == trip_id:
-            timeline_entries_db[entry_id]["order"] = index
+    place.visit_date = None
+    place.order = 0
+
+    await db.commit()
 
     return {"success": True}
 
 
+@router.post("/{trip_id}/timeline/reorder")
+async def reorder_timeline(
+    trip_id: int,
+    place_ids: List[int],
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Reorder timeline entries (e.g., after drag & drop). Requires authentication."""
+    # Verify trip ownership first
+    trip_result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = trip_result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if trip.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    for index, place_id in enumerate(place_ids):
+        result = await db.execute(
+            select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id))
+        )
+        place = result.scalar_one_or_none()
+        if place:
+            place.order = index
+
+    await db.commit()
+    return {"success": True}
+
+
 @router.post("/{trip_id}/timeline/optimize")
-async def optimize_timeline(trip_id: int, day_date: date):
+async def optimize_timeline(
+    trip_id: int,
+    day_date: date,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
     """
     Optimize timeline order for a specific day based on geographic distance.
     Uses nearest-neighbor algorithm to minimize travel distance.
+    Requires authentication.
     """
-    from routes.places import places_db
+    # Verify trip ownership first
+    trip_result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = trip_result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    if trip.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
-    # Get all entries for this day
-    day_entries = [
-        e for e in timeline_entries_db.values()
-        if e.get("trip_id") == trip_id and e.get("day_date") == day_date.isoformat()
-    ]
+    # Get all places for this day
+    result = await db.execute(
+        select(Place)
+        .where(and_(Place.trip_id == trip_id, Place.visit_date.isnot(None)))
+    )
+    all_places = result.scalars().all()
 
-    if len(day_entries) <= 1:
+    day_places = [p for p in all_places if p.visit_date and p.visit_date.date() == day_date]
+
+    if len(day_places) <= 1:
         return {"success": True, "message": "Nicht genug Einträge zum Optimieren"}
 
     # Get place coordinates
     places_with_coords = []
-    for entry in day_entries:
-        place = places_db.get(entry["place_id"])
-        if place:
-            places_with_coords.append({
-                "entry_id": entry["id"],
-                "lat": place.get("latitude", 0),
-                "lon": place.get("longitude", 0),
-                "visited": place.get("visited", False)
-            })
+    for place in day_places:
+        places_with_coords.append({
+            "place": place,
+            "lat": place.latitude,
+            "lon": place.longitude,
+            "visited": place.visited
+        })
 
     if len(places_with_coords) <= 1:
         return {"success": True, "message": "Keine Koordinaten verfügbar"}
 
     # Nearest neighbor optimization
-    # Start with first unvisited place, or first place if all unvisited
     unvisited_places = [p for p in places_with_coords if not p["visited"]]
     start_places = unvisited_places if unvisited_places else places_with_coords
 
     ordered = [start_places[0]]
-    remaining = [p for p in places_with_coords if p["entry_id"] != ordered[0]["entry_id"]]
+    remaining = [p for p in places_with_coords if p["place"].id != ordered[0]["place"].id]
 
     while remaining:
         current = ordered[-1]
-        # Find nearest remaining place
         nearest = min(
             remaining,
             key=lambda p: calculate_distance(current["lat"], current["lon"], p["lat"], p["lon"])
         )
         ordered.append(nearest)
-        remaining = [p for p in remaining if p["entry_id"] != nearest["entry_id"]]
+        remaining = [p for p in remaining if p["place"].id != nearest["place"].id]
 
     # Update order
     for index, place_data in enumerate(ordered):
-        timeline_entries_db[place_data["entry_id"]]["order"] = index
+        place_data["place"].order = index
+
+    await db.commit()
 
     return {
         "success": True,

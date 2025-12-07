@@ -2,5 +2,21 @@
   "title": "Carte",
   "showPlaces": "Afficher les lieux",
   "showRoute": "Afficher l'itinéraire",
-  "yourLocation": "Votre position"
+  "yourLocation": "Votre position",
+  "noPlacesYet": "Pas encore de lieux",
+  "addPlacesToSeeOnMap": "Ajoutez des lieux à votre voyage pour les voir sur la carte",
+  "addPlaces": "Ajouter des lieux",
+  "createRoutes": "Créer des itinéraires",
+  "needTwoPlacesForRoute": "Vous avez besoin d'au moins 2 lieux pour créer un itinéraire",
+  "addMorePlaces": "Ajouter plus de lieux",
+  "mapStatistics": "Statistiques de la carte",
+  "totalPlaces": "Total des lieux :",
+  "activeRoutes": "Itinéraires actifs :",
+  "visited": "Visités :",
+  "tip": "Conseil",
+  "dragPlacesToCreateRoutes": "Faites glisser les lieux de la liste de gauche vers l'ordre d'itinéraire à droite pour créer vos propres itinéraires. Changez les couleurs et les styles pour organiser différents jours ou thèmes !",
+  "legend": "Légende",
+  "places": "Lieux",
+  "routes": "Itinéraires",
+  "moreRoutes": "+{{count}} autres"
 }

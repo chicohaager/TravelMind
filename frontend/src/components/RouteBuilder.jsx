@@ -75,12 +75,12 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
         // Update existing route
         const response = await routesService.update(editingRoute.id, routeData)
         savedRoute = response.data
-        toast.success('Route aktualisiert!')
+        toast.success(t('routes:routeUpdated'))
       } else {
         // Create new route
         const response = await routesService.create(routeData)
         savedRoute = response.data
-        toast.success('Route erstellt!')
+        toast.success(t('routes:routeCreated'))
       }
 
       // Update routes list
@@ -159,14 +159,14 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <RouteIcon className="w-5 h-5" />
-            Routen ({routes.length})
+            {t('routes:routes')} ({routes.length})
           </h3>
           <button
             onClick={() => setIsCreating(!isCreating)}
             className="btn btn-primary btn-sm flex items-center gap-2"
           >
             {isCreating ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {isCreating ? 'Abbrechen' : 'Neue Route'}
+            {isCreating ? t('routes:cancelRoute') : t('routes:newRoute')}
           </button>
         </div>
 
@@ -184,7 +184,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium truncate">{route.name}</h4>
                   <p className="text-sm text-gray-500">
-                    {route.place_ids.length} Stopps
+                    {route.place_ids.length} {t('routes:stops')}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -192,13 +192,13 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                     onClick={() => editRoute(route)}
                     className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                   >
-                    Bearbeiten
+                    {t('routes:editRoute')}
                   </button>
                   <button
                     onClick={() => handleDeleteRoute(route.id)}
                     className="text-sm text-red-600 hover:text-red-700 font-medium"
                   >
-                    Löschen
+                    {t('routes:deleteRoute')}
                   </button>
                 </div>
               </div>
@@ -212,32 +212,32 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="card">
             <h3 className="text-lg font-semibold mb-4">
-              {editingRoute ? 'Route bearbeiten' : 'Neue Route erstellen'}
+              {editingRoute ? t('routes:editRouteTitle') : t('routes:createNewRoute')}
             </h3>
 
             {/* Route Details */}
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Routenname *
+                  {t('routes:routeName')}
                 </label>
                 <input
                   type="text"
                   value={newRoute.name}
                   onChange={(e) => setNewRoute({ ...newRoute, name: e.target.value })}
-                  placeholder="z.B. Tag 1: Stadttour"
+                  placeholder={t('routes:routeNamePlaceholder')}
                   className="input w-full"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Beschreibung
+                  {t('routes:description')}
                 </label>
                 <textarea
                   value={newRoute.description}
                   onChange={(e) => setNewRoute({ ...newRoute, description: e.target.value })}
-                  placeholder="Optionale Beschreibung..."
+                  placeholder={t('routes:descriptionPlaceholder')}
                   className="input w-full"
                   rows="2"
                 />
@@ -247,21 +247,21 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                 <ColorPicker
                   value={newRoute.color}
                   onChange={(color) => setNewRoute({ ...newRoute, color })}
-                  label="Linienfarbe"
+                  label={t('routes:lineColor')}
                 />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Linienstil
+                    {t('routes:lineStyle')}
                   </label>
                   <select
                     value={newRoute.line_style}
                     onChange={(e) => setNewRoute({ ...newRoute, line_style: e.target.value })}
                     className="input w-full"
                   >
-                    <option value="solid">Durchgezogen</option>
-                    <option value="dashed">Gestrichelt</option>
-                    <option value="dotted">Gepunktet</option>
+                    <option value="solid">{t('routes:lineSolid')}</option>
+                    <option value="dashed">{t('routes:lineDashed')}</option>
+                    <option value="dotted">{t('routes:lineDotted')}</option>
                   </select>
                 </div>
               </div>
@@ -271,7 +271,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
             <div className="grid md:grid-cols-2 gap-4">
               {/* Available Places */}
               <div>
-                <h4 className="font-medium mb-2">Verfügbare Orte</h4>
+                <h4 className="font-medium mb-2">{t('routes:availablePlaces')}</h4>
                 <Droppable droppableId="places" isDropDisabled>
                   {(provided) => (
                     <div
@@ -319,7 +319,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
               {/* Route Order */}
               <div>
-                <h4 className="font-medium mb-2">Routen-Reihenfolge ({newRoute.place_ids.length})</h4>
+                <h4 className="font-medium mb-2">{t('routes:routeOrder')} ({newRoute.place_ids.length})</h4>
                 <Droppable droppableId="route-places">
                   {(provided) => (
                     <div
@@ -371,7 +371,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                       {provided.placeholder}
                       {newRoute.place_ids.length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-8">
-                          Ziehe Orte hierher um eine Route zu erstellen
+                          {t('routes:dragPlacesHere')}
                         </p>
                       )}
                     </div>
@@ -388,13 +388,13 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                 disabled={!newRoute.name || newRoute.place_ids.length < 2}
               >
                 <Save className="w-4 h-4" />
-                {editingRoute ? 'Route aktualisieren' : 'Route speichern'}
+                {editingRoute ? t('routes:updateRoute') : t('routes:saveRoute')}
               </button>
               <button
                 onClick={resetForm}
                 className="btn btn-outline"
               >
-                Abbrechen
+                {t('routes:cancelRoute')}
               </button>
             </div>
           </div>

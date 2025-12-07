@@ -56,5 +56,19 @@
   "errorAdding": "Fehler beim Hinzufügen",
   "errorUpdating": "Fehler beim Aktualisieren",
   "errorDeleting": "Fehler beim Löschen",
-  "noExpensesYet": "Noch keine Ausgaben erfasst."
+  "noExpensesYet": "Noch keine Ausgaben erfasst.",
+  "expenseAdded": "Ausgabe hinzugefügt",
+  "expenseUpdated": "Ausgabe aktualisiert",
+  "expenseDeleted": "Ausgabe gelöscht",
+  "confirmDeleteExpense": "Möchtest du diese Ausgabe wirklich löschen?",
+  "budgetSummary": "Budget-Übersicht",
+  "totalExpenses": "Gesamtausgaben",
+  "byCategory": "Nach Kategorie",
+  "participantOverview": "Teilnehmer-Übersicht",
+  "balanced": "Ausgeglichen",
+  "paid": "Bezahlt",
+  "owes": "Schuldet",
+  "expenses": "Ausgaben",
+  "addFirstExpense": "Erste Ausgabe hinzufügen",
+  "addParticipantsFirst": "Füge zuerst Teilnehmer hinzu, um Ausgaben zu erfassen."
 }

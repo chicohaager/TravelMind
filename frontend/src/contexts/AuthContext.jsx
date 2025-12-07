@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { authService } from '@services/api'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
+  const { t } = useTranslation()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [token, setToken] = useState(localStorage.getItem('token'))
@@ -43,10 +45,10 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', access_token)
       setToken(access_token)
       await loadUser()
-      toast.success('Registrierung erfolgreich!')
+      toast.success(t('auth:registrationSuccessful'))
       return true
     } catch (error) {
-      const message = error.response?.data?.detail || 'Registrierung fehlgeschlagen'
+      const message = error.response?.data?.detail || t('auth:registrationFailed')
       toast.error(message)
       return false
     }
@@ -59,10 +61,10 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', access_token)
       setToken(access_token)
       await loadUser()
-      toast.success('Erfolgreich angemeldet!')
+      toast.success(t('auth:loginSuccessful'))
       return true
     } catch (error) {
-      const message = error.response?.data?.detail || 'Anmeldung fehlgeschlagen'
+      const message = error.response?.data?.detail || t('auth:loginFailed')
       toast.error(message)
       return false
     }
@@ -72,7 +74,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
-    toast.success('Erfolgreich abgemeldet')
+    toast.success(t('auth:logoutSuccessful'))
   }
 
   const value = {

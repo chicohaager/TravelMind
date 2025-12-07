@@ -21,5 +21,36 @@
   "days": "días",
   "showAll": "Ver todo →",
   "notSet": "No especificado",
-  "none": "Ninguno"
+  "none": "Ninguno",
+  "camera": {
+    "takePhoto": "Tomar foto",
+    "photoTaken": "¡Foto tomada!",
+    "pleaseSelectImage": "Por favor selecciona una imagen",
+    "imageTooLarge": "La imagen es demasiado grande (máx. 10MB)",
+    "errorProcessing": "Error al procesar la foto",
+    "opensCamera": "Abre tu cámara o galería",
+    "selectFromGallery": "Selecciona una foto de tu galería"
+  },
+  "audioRecorder": {
+    "microphoneDenied": "Acceso al micrófono denegado. Por favor permite el acceso en tu navegador.",
+    "transcriptionFailed": "La transcripción falló.",
+    "transcriptionError": "Error de transcripción. Por favor verifica que OPENAI_API_KEY esté configurado.",
+    "startRecording": "Iniciar grabación",
+    "stop": "Detener",
+    "recording": "Grabando",
+    "transcribing": "Transcribiendo...",
+    "transcribe": "Transcribir",
+    "tip": "Consejo: Haz clic en \"Iniciar grabación\", dicta tu entrada del diario y luego haz clic en \"Transcribir\". El texto se insertará automáticamente."
+  },
+  "interactiveMap": "Mapa Interactivo",
+  "share": {
+    "share": "Compartir",
+    "shareTrip": "Compartir viaje",
+    "copyLink": "Copiar enlace",
+    "linkCopied": "¡Enlace copiado!",
+    "copyFailed": "Error al copiar",
+    "email": "Correo",
+    "tripTo": "Mi viaje a {{destination}}",
+    "checkOutTrip": "¡Mira mi viaje!"
+  }
 }
