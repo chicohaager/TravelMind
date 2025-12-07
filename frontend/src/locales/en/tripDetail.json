@@ -52,5 +52,19 @@
   "art": "Art",
   "selectInterestsPrompt": "Select your interests to get personalized recommendations",
   "noInterestsYet": "No interests selected yet. Click \"Edit\" to add some.",
-  "noDiaryEntriesYet": "No diary entries yet. Capture your travel experiences!"
+  "noDiaryEntriesYet": "No diary entries yet. Capture your travel experiences!",
+  "participantAdded": "Participant added",
+  "participantRemoved": "Participant removed",
+  "participantAddError": "Error adding",
+  "participantRemoveError": "Error removing",
+  "participantPhotoUploaded": "Photo uploaded",
+  "participantPhotoUploadError": "Error uploading",
+  "participantOnlyImages": "Only images allowed",
+  "participantImageTooLarge": "Image too large (max. 5MB)",
+  "participantNameRequired": "Name required",
+  "participantsLabel": "Participants",
+  "participantNamePlaceholder": "Name *",
+  "participantEmailPlaceholder": "Email (optional)",
+  "participantRolePlaceholder": "Role (e.g. Friend, Family)",
+  "participantPhotoSelected": "Photo selected: {fileName}"
 }

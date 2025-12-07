@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Mic, Square, Upload, X, Loader } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 
 const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
+  const { t } = useTranslation();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -56,7 +58,7 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
 
     } catch (err) {
       console.error('Error starting recording:', err);
-      setError('Mikrofon-Zugriff verweigert. Bitte erlaube den Zugriff in deinem Browser.');
+      setError(t('common:audioRecorder.microphoneDenied'));
     }
   };
 
@@ -99,12 +101,12 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
         setAudioBlob(null);
         setRecordingTime(0);
       } else {
-        setError('Transkription fehlgeschlagen.');
+        setError(t('common:audioRecorder.transcriptionFailed'));
       }
 
     } catch (err) {
       console.error('Error transcribing audio:', err);
-      setError(err.response?.data?.detail || 'Fehler bei der Transkription. Bitte prüfe ob OPENAI_API_KEY konfiguriert ist.');
+      setError(err.response?.data?.detail || t('common:audioRecorder.transcriptionError'));
     } finally {
       setIsProcessing(false);
     }
@@ -141,7 +143,7 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
                 className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Mic size={20} />
-                <span>Aufnahme starten</span>
+                <span>{t('common:audioRecorder.startRecording')}</span>
               </button>
             ) : (
               <>
@@ -151,7 +153,7 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
                   className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg transition"
                 >
                   <Square size={20} />
-                  <span>Stop</span>
+                  <span>{t('common:audioRecorder.stop')}</span>
                 </button>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -165,7 +167,7 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
             <div className="flex-1">
               <div className="flex items-center gap-2 text-gray-600">
                 <Mic size={18} />
-                <span className="text-sm">Aufnahme: {formatTime(recordingTime)}</span>
+                <span className="text-sm">{t('common:audioRecorder.recording')}: {formatTime(recordingTime)}</span>
               </div>
             </div>
 
@@ -178,12 +180,12 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
               {isProcessing ? (
                 <>
                   <Loader size={20} className="animate-spin" />
-                  <span>Transkribiere...</span>
+                  <span>{t('common:audioRecorder.transcribing')}</span>
                 </>
               ) : (
                 <>
                   <Upload size={20} />
-                  <span>Transkribieren</span>
+                  <span>{t('common:audioRecorder.transcribe')}</span>
                 </>
               )}
             </button>
@@ -201,7 +203,7 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
       </div>
 
       <p className="text-xs text-gray-500 mt-2">
-        💡 Tipp: Klicke auf "Aufnahme starten", sprich deinen Tagebucheintrag und klicke dann auf "Transkribieren". Der Text wird automatisch eingefügt.
+        💡 {t('common:audioRecorder.tip')}
       </p>
     </div>
   );
