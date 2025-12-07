@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from main import app
 from models.database import Base, get_db
 from models.user import User
+from utils.rate_limits import limiter
 
 # Test database URL (in-memory SQLite for speed)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -54,17 +55,21 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Create test client with database override"""
+    """Create test client with database override and disabled rate limiting"""
 
     async def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
 
+    # Disable rate limiting for tests
+    limiter.enabled = False
+
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
+    limiter.enabled = True
 
 
 @pytest_asyncio.fixture
