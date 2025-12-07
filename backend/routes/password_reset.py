@@ -68,12 +68,16 @@ def create_reset_token(email: str, user_id: int) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verify_reset_token(token: str) -> dict:
+def verify_reset_token(token: str, password_changed_at: datetime = None) -> dict:
     """
     Verify and decode a password reset token.
 
     Returns the token payload if valid.
-    Raises HTTPException if invalid or expired.
+    Raises HTTPException if invalid, expired, or already used.
+
+    Args:
+        token: The JWT reset token
+        password_changed_at: User's password_changed_at timestamp (for invalidation check)
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -83,6 +87,19 @@ def verify_reset_token(token: str) -> dict:
                 status_code=400,
                 detail="Invalid token type"
             )
+
+        # Check if token was issued before password was changed (token already used)
+        if password_changed_at:
+            token_issued_at = datetime.fromtimestamp(
+                payload.get("exp") - (RESET_TOKEN_EXPIRE_MINUTES * 60),
+                tz=timezone.utc
+            )
+            if token_issued_at < password_changed_at:
+                logger.warning("password_reset_token_already_used", token_issued=token_issued_at, password_changed=password_changed_at)
+                raise HTTPException(
+                    status_code=400,
+                    detail="Reset token has already been used"
+                )
 
         return payload
 
@@ -203,11 +220,18 @@ async def confirm_password_reset(
     Confirm password reset with token.
 
     Verifies the reset token and updates the user's password.
+    Token is invalidated after successful use via password_changed_at timestamp.
 
     **Rate limited to 10 requests per hour per IP.**
     """
-    # Verify token
-    payload = verify_reset_token(reset_confirm.token)
+    # First decode token to get user_id (basic validation)
+    try:
+        payload = jwt.decode(reset_confirm.token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    if payload.get("type") != "password_reset":
+        raise HTTPException(status_code=400, detail="Invalid token type")
 
     user_id = payload.get("user_id")
     email = payload.get("sub")
@@ -230,9 +254,14 @@ async def confirm_password_reset(
             detail="User account is disabled"
         )
 
-    # Update password
+    # Verify token with password_changed_at check (prevents token reuse)
+    verify_reset_token(reset_confirm.token, user.password_changed_at)
+
+    # Update password and set password_changed_at to invalidate all existing reset tokens
+    now = datetime.now(timezone.utc)
     user.hashed_password = User.hash_password(reset_confirm.new_password)
-    user.updated_at = datetime.now(timezone.utc)
+    user.password_changed_at = now
+    user.updated_at = now
 
     await db.commit()
 
