@@ -58,6 +58,8 @@ typing-extensions==4.9.0
 pytest==7.4.4
 pytest-asyncio==0.23.3
 pytest-cov==4.1.0
+aiosqlite==0.19.0      # For in-memory test database
+httpx==0.26.0          # For async test client
 
 # Logging & Monitoring
 structlog==24.1.0
