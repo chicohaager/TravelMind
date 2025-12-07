@@ -72,7 +72,8 @@ class RateLimits:
     DIARY_CREATE = os.getenv("RATE_LIMIT_DIARY_CREATE", "30/minute")
     DIARY_UPDATE = os.getenv("RATE_LIMIT_DIARY_UPDATE", "30/minute")
     DIARY_DELETE = os.getenv("RATE_LIMIT_DIARY_DELETE", "20/minute")
-    DIARY_UPLOAD = os.getenv("RATE_LIMIT_DIARY_UPLOAD", "60/minute")
+    DIARY_UPLOAD = os.getenv("RATE_LIMIT_DIARY_UPLOAD", "15/minute")  # Lowered from 60 to prevent storage DoS
+    DIARY_TRANSCRIBE = os.getenv("RATE_LIMIT_DIARY_TRANSCRIBE", "10/hour")  # Audio transcription (expensive)
 
     # ===== Place Operations =====
     PLACE_LIST = os.getenv("RATE_LIMIT_PLACE_LIST", "60/minute")
