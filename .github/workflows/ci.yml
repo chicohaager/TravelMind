@@ -240,7 +240,7 @@ jobs:
           # Set test values in .env
           sed -i 's/JWT_SECRET=.*/JWT_SECRET=test-jwt-secret/' .env
           sed -i 's/SECRET_KEY=.*/SECRET_KEY=test-secret-key/' .env
-          docker-compose up -d
+          docker compose up -d
           sleep 10
 
       - name: Wait for services
@@ -258,7 +258,7 @@ jobs:
           echo "✅ Frontend is up"
 
       - name: Stop services
-        run: docker-compose down -v
+        run: docker compose down -v
         if: always()
 
   # ==================== Build Status ====================
