@@ -466,7 +466,7 @@ export default function TripDetail() {
               <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Zeitraum</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail:period')}</div>
               <div className="font-semibold">
                 {trip.start_date && trip.end_date ? (
                   <>
@@ -488,7 +488,7 @@ export default function TripDetail() {
               <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Budget</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail:budget')}</div>
               <div className="font-semibold">
                 {trip.budget ? `${trip.budget.toLocaleString('de-DE')} ${trip.currency}` : t('common:notSet')}
               </div>
@@ -571,7 +571,7 @@ export default function TripDetail() {
               {/* Description */}
               {trip.description && (
                 <div className="card">
-                  <h2 className="text-2xl font-bold mb-4">Beschreibung</h2>
+                  <h2 className="text-2xl font-bold mb-4">{t('tripDetail:description')}</h2>
                   <p className="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
                     {trip.description}
                   </p>
@@ -672,7 +672,7 @@ export default function TripDetail() {
           {/* Participants Tab */}
           {activeTab === 'participants' && (
             <div className="card">
-              <h2 className="text-2xl font-bold mb-4">Teilnehmer</h2>
+              <h2 className="text-2xl font-bold mb-4">{t('tripDetail:participants')}</h2>
               <ParticipantsManager tripId={id} participants={participants} isEditing={true} />
             </div>
           )}
@@ -683,7 +683,7 @@ export default function TripDetail() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <BookOpen className="w-6 h-6" />
-                Reisetagebuch
+                {t('tripDetail:travelDiary')}
               </h2>
               <div className="flex gap-2">
                 {diaryEntries.length > 0 && (
@@ -806,7 +806,7 @@ export default function TripDetail() {
                         <div className="text-center">
                           <strong>{trip.destination}</strong>
                           <br />
-                          <span className="text-xs text-gray-600">Reiseziel</span>
+                          <span className="text-xs text-gray-600">{t('tripDetail:destination')}</span>
                         </div>
                       </Popup>
                     </Marker>
@@ -872,7 +872,7 @@ export default function TripDetail() {
         <div className="space-y-6">
           {/* Map */}
           <div className="card">
-            <h3 className="text-lg font-bold mb-3">Karte</h3>
+            <h3 className="text-lg font-bold mb-3">{t('tripDetail:map')}</h3>
             <div className="h-64 rounded-lg overflow-hidden">
               <MapContainer
                 center={mapCenter}
@@ -896,30 +896,30 @@ export default function TripDetail() {
               className="btn btn-primary w-full mt-3 flex items-center justify-center gap-2"
             >
               <MapIcon className="w-4 h-4" />
-              Interaktive Karte & Routen
+              {t('tripDetail:interactiveMapAndRoutes')}
             </button>
           </div>
 
           {/* Stats */}
           <div className="card">
-            <h3 className="text-lg font-bold mb-3">Statistiken</h3>
+            <h3 className="text-lg font-bold mb-3">{t('tripDetail:statistics')}</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Orte</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('tripDetail:places')}</span>
                 <span className="font-semibold">{places.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Besucht</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('tripDetail:visited')}</span>
                 <span className="font-semibold">
                   {places.filter(p => p.visited).length} / {places.length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Tagebucheinträge</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('tripDetail:diaryEntries')}</span>
                 <span className="font-semibold">{diaryEntries.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Fotos</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('tripDetail:photos')}</span>
                 <span className="font-semibold">
                   {diaryEntries.reduce((acc, entry) => acc + (entry.photos?.length || 0), 0)}
                 </span>
