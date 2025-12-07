@@ -1,4 +1,5 @@
 {
+  "description": "Description",
   "overview": "Overview",
   "places": "Places",
   "timeline": "Timeline",
@@ -66,5 +67,13 @@
   "participantNamePlaceholder": "Name *",
   "participantEmailPlaceholder": "Email (optional)",
   "participantRolePlaceholder": "Role (e.g. Friend, Family)",
-  "participantPhotoSelected": "Photo selected: {fileName}"
+  "participantPhotoSelected": "Photo selected: {fileName}",
+  "period": "Period",
+  "destination": "Destination",
+  "travelDiary": "Travel Diary",
+  "interactiveMapAndRoutes": "Interactive Map & Routes",
+  "statistics": "Statistics",
+  "visited": "Visited",
+  "diaryEntries": "Diary Entries",
+  "photos": "Photos"
 }

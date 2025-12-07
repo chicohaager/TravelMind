@@ -1,4 +1,5 @@
 {
+  "description": "Descripción",
   "overview": "Resumen",
   "places": "Lugares",
   "timeline": "Línea de tiempo",
@@ -66,5 +67,13 @@
   "participantNamePlaceholder": "Nombre *",
   "participantEmailPlaceholder": "Email (opcional)",
   "participantRolePlaceholder": "Rol (ej. Amigo, Familia)",
-  "participantPhotoSelected": "Foto seleccionada: {fileName}"
+  "participantPhotoSelected": "Foto seleccionada: {fileName}",
+  "period": "Período",
+  "destination": "Destino",
+  "travelDiary": "Diario de viaje",
+  "interactiveMapAndRoutes": "Mapa interactivo y rutas",
+  "statistics": "Estadísticas",
+  "visited": "Visitado",
+  "diaryEntries": "Entradas del diario",
+  "photos": "Fotos"
 }
