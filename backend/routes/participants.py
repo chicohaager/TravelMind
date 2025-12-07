@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import uuid
 import magic
@@ -63,10 +63,15 @@ class ParticipantUpdate(BaseModel):
 class ParticipantResponse(BaseModel):
     id: int
     trip_id: int
+    user_id: Optional[int] = None
     name: str
     email: Optional[str]
     role: Optional[str]
     photo_url: Optional[str]
+    permission: Optional[str] = "viewer"
+    invitation_status: Optional[str] = "pending"
+    invited_at: Optional[datetime] = None
+    accepted_at: Optional[datetime] = None
     created_at: datetime
 
     class Config:
@@ -211,7 +216,7 @@ async def update_participant(
     for field, value in update_data.items():
         setattr(existing_participant, field, value)
 
-    existing_participant.updated_at = datetime.now()
+    existing_participant.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(existing_participant)
@@ -276,7 +281,7 @@ async def upload_participant_photo(
 
     # Update participant with new photo
     participant.photo_url = file_url
-    participant.updated_at = datetime.now()
+    participant.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(participant)

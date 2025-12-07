@@ -4,40 +4,26 @@ Database configuration and session management
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import event
-from sqlalchemy.pool import NullPool
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get database URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/travelmind.db")
+# Get database URL from environment (PostgreSQL only)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://travelmind:travelmind@localhost:5432/travelmind")
 
-# Convert database URLs for async support
-if DATABASE_URL.startswith("sqlite:///"):
-    DATABASE_URL = DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
-elif DATABASE_URL.startswith("postgresql://"):
+# Convert database URL for async support
+if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
-# Create async engine
-if "sqlite" in DATABASE_URL:
-    # SQLite specific settings
-    engine = create_async_engine(
-        DATABASE_URL,
-        echo=False,
-        poolclass=NullPool,
-        connect_args={"check_same_thread": False}
-    )
-else:
-    # PostgreSQL settings
-    engine = create_async_engine(
-        DATABASE_URL,
-        echo=False,
-        pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20
-    )
+# Create async engine for PostgreSQL
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=20
+)
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
@@ -70,143 +56,55 @@ async def get_db() -> AsyncSession:
 async def run_migrations(conn):
     """
     Run manual migrations for schema changes that can't be done by create_all
+    PostgreSQL only.
     """
     from sqlalchemy import text
 
     try:
-        # Check if ai_provider and encrypted_api_key columns exist
-        if "sqlite" in DATABASE_URL:
-            # SQLite specific migration
-            result = await conn.execute(text("PRAGMA table_info(users)"))
-            columns = [row[1] for row in result.fetchall()]
+        # Check users table columns
+        result = await conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='users'
+        """))
+        user_columns = [row[0] for row in result.fetchall()]
 
-            if 'ai_provider' not in columns:
-                await conn.execute(text("ALTER TABLE users ADD COLUMN ai_provider VARCHAR(10)"))
-                print("  ✓ Added ai_provider column to users table")
+        if 'ai_provider' not in user_columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN ai_provider VARCHAR(10)"))
+            print("  ✓ Added ai_provider column to users table")
 
-            if 'encrypted_api_key' not in columns:
-                await conn.execute(text("ALTER TABLE users ADD COLUMN encrypted_api_key TEXT"))
-                print("  ✓ Added encrypted_api_key column to users table")
-        else:
-            # PostgreSQL specific migration
-            result = await conn.execute(text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name='users'
-            """))
-            columns = [row[0] for row in result.fetchall()]
+        if 'encrypted_api_key' not in user_columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN encrypted_api_key TEXT"))
+            print("  ✓ Added encrypted_api_key column to users table")
 
-            if 'ai_provider' not in columns:
-                await conn.execute(text("ALTER TABLE users ADD COLUMN ai_provider VARCHAR(10)"))
-                print("  ✓ Added ai_provider column to users table")
+        if 'encryption_salt' not in user_columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN encryption_salt VARCHAR(32)"))
+            print("  ✓ Added encryption_salt column to users table")
 
-            if 'encrypted_api_key' not in columns:
-                await conn.execute(text("ALTER TABLE users ADD COLUMN encrypted_api_key TEXT"))
-                print("  ✓ Added encrypted_api_key column to users table")
+        # Check places table columns
+        result = await conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='places'
+        """))
+        place_columns = [row[0] for row in result.fetchall()]
 
-        # Add all missing columns to places table
-        if "sqlite" in DATABASE_URL:
-            result = await conn.execute(text("PRAGMA table_info(places)"))
-            columns = [row[1] for row in result.fetchall()]
+        migrations = [
+            ('color', "ALTER TABLE places ADD COLUMN color VARCHAR(7) DEFAULT '#6366F1'"),
+            ('icon_type', "ALTER TABLE places ADD COLUMN icon_type VARCHAR(50) DEFAULT 'location'"),
+            ('image_url', "ALTER TABLE places ADD COLUMN image_url VARCHAR(1000)"),
+            ('tags', "ALTER TABLE places ADD COLUMN tags JSON"),
+            ('external_links', "ALTER TABLE places ADD COLUMN external_links JSON"),
+            ('google_place_id', "ALTER TABLE places ADD COLUMN google_place_id VARCHAR(200)"),
+            ('external_rating', "ALTER TABLE places ADD COLUMN external_rating FLOAT"),
+            ('review_count', "ALTER TABLE places ADD COLUMN review_count INTEGER"),
+            ('list_id', "ALTER TABLE places ADD COLUMN list_id INTEGER REFERENCES place_lists(id) ON DELETE SET NULL"),
+        ]
 
-            if 'color' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN color VARCHAR(7) DEFAULT '#6366F1'"))
-                print("  ✓ Added color column to places table")
-
-            if 'icon_type' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN icon_type VARCHAR(50) DEFAULT 'location'"))
-                print("  ✓ Added icon_type column to places table")
-
-            if 'image_url' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN image_url VARCHAR(1000)"))
-                print("  ✓ Added image_url column to places table")
-
-            if 'tags' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN tags JSON"))
-                print("  ✓ Added tags column to places table")
-
-            if 'external_links' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN external_links JSON"))
-                print("  ✓ Added external_links column to places table")
-
-            if 'google_place_id' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN google_place_id VARCHAR(200)"))
-                print("  ✓ Added google_place_id column to places table")
-
-            if 'external_rating' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN external_rating FLOAT"))
-                print("  ✓ Added external_rating column to places table")
-
-            if 'review_count' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN review_count INTEGER"))
-                print("  ✓ Added review_count column to places table")
-
-            if 'list_id' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN list_id INTEGER REFERENCES place_lists(id) ON DELETE SET NULL"))
-                print("  ✓ Added list_id column to places table")
-        else:
-            result = await conn.execute(text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name='places'
-            """))
-            columns = [row[0] for row in result.fetchall()]
-
-            if 'color' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN color VARCHAR(7) DEFAULT '#6366F1'"))
-                print("  ✓ Added color column to places table")
-
-            if 'icon_type' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN icon_type VARCHAR(50) DEFAULT 'location'"))
-                print("  ✓ Added icon_type column to places table")
-
-            if 'image_url' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN image_url VARCHAR(1000)"))
-                print("  ✓ Added image_url column to places table")
-
-            if 'tags' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN tags JSON"))
-                print("  ✓ Added tags column to places table")
-
-            if 'external_links' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN external_links JSON"))
-                print("  ✓ Added external_links column to places table")
-
-            if 'google_place_id' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN google_place_id VARCHAR(200)"))
-                print("  ✓ Added google_place_id column to places table")
-
-            if 'external_rating' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN external_rating FLOAT"))
-                print("  ✓ Added external_rating column to places table")
-
-            if 'review_count' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN review_count INTEGER"))
-                print("  ✓ Added review_count column to places table")
-
-            if 'list_id' not in columns:
-                await conn.execute(text("ALTER TABLE places ADD COLUMN list_id INTEGER REFERENCES place_lists(id) ON DELETE SET NULL"))
-                print("  ✓ Added list_id column to places table")
-
-        # Add encryption_salt to users table
-        if "sqlite" in DATABASE_URL:
-            result = await conn.execute(text("PRAGMA table_info(users)"))
-            columns = [row[1] for row in result.fetchall()]
-
-            if 'encryption_salt' not in columns:
-                await conn.execute(text("ALTER TABLE users ADD COLUMN encryption_salt VARCHAR(32)"))
-                print("  ✓ Added encryption_salt column to users table")
-        else:
-            result = await conn.execute(text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name='users'
-            """))
-            columns = [row[0] for row in result.fetchall()]
-
-            if 'encryption_salt' not in columns:
-                await conn.execute(text("ALTER TABLE users ADD COLUMN encryption_salt VARCHAR(32)"))
-                print("  ✓ Added encryption_salt column to users table")
+        for column, sql in migrations:
+            if column not in place_columns:
+                await conn.execute(text(sql))
+                print(f"  ✓ Added {column} column to places table")
 
     except Exception as e:
         print(f"  ⚠️  Migration warning: {e}")
@@ -214,19 +112,14 @@ async def run_migrations(conn):
 
 async def init_default_settings(conn):
     """
-    Initialize default application settings
+    Initialize default application settings (PostgreSQL only)
     """
     from sqlalchemy import text
-    from models.settings import Settings
 
     try:
-        # Check if settings table exists and has data
-        if "sqlite" in DATABASE_URL:
-            result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'"))
-            table_exists = result.fetchone() is not None
-        else:
-            result = await conn.execute(text("SELECT to_regclass('settings')"))
-            table_exists = result.scalar() is not None
+        # Check if settings table exists
+        result = await conn.execute(text("SELECT to_regclass('settings')"))
+        table_exists = result.scalar() is not None
 
         if table_exists:
             # Check if registration_open setting exists

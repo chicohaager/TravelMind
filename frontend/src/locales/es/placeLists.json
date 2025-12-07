@@ -1,6 +1,21 @@
 {
   "title": "Listas de lugares",
+  "listCreated": "Lista creada",
+  "errorCreating": "Error al crear",
+  "listUpdated": "Lista actualizada",
+  "errorUpdating": "Error al actualizar",
+  "listDeleted": "Lista eliminada",
+  "errorDeleting": "Error al eliminar",
+  "pleaseEnterTitle": "Por favor introduce un título",
+  "confirmDeleteList": "¿Eliminar lista? Los lugares no serán eliminados.",
+  "recommendedPlaces": "Lugares recomendados",
+  "deleteList": "Eliminar lista",
+  "noPlacesInList": "Aún no hay lugares en esta lista",
+  "createNewList": "Crear nueva lista",
   "createList": "Crear lista",
   "editList": "Editar lista",
-  "deleteList": "Eliminar lista"
+  "titleLabel": "Título",
+  "titlePlaceholder": "ej. \"Restaurantes\", \"Museos\"",
+  "icon": "Icono",
+  "color": "Color"
 }

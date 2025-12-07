@@ -5,6 +5,7 @@
   "startRecording": "Aufnahme starten",
   "stopRecording": "Aufnahme stoppen",
   "transcribing": "Transkribiere...",
+  "processing": "Verarbeite...",
   "result": "Transkriptionsergebnis",
   "description": "Nehme Audio auf oder lade eine Datei hoch, um sie in Text umzuwandeln",
   "record": "Aufnehmen",

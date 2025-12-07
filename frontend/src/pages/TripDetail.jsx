@@ -21,6 +21,7 @@ import ImportFromGuideModal from '@components/ImportFromGuideModal'
 import RecommendationsView from '@components/RecommendationsView'
 import PlaceListsSection from '@components/PlaceListsSection'
 import PlaceDetailModal from '@components/PlaceDetailModal'
+import ShareButton from '@components/ShareButton'
 import { useTranslation } from 'react-i18next'
 
 // Fix Leaflet icon issue
@@ -277,38 +278,54 @@ export default function TripDetail() {
 
   // Export handlers
   const handleExportMarkdown = async () => {
+    let url = null
+    let link = null
     try {
       const response = await diaryService.exportMarkdown(id)
       const blob = new Blob([response.data], { type: 'text/markdown' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
+      url = window.URL.createObjectURL(blob)
+      link = document.createElement('a')
       link.href = url
       link.download = `${trip.title.replace(/ /g, '_')}_tagebuch.md`
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
       toast.success(t('tripDetail:markdownDownloaded'))
     } catch (error) {
       toast.error(formatError(error, t('tripDetail:exportError')))
+    } finally {
+      // Clean up DOM and revoke URL even if an error occurred
+      if (link && link.parentNode) {
+        document.body.removeChild(link)
+      }
+      if (url) {
+        window.URL.revokeObjectURL(url)
+      }
     }
   }
 
   const handleExportPdf = async () => {
+    let url = null
+    let link = null
     try {
       const response = await diaryService.exportPdf(id)
       const blob = new Blob([response.data], { type: 'application/pdf' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
+      url = window.URL.createObjectURL(blob)
+      link = document.createElement('a')
       link.href = url
       link.download = `${trip.title.replace(/ /g, '_')}_tagebuch.pdf`
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
       toast.success(t('tripDetail:pdfDownloaded'))
     } catch (error) {
       toast.error(formatError(error, t('tripDetail:exportError')))
+    } finally {
+      // Clean up DOM and revoke URL even if an error occurred
+      if (link && link.parentNode) {
+        document.body.removeChild(link)
+      }
+      if (url) {
+        window.URL.revokeObjectURL(url)
+      }
     }
   }
 
@@ -425,15 +442,16 @@ export default function TripDetail() {
           </div>
         </div>
         <div className="absolute top-6 right-6 flex gap-2">
+          <ShareButton trip={trip} />
           <button
             onClick={() => navigate(`/trips/${trip.id}/edit`)}
-            className="bg-white/90 hover:bg-white p-3 rounded-lg transition-colors"
+            className="bg-white/90 hover:bg-white p-3 rounded-full transition-colors"
           >
             <Edit className="w-5 h-5 text-gray-700" />
           </button>
           <button
             onClick={() => deleteMutation.mutate()}
-            className="bg-red-500/90 hover:bg-red-500 p-3 rounded-lg transition-colors"
+            className="bg-red-500/90 hover:bg-red-500 p-3 rounded-full transition-colors"
           >
             <Trash2 className="w-5 h-5 text-white" />
           </button>
@@ -563,11 +581,11 @@ export default function TripDetail() {
               {/* Interests */}
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold">Interessen</h2>
+                  <h2 className="text-2xl font-bold">{t('tripDetail:interests')}</h2>
                   {!isEditingInterests && (
                     <button
                       onClick={handleEditInterests}
-                      className="btn-outline btn-sm flex items-center gap-2"
+                      className="px-4 py-2 bg-primary-50 hover:bg-primary-100 text-primary-600 font-medium text-sm rounded-full flex items-center gap-2 transition-colors border border-primary-200"
                     >
                       <Edit className="w-4 h-4" />
                       {t('tripDetail:editInterests')}

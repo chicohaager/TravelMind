@@ -7,5 +7,8 @@
   "currency": {
     "symbol": "$",
     "position": "before"
-  }
+  },
+  "dateShort": "MM/DD/YYYY",
+  "dateLong": "MMMM DD, YYYY",
+  "time": "h:mm A"
 }

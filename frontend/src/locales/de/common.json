@@ -21,5 +21,36 @@
   "days": "Tage",
   "showAll": "Alle anzeigen →",
   "notSet": "Nicht festgelegt",
-  "none": "Keine"
+  "none": "Keine",
+  "camera": {
+    "takePhoto": "Foto aufnehmen",
+    "photoTaken": "Foto aufgenommen!",
+    "pleaseSelectImage": "Bitte wähle ein Bild aus",
+    "imageTooLarge": "Bild ist zu groß (max. 10MB)",
+    "errorProcessing": "Fehler beim Verarbeiten des Fotos",
+    "opensCamera": "Öffnet deine Kamera oder Galerie",
+    "selectFromGallery": "Wähle ein Foto aus deiner Galerie"
+  },
+  "audioRecorder": {
+    "microphoneDenied": "Mikrofon-Zugriff verweigert. Bitte erlaube den Zugriff in deinem Browser.",
+    "transcriptionFailed": "Transkription fehlgeschlagen.",
+    "transcriptionError": "Fehler bei der Transkription. Bitte prüfe ob OPENAI_API_KEY konfiguriert ist.",
+    "startRecording": "Aufnahme starten",
+    "stop": "Stop",
+    "recording": "Aufnahme",
+    "transcribing": "Transkribiere...",
+    "transcribe": "Transkribieren",
+    "tip": "Tipp: Klicke auf \"Aufnahme starten\", sprich deinen Tagebucheintrag und klicke dann auf \"Transkribieren\". Der Text wird automatisch eingefügt."
+  },
+  "interactiveMap": "Interaktive Karte",
+  "share": {
+    "share": "Teilen",
+    "shareTrip": "Reise teilen",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert!",
+    "copyFailed": "Kopieren fehlgeschlagen",
+    "email": "E-Mail",
+    "tripTo": "Meine Reise nach {{destination}}",
+    "checkOutTrip": "Schau dir meine Reise an!"
+  }
 }

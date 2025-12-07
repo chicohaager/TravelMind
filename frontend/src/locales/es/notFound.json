@@ -1,5 +1,8 @@
 {
   "title": "Página no encontrada",
+  "subtitle": "¡Vaya! Esta página no parece existir. ¿Quizás te perdiste?",
+  "description": "Vamos a ponerte de nuevo en camino.",
   "message": "La página que buscas no existe.",
-  "backHome": "Volver al inicio"
+  "backHome": "Volver al inicio",
+  "toTrips": "A mis viajes"
 }
