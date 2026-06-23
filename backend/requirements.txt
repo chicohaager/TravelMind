@@ -38,6 +38,7 @@ beautifulsoup4==4.12.3
 # File Handling
 python-magic==0.4.27
 pillow==10.2.0
+pillow-heif==0.15.0     # Decode HEIC/HEIF (default iPhone photo format)
 aiofiles==23.2.1
 
 # PDF Generation

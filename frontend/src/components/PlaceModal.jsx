@@ -3,6 +3,7 @@ import { X, MapPin, Star, Calendar, DollarSign, Sparkles, Lightbulb, Image, Uplo
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation } from '@tanstack/react-query'
 import { tripsService, aiService, placesService } from '@services/api'
+import { getThumbUrl, onThumbError } from '@/utils/images'
 import toast from 'react-hot-toast'
 import NativeCamera from './NativeCamera'
 import { useTranslation } from 'react-i18next'
@@ -576,7 +577,9 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                       {formData.photos.map((photoUrl, index) => (
                         <div key={index} className="relative group">
                           <img
-                            src={photoUrl}
+                            src={getThumbUrl(photoUrl)}
+                            onError={onThumbError(photoUrl)}
+                            loading="lazy"
                             alt={t('places:photoLabel').replace('{index}', index + 1)}
                             className="w-full h-24 object-cover rounded-lg"
                           />

@@ -44,6 +44,13 @@ class DiaryEntry(Base):
     # Relationships
     trip = relationship("Trip", back_populates="diary_entries")
     author = relationship("User", back_populates="diary_entries")
+    media = relationship(
+        "Media",
+        back_populates="diary_entry",
+        cascade="all, delete-orphan",
+        order_by="Media.order_index",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<DiaryEntry {self.title}>"

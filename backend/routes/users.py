@@ -10,14 +10,13 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime, timezone
 from pathlib import Path
-import uuid
-import magic
 
 from models.database import get_db
 from models.user import User
 from routes.auth import get_current_active_user
 from services.audit_service import audit_service
 from utils.rate_limits import limiter, RateLimits
+from utils.images import validate_image, process_and_save
 
 router = APIRouter()
 
@@ -25,29 +24,26 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/avatars")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-
-
-def validate_image_file(contents: bytes, filename: str) -> bool:
-    """
-    Validate image file by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
 
 
 class UserProfile(BaseModel):
     id: int
     username: str
     email: EmailStr
+    full_name: Optional[str]
+    avatar_url: Optional[str]
+    bio: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PublicUserProfile(BaseModel):
+    """Public-facing profile exposed to other authenticated users (no email)."""
+    id: int
+    username: str
     full_name: Optional[str]
     avatar_url: Optional[str]
     bio: Optional[str]
@@ -169,13 +165,18 @@ async def change_password(
     return {"message": "Password changed successfully"}
 
 
-@router.get("/{user_id}", response_model=UserProfile)
+@router.get("/{user_id}", response_model=PublicUserProfile)
 @limiter.limit(RateLimits.USER_PROFILE_READ)
-async def get_user(request: Request, user_id: int, db: AsyncSession = Depends(get_db)):
+async def get_user(
+    request: Request,
+    user_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
     """
-    Get user profile by ID
+    Get the public profile of a user by ID.
 
-    Returns public profile information of any user.
+    Requires authentication. Returns only public fields (no email).
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -247,23 +248,22 @@ async def upload_avatar(
         )
 
     # Validate file type using MIME detection (not just extension)
-    if not validate_image_file(contents, file.filename):
+    if not validate_image(contents, file.filename):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid file type. Only these image types are allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # Generate unique filename
-    extension = file.filename.split(".")[-1].lower()
-    unique_filename = f"user_{current_user.id}_{uuid.uuid4()}.{extension}"
-    file_path = UPLOAD_DIR / unique_filename
-
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    # Normalize, auto-orient and compress. Avatars stay small; no thumbnail needed.
+    try:
+        processed = process_and_save(
+            contents, UPLOAD_DIR, "/uploads/avatars", make_thumb=False, full_max_edge=512
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 
     # Update user avatar URL
-    current_user.avatar_url = f"/uploads/avatars/{unique_filename}"
+    current_user.avatar_url = processed.url
     current_user.updated_at = datetime.now(timezone.utc)
 
     await db.commit()

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
+import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
 
 export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }) {
   const { t } = useTranslation()
@@ -45,8 +46,9 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
             {place.image_url && (
               <div className="relative h-48 bg-gray-200 dark:bg-gray-700 flex-shrink-0">
                 <img
-                  src={place.image_url}
+                  src={getPhotoUrl(place.image_url)}
                   alt={place.name}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
                 <button
@@ -276,7 +278,9 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                         {place.photos.map((photo, index) => (
                           <img
                             key={index}
-                            src={photo}
+                            src={getThumbUrl(photo)}
+                            onError={onThumbError(photo)}
+                            loading="lazy"
                             alt={t('places:photoAlt').replace('{name}', place.name).replace('{index}', index + 1)}
                             className="w-full h-48 object-cover rounded-lg"
                           />

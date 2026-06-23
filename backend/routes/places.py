@@ -6,13 +6,13 @@ CRUD operations for places/POIs in trips
 from fastapi import APIRouter, HTTPException, Depends, Request, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from pydantic import BaseModel, Field
+from sqlalchemy.orm import selectinload
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import List, Optional
 from datetime import datetime, timezone
 from utils.rate_limits import limiter, RateLimits
+from utils.images import validate_image, process_and_save, derive_thumb_url, delete_upload_file
 import structlog
-import uuid
-import magic
 from pathlib import Path
 
 from models.database import get_db
@@ -20,7 +20,9 @@ from models.place import Place
 from models.place_list import PlaceList
 from models.trip import Trip
 from models.user import User
+from models.media import Media
 from routes.auth import get_optional_user, get_current_active_user
+from routes.media import MediaResponse
 from services.guide_parser import guide_parser_service
 from utils.geocoding import geocode_if_missing
 
@@ -31,23 +33,7 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/places")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-
-def validate_photo_type(contents: bytes, filename: str) -> bool:
-    """
-    Validate photo file type by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
 
 
 async def verify_trip_access(trip_id: int, user: User, db: AsyncSession) -> Trip:
@@ -133,7 +119,7 @@ class PlaceResponse(BaseModel):
     currency: str
     rating: Optional[int]
     notes: Optional[str]
-    photos: List[str]
+    media: List[MediaResponse] = []
     order: int
     created_at: datetime
     external_rating: Optional[float]
@@ -141,8 +127,13 @@ class PlaceResponse(BaseModel):
     opening_hours: Optional[str]
     external_links: Optional[dict]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+    @computed_field
+    @property
+    def photos(self) -> List[str]:
+        """Backward-compatible URL list, derived from `media` (the source of truth)."""
+        return [m.url for m in self.media]
 
 
 @router.get("/{trip_id}/places", response_model=List[PlaceResponse])
@@ -167,9 +158,10 @@ async def get_places(
     # Verify trip access
     await verify_trip_access(trip_id, current_user, db)
 
-    # Get places with pagination
+    # Get places with pagination (media eager-loaded for the response)
     result = await db.execute(
         select(Place)
+        .options(selectinload(Place.media))
         .where(Place.trip_id == trip_id)
         .order_by(Place.order)
         .offset(skip)
@@ -180,6 +172,27 @@ async def get_places(
     logger.info("places_fetched", trip_id=trip_id, user_id=current_user.id, count=len(places))
 
     return places
+
+
+async def _load_place_with_media(place_id: int, db: AsyncSession) -> Place:
+    """Re-fetch a place with its media eager-loaded for the response."""
+    result = await db.execute(
+        select(Place).options(selectinload(Place.media)).where(Place.id == place_id)
+    )
+    return result.scalar_one()
+
+
+async def _create_place_media(place_id: int, trip_id: int, urls, owner_id: int, db: AsyncSession) -> None:
+    """Register a list of photo URLs as media rows for a place (used on create/import)."""
+    for i, url in enumerate(urls or []):
+        db.add(Media(
+            owner_id=owner_id,
+            trip_id=trip_id,
+            place_id=place_id,
+            url=url,
+            thumb_url=derive_thumb_url(url),
+            order_index=i,
+        ))
 
 
 @router.post("/{trip_id}/places", response_model=PlaceResponse, status_code=201)
@@ -229,7 +242,7 @@ async def create_place(
         currency=place.currency,
         rating=place.rating,
         notes=place.notes,
-        photos=place.photos,
+        photos=[],
         order=max_order + 1,
         external_rating=place.external_rating,
         review_count=place.review_count,
@@ -241,9 +254,14 @@ async def create_place(
     await db.commit()
     await db.refresh(new_place)
 
+    # Register any provided photo URLs as media (source of truth).
+    if place.photos:
+        await _create_place_media(new_place.id, trip_id, place.photos, current_user.id, db)
+        await db.commit()
+
     logger.info("place_created", place_id=new_place.id, trip_id=trip_id, user_id=current_user.id)
 
-    return new_place
+    return await _load_place_with_media(new_place.id, db)
 
 
 @router.put("/places/{place_id}", response_model=PlaceResponse)
@@ -282,19 +300,30 @@ async def update_place(
     existing_place.currency = place.currency
     existing_place.rating = place.rating
     existing_place.notes = place.notes
-    existing_place.photos = place.photos
     existing_place.external_rating = place.external_rating
     existing_place.review_count = place.review_count
     existing_place.opening_hours = place.opening_hours
     existing_place.external_links = place.external_links
     existing_place.updated_at = datetime.now(timezone.utc)
 
+    # Reconcile media with the retained photo set: the frontend sends the list of
+    # existing photos it wants to keep (removals dropped), and uploads new ones
+    # via the upload endpoint. Delete media (and files) no longer in that list.
+    retained = set(place.photos or [])
+    media_result = await db.execute(select(Media).where(Media.place_id == place_id))
+    for m in media_result.scalars().all():
+        if m.url not in retained:
+            url, thumb_url = m.url, m.thumb_url
+            await db.delete(m)
+            delete_upload_file(url)
+            if thumb_url and thumb_url != url:
+                delete_upload_file(thumb_url)
+
     await db.commit()
-    await db.refresh(existing_place)
 
     logger.info("place_updated", place_id=place_id, trip_id=existing_place.trip_id, user_id=current_user.id)
 
-    return existing_place
+    return await _load_place_with_media(place_id, db)
 
 
 @router.delete("/places/{place_id}", status_code=204)
@@ -408,14 +437,18 @@ async def get_place_lists(
     )
     lists = result.scalars().all()
 
+    # Fetch all place counts in a single grouped query (avoids N+1 COUNTs).
+    counts_result = await db.execute(
+        select(Place.list_id, func.count(Place.id))
+        .where(Place.list_id.in_([lst.id for lst in lists]) if lists else False)
+        .group_by(Place.list_id)
+    )
+    counts = {list_id: count for list_id, count in counts_result.all()}
+
     # Add place count for each list
     response_lists = []
     for lst in lists:
-        result = await db.execute(
-            select(func.count(Place.id))
-            .where(Place.list_id == lst.id)
-        )
-        place_count = result.scalar() or 0
+        place_count = counts.get(lst.id, 0)
 
         response_lists.append(PlaceListResponse(
             id=lst.id,
@@ -629,7 +662,7 @@ async def search_guides_auto(
     trip_id: int,
     request: GuideSearchRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     AI-powered destination place discovery
@@ -643,26 +676,14 @@ async def search_guides_auto(
 
     This is the easiest and most reliable way to find places for your trip!
     """
-    # Verify trip exists
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # If authenticated, verify ownership
-    if current_user and trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Require authentication and verify the user owns the trip.
+    trip = await verify_trip_access(trip_id, current_user, db)
 
     # Get user's AI service (needed for place discovery)
-    from routes.auth import get_current_active_user
     from routes.ai import get_user_ai_service
     from services.pexels_service import get_place_photo
     import json
     import asyncio
-
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required for AI features")
 
     ai_service = get_user_ai_service(current_user)
 
@@ -802,7 +823,7 @@ async def parse_guide_url(
     trip_id: int,
     request: GuideUrlRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Parse a travel guide URL and extract places
@@ -816,16 +837,8 @@ async def parse_guide_url(
 
     Uses AI to intelligently extract places from the page content.
     """
-    # Verify trip exists
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # If authenticated, verify ownership
-    if current_user and trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Require authentication and verify the user owns the trip.
+    await verify_trip_access(trip_id, current_user, db)
 
     try:
         result = await guide_parser_service.parse_guide_url(
@@ -849,23 +862,15 @@ async def import_places_bulk(
     trip_id: int,
     import_data: BulkPlaceImport,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Import multiple places at once
 
     Used after parsing a guide URL to add selected places to the trip.
     """
-    # Verify trip exists
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # If authenticated, verify ownership
-    if current_user and trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Require authentication and verify the user owns the trip.
+    trip = await verify_trip_access(trip_id, current_user, db)
 
     # Get current max order
     result = await db.execute(
@@ -903,20 +908,24 @@ async def import_places_bulk(
             currency=place_data.currency,
             rating=place_data.rating,
             notes=place_data.notes,
-            photos=place_data.photos,
+            photos=[],
             order=max_order + idx + 1
         )
 
         db.add(new_place)
-        imported_places.append(new_place)
+        imported_places.append((new_place, place_data.photos))
 
     await db.commit()
 
-    # Refresh all places
-    for place in imported_places:
+    # Register imported photo URLs as media (source of truth).
+    for place, photos in imported_places:
         await db.refresh(place)
+        if photos:
+            await _create_place_media(place.id, trip_id, photos, current_user.id, db)
+    await db.commit()
 
-    return imported_places
+    # Reload with media for the response.
+    return [await _load_place_with_media(place.id, db) for place, _ in imported_places]
 
 
 # ==================== PHOTO UPLOAD ENDPOINTS ====================
@@ -955,37 +964,52 @@ async def upload_place_photo(
         )
 
     # CRITICAL: Validate file type by content (security check)
-    if not validate_photo_type(content, file.filename):
+    if not validate_image(content, file.filename):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid file type. Only images allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # Generate unique filename
-    file_ext = file.filename.split('.')[-1].lower()
-    unique_filename = f"{uuid.uuid4()}.{file_ext}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Normalize, compress to WebP and generate a thumbnail.
+    try:
+        processed = process_and_save(content, UPLOAD_DIR, "/uploads/places")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(content)
+    # Append after existing media (preserve order).
+    count_result = await db.execute(
+        select(func.count()).select_from(Media).where(Media.place_id == place_id)
+    )
+    next_index = count_result.scalar() or 0
 
-    # Add photo to place
-    photo_url = f"/uploads/places/{unique_filename}"
-    if place.photos is None:
-        place.photos = []
-    place.photos = place.photos + [photo_url]  # Create new list for SQLAlchemy change tracking
+    new_media = Media(
+        owner_id=current_user.id,
+        trip_id=place.trip_id,
+        place_id=place_id,
+        url=processed.url,
+        thumb_url=processed.thumb_url,
+        mime_type="image/webp",
+        width=processed.width,
+        height=processed.height,
+        size_bytes=processed.size_bytes,
+        taken_at=processed.taken_at,
+        latitude=processed.latitude,
+        longitude=processed.longitude,
+        order_index=next_index,
+    )
+    db.add(new_media)
     place.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
-    await db.refresh(place)
+    await db.refresh(new_media)
 
-    logger.info("place_photo_uploaded", place_id=place_id, filename=unique_filename, user_id=current_user.id)
+    logger.info("place_photo_uploaded", place_id=place_id, media_id=new_media.id, user_id=current_user.id)
 
     return {
         "message": "Photo uploaded successfully",
-        "photo_url": photo_url,
-        "place": place
+        "photo_url": processed.url,
+        "thumb_url": processed.thumb_url,
+        "media": MediaResponse.model_validate(new_media),
     }
 
 
@@ -998,7 +1022,11 @@ async def delete_place_photo(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Delete a photo from a place"""
+    """Delete a photo (by URL) from a place.
+
+    Kept URL-based for backward compatibility; internally it removes the
+    corresponding media row (the source of truth) and its files.
+    """
     # Get place
     result = await db.execute(select(Place).where(Place.id == place_id))
     place = result.scalar_one_or_none()
@@ -1009,26 +1037,24 @@ async def delete_place_photo(
     # Verify trip ownership
     trip = await verify_trip_access(place.trip_id, current_user, db)
 
-    # Remove photo from list
-    if place.photos and photo_url in place.photos:
-        place.photos = [p for p in place.photos if p != photo_url]
-        place.updated_at = datetime.now(timezone.utc)
-
-        # Delete physical file
-        try:
-            filename = photo_url.split('/')[-1]
-            file_path = UPLOAD_DIR / filename
-            if file_path.exists():
-                file_path.unlink()
-        except Exception as e:
-            logger.warning("failed_to_delete_file", error=str(e), photo_url=photo_url)
-
-        await db.commit()
-        await db.refresh(place)
-
-        logger.info("place_photo_deleted", place_id=place_id, photo_url=photo_url, user_id=current_user.id)
-
-        return {"message": "Photo deleted successfully", "place": place}
-    else:
+    # Find the media row for this URL
+    media_result = await db.execute(
+        select(Media).where(Media.place_id == place_id, Media.url == photo_url)
+    )
+    media = media_result.scalar_one_or_none()
+    if not media:
         raise HTTPException(status_code=404, detail="Photo not found in place")
+
+    thumb_url = media.thumb_url
+    await db.delete(media)
+    place.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    delete_upload_file(photo_url)
+    if thumb_url and thumb_url != photo_url:
+        delete_upload_file(thumb_url)
+
+    logger.info("place_photo_deleted", place_id=place_id, user_id=current_user.id)
+
+    return {"message": "Photo deleted successfully"}
 
