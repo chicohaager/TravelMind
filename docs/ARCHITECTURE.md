@@ -529,31 +529,33 @@ test('user can create trip', async () => {
 
 ## Erweiterungen (Roadmap)
 
-### Phase 1 - MVP (aktuell)
-- ✅ Grundstruktur
-- ✅ Claude AI Integration
-- ✅ Design-System
-- 🚧 Datenbank-Anbindung
+### ✅ Umgesetzt
 
-### Phase 2 - Features
-- 📍 Karten-Integration (Leaflet)
-- 📸 Foto-Upload & Galerie
-- 📄 PDF-Export
-- 🔔 Benachrichtigungen
+- Grundstruktur, AI-Integration (Multi-Provider), Design-System
+- PostgreSQL-Anbindung (async SQLAlchemy, Alembic)
+- Karten-Integration (Leaflet), Foto-Upload, PDF-Export
+- Multi-User (Reisen teilen mit Rollen), Offline-First (PWA)
+- **Bild-Pipeline**: WebP-Kompression, Thumbnails, EXIF (Aufnahmedatum + GPS), HEIC/HEIF
+- **Media-Tabelle** als Source-of-Truth (Bildunterschriften, GPS, Reihenfolge) inkl. Backfill
+- **Geo-Fotos auf der Karte** (Auto-Geotagging aus EXIF)
+- **Volltextsuche** (Postgres FTS + ILIKE-Fallback, Navbar-Dropdown)
+- **Route-Code-Splitting** (React.lazy)
+- **Backup/Restore** für DB + Uploads (Skripte + Doku, ZimaOS-Anhang)
 
-### Phase 3 - Collaboration
-- 👥 Multi-User Support
-- 💬 Echtzeit-Chat (WebSocket)
-- 🔗 Reisen teilen
-- 📊 Kollaborative Planung
+### 🔜 Als Nächstes
 
-### Phase 4 - Advanced
+- 🖼️ Reise-übergreifende Foto-Galerie (nutzt die Media-Tabelle)
+- 🔗 Öffentliche, read-only Share-Links für Reisetagebücher (mit Privacy-Schalter)
+- 🗂️ Drag-&-Drop-Sortierung der Fotos (order_index ist vorbereitet)
+- 🧠 HEIC-Galerie/Lightbox-Feinschliff, Foto-Timeline
+
+### 💡 Später
+
+- 🔔 Benachrichtigungen, 📈 Analytics-Dashboard
+- 💬 Echtzeit-Kollaboration (WebSocket)
 - 📱 Native Mobile App (React Native)
-- 🌐 Offline-First (PWA)
-- 🔍 Volltextsuche
-- 📈 Analytics Dashboard
 
 ---
 
-**Dokumentations-Version**: 1.0
-**Letztes Update**: 2024-10-09
+**Dokumentations-Version**: 2.0
+**Letztes Update**: 2026-06-23
