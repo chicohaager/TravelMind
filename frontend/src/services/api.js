@@ -3,7 +3,7 @@ import axios from 'axios'
 // In development, ALWAYS use relative URLs to leverage Vite proxy
 // In production, use the configured API URL
 const isDev = import.meta.env.DEV
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8137'
 
 // Force relative URLs in development
 let baseURL

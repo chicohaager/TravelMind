@@ -422,7 +422,7 @@ stmt = select(Trip).options(
 ```
 docker-compose.yml
 ├── backend (FastAPI)
-│   └── Port 8000
+│   └── Port 8137
 ├── frontend (React/Nginx)
 │   └── Port 80/5173
 └── db (PostgreSQL)
