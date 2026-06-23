@@ -74,19 +74,19 @@ USER travelmind
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    PORT=8000
+    PORT=8137
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8137
 
 # Health check using the detailed health endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health/live || exit 1
+    CMD curl -f http://localhost:8137/api/health/live || exit 1
 
 # Run with gunicorn for production
 # Workers = 2 * CPU cores + 1 (adjust based on your server)
 CMD ["gunicorn", "main:app", \
-    "--bind", "0.0.0.0:8000", \
+    "--bind", "0.0.0.0:8137", \
     "--workers", "4", \
     "--worker-class", "uvicorn.workers.UvicornWorker", \
     "--timeout", "120", \

@@ -312,7 +312,7 @@ if __name__ == "__main__":
     import uvicorn
 
     host = os.getenv("BACKEND_HOST", "0.0.0.0")
-    port = int(os.getenv("BACKEND_PORT", "8000"))
+    port = int(os.getenv("BACKEND_PORT", "8137"))
     reload = os.getenv("BACKEND_RELOAD", "true").lower() == "true"
 
     uvicorn.run(
