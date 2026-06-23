@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/LanguageSwitcher'
+import GlobalSearch from '@components/GlobalSearch'
 
 export default function Navbar({ onMenuClick }) {
   const navigate = useNavigate()
@@ -63,6 +64,9 @@ export default function Navbar({ onMenuClick }) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Global Search (authenticated only) */}
+            {isAuthenticated && <GlobalSearch />}
+
             {/* Language Switcher */}
             <LanguageSwitcher />
 
