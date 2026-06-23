@@ -183,6 +183,27 @@ async def backfill_media(conn):
         print(f"  ⚠️  Media backfill warning: {e}")
 
 
+async def create_search_indexes(conn):
+    """
+    Create GIN full-text indexes (PostgreSQL only).
+
+    Uses the same document expressions as the search queries (routes.search)
+    so the planner can use the indexes. Idempotent via IF NOT EXISTS.
+    """
+    from sqlalchemy import text
+    from routes.search import PG_DOCS
+
+    tables = {"trip": "trips", "diary": "diary_entries", "place": "places", "media": "media"}
+    try:
+        for kind, table in tables.items():
+            await conn.execute(text(
+                f"CREATE INDEX IF NOT EXISTS ix_{table}_fts ON {table} USING GIN ({PG_DOCS[kind]})"
+            ))
+        print("  ✓ Search (GIN full-text) indexes ensured")
+    except Exception as e:
+        print(f"  ⚠️  Search index creation warning: {e}")
+
+
 async def init_default_settings(conn):
     """
     Initialize default application settings (PostgreSQL only)
@@ -231,6 +252,9 @@ async def init_db():
 
         # Backfill media rows from legacy photos arrays
         await backfill_media(conn)
+
+        # Create full-text search indexes (PostgreSQL only)
+        await create_search_indexes(conn)
 
         # Initialize default settings
         await init_default_settings(conn)

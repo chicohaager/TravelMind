@@ -181,6 +181,11 @@ export const mediaService = {
   delete: (mediaId) => api.delete(`/media/${mediaId}`),
 }
 
+// Search Service (cross-entity full-text search)
+export const searchService = {
+  search: (q) => api.get('/search', { params: { q } }),
+}
+
 // Timeline Services
 export const timelineService = {
   getTimeline: (tripId) => api.get(`/timeline/${tripId}/timeline`),
