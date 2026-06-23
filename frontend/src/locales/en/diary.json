@@ -1,5 +1,8 @@
 {
   "title": "Travel Diary",
+  "caption": "Caption",
+  "captionPlaceholder": "Add a caption…",
+  "captionSaved": "Caption saved",
   "newEntry": "New Entry",
   "editEntry": "Edit Entry",
   "deleteEntry": "Delete Entry",

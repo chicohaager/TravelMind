@@ -69,6 +69,13 @@ class Place(Base):
     # Relationships
     trip = relationship("Trip", back_populates="places")
     place_list = relationship("PlaceList", back_populates="places")
+    media = relationship(
+        "Media",
+        back_populates="place",
+        cascade="all, delete-orphan",
+        order_by="Media.order_index",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Place {self.name}>"

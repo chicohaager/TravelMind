@@ -8,6 +8,7 @@ from models.trip import Trip
 from models.diary import DiaryEntry
 from models.place import Place
 from models.place_list import PlaceList
+from models.media import Media
 
 __all__ = [
     "Base",
@@ -18,5 +19,6 @@ __all__ = [
     "Trip",
     "DiaryEntry",
     "Place",
-    "PlaceList"
+    "PlaceList",
+    "Media"
 ]

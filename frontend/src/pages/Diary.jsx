@@ -2,12 +2,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Image, MapPin, Calendar, Star, Map as MapIcon, Edit2, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { diaryService, tripsService } from '@services/api'
+import { diaryService, tripsService, mediaService } from '@services/api'
 import toast from 'react-hot-toast'
 import { useState, useEffect, useCallback } from 'react'
 import DiaryModal from '@components/DiaryModal'
 import { useTranslation } from 'react-i18next'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
 
 export default function Diary() {
   const { t } = useTranslation()
@@ -18,7 +19,8 @@ export default function Diary() {
   const [selectedEntry, setSelectedEntry] = useState(null)
   const [editingEntry, setEditingEntry] = useState(null)
   const [expandedEntries, setExpandedEntries] = useState(new Set())
-  const [lightbox, setLightbox] = useState({ open: false, photos: [], index: 0 })
+  const [lightbox, setLightbox] = useState({ open: false, items: [], index: 0 })
+  const [captionDraft, setCaptionDraft] = useState('')
 
   // Fetch all trips
   const { data: trips = [], isLoading: isLoadingTrips } = useQuery({
@@ -173,30 +175,44 @@ export default function Diary() {
     setIsModalOpen(true)
   }
 
-  const openLightbox = (photos, index) => {
-    setLightbox({ open: true, photos, index })
+  const openLightbox = (items, index) => {
+    setLightbox({ open: true, items, index })
+    setCaptionDraft(items[index]?.caption || '')
   }
 
   const closeLightbox = () => {
-    setLightbox({ open: false, photos: [], index: 0 })
+    setLightbox({ open: false, items: [], index: 0 })
   }
 
   const nextPhoto = () => {
-    setLightbox(prev => ({
-      ...prev,
-      index: (prev.index + 1) % prev.photos.length
-    }))
+    setLightbox(prev => {
+      const index = (prev.index + 1) % prev.items.length
+      setCaptionDraft(prev.items[index]?.caption || '')
+      return { ...prev, index }
+    })
   }
 
   const prevPhoto = () => {
-    setLightbox(prev => ({
-      ...prev,
-      index: (prev.index - 1 + prev.photos.length) % prev.photos.length
-    }))
+    setLightbox(prev => {
+      const index = (prev.index - 1 + prev.items.length) % prev.items.length
+      setCaptionDraft(prev.items[index]?.caption || '')
+      return { ...prev, index }
+    })
   }
 
-  const getPhotoUrl = (photo) => {
-    return photo.startsWith('http') ? photo : `${import.meta.env.VITE_API_URL}${photo}`
+  const saveCaptionMutation = useMutation({
+    mutationFn: ({ mediaId, caption }) => mediaService.updateCaption(mediaId, caption),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
+      queryClient.invalidateQueries({ queryKey: ['allDiaryEntries'] })
+      toast.success(t('diary:captionSaved', 'Bildunterschrift gespeichert'))
+    },
+    onError: () => toast.error(t('common:error', 'Fehler')),
+  })
+
+  const saveCaption = () => {
+    const current = lightbox.items[lightbox.index]
+    if (current?.id) saveCaptionMutation.mutate({ mediaId: current.id, caption: captionDraft })
   }
 
   // Keyboard navigation for lightbox
@@ -452,23 +468,26 @@ export default function Diary() {
                 </p>
 
                 {/* Photos */}
-                {entry.photos && entry.photos.length > 0 && (
+                {entry.media && entry.media.length > 0 && (
                   <div className={`flex flex-wrap gap-2 mb-3`}>
-                    {(expandedEntries.has(entry.id) ? entry.photos : entry.photos.slice(0, 3)).map((photo, i) => (
+                    {(expandedEntries.has(entry.id) ? entry.media : entry.media.slice(0, 3)).map((m, i) => (
                       <img
-                        key={i}
-                        src={getPhotoUrl(photo)}
-                        alt={`Photo ${i + 1}`}
-                        onClick={() => openLightbox(entry.photos, i)}
+                        key={m.id ?? i}
+                        src={getThumbUrl(m.url)}
+                        onError={onThumbError(m.url)}
+                        loading="lazy"
+                        alt={m.caption || `Photo ${i + 1}`}
+                        title={m.caption || undefined}
+                        onClick={() => openLightbox(entry.media, i)}
                         className={`${expandedEntries.has(entry.id) ? 'w-32 h-32' : 'w-20 h-20'} object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
                       />
                     ))}
-                    {!expandedEntries.has(entry.id) && entry.photos.length > 3 && (
+                    {!expandedEntries.has(entry.id) && entry.media.length > 3 && (
                       <div
-                        onClick={() => openLightbox(entry.photos, 3)}
+                        onClick={() => openLightbox(entry.media, 3)}
                         className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-sm text-gray-500 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       >
-                        +{entry.photos.length - 3}
+                        +{entry.media.length - 3}
                       </div>
                     )}
                   </div>
@@ -579,11 +598,11 @@ export default function Diary() {
 
           {/* Photo Counter */}
           <div className="absolute top-4 left-4 text-white text-sm">
-            {lightbox.index + 1} / {lightbox.photos.length}
+            {lightbox.index + 1} / {lightbox.items.length}
           </div>
 
           {/* Previous Button */}
-          {lightbox.photos.length > 1 && (
+          {lightbox.items.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
               className="absolute left-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
@@ -594,14 +613,14 @@ export default function Diary() {
 
           {/* Image */}
           <img
-            src={getPhotoUrl(lightbox.photos[lightbox.index])}
-            alt={`Photo ${lightbox.index + 1}`}
+            src={getPhotoUrl(lightbox.items[lightbox.index]?.url)}
+            alt={lightbox.items[lightbox.index]?.caption || `Photo ${lightbox.index + 1}`}
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[90vh] max-w-[90vw] object-contain"
+            className="max-h-[80vh] max-w-[90vw] object-contain"
           />
 
           {/* Next Button */}
-          {lightbox.photos.length > 1 && (
+          {lightbox.items.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
               className="absolute right-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
@@ -610,22 +629,48 @@ export default function Diary() {
             </button>
           )}
 
-          {/* Thumbnails */}
-          {lightbox.photos.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {lightbox.photos.map((photo, i) => (
-                <img
-                  key={i}
-                  src={getPhotoUrl(photo)}
-                  alt={`Thumbnail ${i + 1}`}
-                  onClick={(e) => { e.stopPropagation(); setLightbox(prev => ({ ...prev, index: i })); }}
-                  className={`w-12 h-12 object-cover rounded cursor-pointer transition-all ${
-                    i === lightbox.index ? 'ring-2 ring-white opacity-100' : 'opacity-50 hover:opacity-75'
-                  }`}
-                />
-              ))}
+          {/* Caption editor + thumbnails */}
+          <div
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 w-[90vw] max-w-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex w-full gap-2">
+              <input
+                type="text"
+                value={captionDraft}
+                onChange={(e) => setCaptionDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveCaption() }}
+                placeholder={t('diary:captionPlaceholder', 'Bildunterschrift hinzufügen…')}
+                maxLength={500}
+                className="flex-1 px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50 text-sm"
+              />
+              <button
+                onClick={saveCaption}
+                disabled={saveCaptionMutation.isPending || captionDraft === (lightbox.items[lightbox.index]?.caption || '')}
+                className="px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {t('common:save', 'Speichern')}
+              </button>
             </div>
-          )}
+
+            {lightbox.items.length > 1 && (
+              <div className="flex gap-2">
+                {lightbox.items.map((m, i) => (
+                  <img
+                    key={m.id ?? i}
+                    src={getThumbUrl(m.url)}
+                    onError={onThumbError(m.url)}
+                    loading="lazy"
+                    alt={m.caption || `Thumbnail ${i + 1}`}
+                    onClick={() => { setLightbox(prev => ({ ...prev, index: i })); setCaptionDraft(m.caption || '') }}
+                    className={`w-12 h-12 object-cover rounded cursor-pointer transition-all ${
+                      i === lightbox.index ? 'ring-2 ring-white opacity-100' : 'opacity-50 hover:opacity-75'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

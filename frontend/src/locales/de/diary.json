@@ -1,5 +1,8 @@
 {
   "title": "Reisetagebuch",
+  "caption": "Bildunterschrift",
+  "captionPlaceholder": "Bildunterschrift hinzufügen…",
+  "captionSaved": "Bildunterschrift gespeichert",
   "newEntry": "Neuer Eintrag",
   "editEntry": "Eintrag bearbeiten",
   "deleteEntry": "Eintrag löschen",

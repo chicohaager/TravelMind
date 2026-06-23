@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin, Hotel, Coffee, UtensilsCrossed, Camera, Mountain, Ship, Plane } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { getPhotoUrl } from '@/utils/images'
 
 // Fix Leaflet default marker icon issue
 delete L.Icon.Default.prototype._getIconUrl
@@ -49,16 +50,50 @@ const createCustomIcon = (color = '#6366F1', iconType = 'location') => {
   })
 }
 
-// Component to center map on places
-function MapCenterController({ places }) {
+// Create a circular thumbnail marker for a geotagged photo.
+const createPhotoIcon = (thumbSrc) => {
+  const size = 46
+  return L.divIcon({
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid white;` +
+          `box-shadow:0 1px 5px rgba(0,0,0,0.4);background-image:url('${thumbSrc}');` +
+          `background-size:cover;background-position:center;"></div>`,
+    className: 'photo-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  })
+}
+
+// True only for places that have usable numeric coordinates.
+const hasValidCoords = (p) =>
+  p &&
+  Number.isFinite(Number(p.latitude)) &&
+  Number.isFinite(Number(p.longitude))
+
+// Component to center map on places. Only fits bounds when the actual set of
+// place IDs changes, so a manual pan is not overridden on every re-render.
+function MapCenterController({ places, photos = [] }) {
   const map = useMap()
+  const lastFittedKey = useRef(null)
 
   useEffect(() => {
-    if (places && places.length > 0) {
-      const bounds = L.latLngBounds(places.map(p => [p.latitude, p.longitude]))
-      map.fitBounds(bounds, { padding: [50, 50] })
-    }
-  }, [places, map])
+    const points = [...places.filter(hasValidCoords), ...photos.filter(hasValidCoords)]
+    if (points.length === 0) return
+
+    // Key based on the set of point IDs (order-independent), so a manual pan is
+    // not overridden on re-render but a changed set (e.g. photos loaded) refits.
+    const key = points
+      .map(p => `${p.id ?? ''}:${p.latitude},${p.longitude}`)
+      .sort()
+      .join('|')
+    if (key === lastFittedKey.current) return
+    lastFittedKey.current = key
+
+    const bounds = L.latLngBounds(
+      points.map(p => [Number(p.latitude), Number(p.longitude)])
+    )
+    map.fitBounds(bounds, { padding: [50, 50] })
+  }, [places, photos, map])
 
   return null
 }
@@ -83,6 +118,7 @@ const categoryColors = {
 export default function InteractiveMap({
   places = [],
   routes = [],
+  photos = [],
   onPlaceClick = null,
   onRouteClick = null,
   editable = false,
@@ -93,13 +129,18 @@ export default function InteractiveMap({
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [selectedRoute, setSelectedRoute] = useState(null)
 
-  // Calculate initial center and zoom based on places
+  // Only render/center on places that have finite numeric coordinates.
+  const validPlaces = useMemo(() => places.filter(hasValidCoords), [places])
+  const validPhotos = useMemo(() => photos.filter(hasValidCoords), [photos])
+
+  // Calculate initial center based on places + geotagged photos
   const mapCenter = useMemo(() => {
-    if (places.length === 0) return center
-    const avgLat = places.reduce((sum, p) => sum + p.latitude, 0) / places.length
-    const avgLng = places.reduce((sum, p) => sum + p.longitude, 0) / places.length
+    const points = [...validPlaces, ...validPhotos]
+    if (points.length === 0) return center
+    const avgLat = points.reduce((sum, p) => sum + Number(p.latitude), 0) / points.length
+    const avgLng = points.reduce((sum, p) => sum + Number(p.longitude), 0) / points.length
     return [avgLat, avgLng]
-  }, [places, center])
+  }, [validPlaces, validPhotos, center])
 
   const handlePlaceClick = (place) => {
     setSelectedPlace(place)
@@ -121,8 +162,8 @@ export default function InteractiveMap({
 
     return route.place_ids
       .map(placeId => places.find(p => p.id === placeId))
-      .filter(place => place)
-      .map(place => [place.latitude, place.longitude])
+      .filter(place => place && hasValidCoords(place))
+      .map(place => [Number(place.latitude), Number(place.longitude)])
   }
 
   return (
@@ -138,7 +179,7 @@ export default function InteractiveMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <MapCenterController places={places} />
+        <MapCenterController places={validPlaces} photos={validPhotos} />
 
         {/* Render routes first (so they appear below markers) */}
         {routes.map((route) => {
@@ -172,11 +213,11 @@ export default function InteractiveMap({
           )
         })}
 
-        {/* Render place markers */}
-        {places.map((place) => (
+        {/* Render place markers (only those with valid coordinates) */}
+        {validPlaces.map((place) => (
           <Marker
             key={place.id}
-            position={[place.latitude, place.longitude]}
+            position={[Number(place.latitude), Number(place.longitude)]}
             icon={createCustomIcon(place.color || '#6366F1', place.icon_type || 'location')}
             eventHandlers={{
               click: () => handlePlaceClick(place),
@@ -201,6 +242,33 @@ export default function InteractiveMap({
                     <span className="text-yellow-500 mr-1">★</span>
                     <span className="text-sm">{place.rating}/5</span>
                   </div>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* Render geotagged photo markers */}
+        {validPhotos.map((photo) => (
+          <Marker
+            key={`photo-${photo.id}`}
+            position={[Number(photo.latitude), Number(photo.longitude)]}
+            icon={createPhotoIcon(getPhotoUrl(photo.thumb_url || photo.url))}
+          >
+            <Popup>
+              <div className="max-w-[220px]">
+                <img
+                  src={getPhotoUrl(photo.url)}
+                  alt={photo.caption || ''}
+                  className="w-full rounded-md mb-1"
+                />
+                {photo.caption && (
+                  <p className="text-sm text-gray-700">{photo.caption}</p>
+                )}
+                {photo.taken_at && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(photo.taken_at).toLocaleDateString()}
+                  </p>
                 )}
               </div>
             </Popup>

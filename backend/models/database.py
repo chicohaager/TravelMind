@@ -81,6 +81,31 @@ async def run_migrations(conn):
             await conn.execute(text("ALTER TABLE users ADD COLUMN encryption_salt VARCHAR(32)"))
             print("  ✓ Added encryption_salt column to users table")
 
+        if 'password_changed_at' not in user_columns:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN password_changed_at TIMESTAMP WITH TIME ZONE"))
+            print("  ✓ Added password_changed_at column to users table")
+
+        # Check participants table columns (trip sharing / permissions)
+        result = await conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='participants'
+        """))
+        participant_columns = [row[0] for row in result.fetchall()]
+
+        participant_migrations = [
+            ('user_id', "ALTER TABLE participants ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE"),
+            ('permission', "ALTER TABLE participants ADD COLUMN permission VARCHAR(20) DEFAULT 'viewer'"),
+            ('invitation_status', "ALTER TABLE participants ADD COLUMN invitation_status VARCHAR(20) DEFAULT 'pending'"),
+            ('invited_at', "ALTER TABLE participants ADD COLUMN invited_at TIMESTAMP WITH TIME ZONE DEFAULT now()"),
+            ('accepted_at', "ALTER TABLE participants ADD COLUMN accepted_at TIMESTAMP WITH TIME ZONE"),
+        ]
+
+        for column, sql in participant_migrations:
+            if column not in participant_columns:
+                await conn.execute(text(sql))
+                print(f"  ✓ Added {column} column to participants table")
+
         # Check places table columns
         result = await conn.execute(text("""
             SELECT column_name
@@ -108,6 +133,54 @@ async def run_migrations(conn):
 
     except Exception as e:
         print(f"  ⚠️  Migration warning: {e}")
+
+
+async def backfill_media(conn):
+    """
+    Backfill the `media` table from legacy `photos` JSON arrays (PostgreSQL only).
+
+    Idempotent: only inserts rows for a diary entry / place that has photos but no
+    media rows yet, so it is safe to run on every startup. Legacy rows carry no
+    EXIF metadata (the originals were not processed); thumbnails are derived from
+    the WebP naming convention where possible.
+    """
+    from sqlalchemy import text
+
+    # Derive the thumbnail URL from the WebP naming convention used by utils.images.
+    thumb_expr = (
+        "CASE WHEN elem.value LIKE '%.webp' "
+        "THEN regexp_replace(elem.value, '\\.webp$', '_thumb.webp') "
+        "ELSE elem.value END"
+    )
+
+    try:
+        await conn.execute(text(f"""
+            INSERT INTO media (owner_id, trip_id, diary_entry_id, url, thumb_url, order_index, created_at)
+            SELECT d.author_id, d.trip_id, d.id, elem.value, {thumb_expr}, (elem.ord - 1)::int, now()
+            FROM diary_entries d
+            CROSS JOIN LATERAL jsonb_array_elements_text(d.photos::jsonb)
+                 WITH ORDINALITY AS elem(value, ord)
+            WHERE d.photos IS NOT NULL
+              AND jsonb_typeof(d.photos::jsonb) = 'array'
+              AND jsonb_array_length(d.photos::jsonb) > 0
+              AND NOT EXISTS (SELECT 1 FROM media m WHERE m.diary_entry_id = d.id)
+        """))
+
+        await conn.execute(text(f"""
+            INSERT INTO media (owner_id, trip_id, place_id, url, thumb_url, order_index, created_at)
+            SELECT t.owner_id, p.trip_id, p.id, elem.value, {thumb_expr}, (elem.ord - 1)::int, now()
+            FROM places p
+            JOIN trips t ON t.id = p.trip_id
+            CROSS JOIN LATERAL jsonb_array_elements_text(p.photos::jsonb)
+                 WITH ORDINALITY AS elem(value, ord)
+            WHERE p.photos IS NOT NULL
+              AND jsonb_typeof(p.photos::jsonb) = 'array'
+              AND jsonb_array_length(p.photos::jsonb) > 0
+              AND NOT EXISTS (SELECT 1 FROM media m WHERE m.place_id = p.id)
+        """))
+        print("  ✓ Backfilled media table from legacy photos arrays")
+    except Exception as e:
+        print(f"  ⚠️  Media backfill warning: {e}")
 
 
 async def init_default_settings(conn):
@@ -148,12 +221,16 @@ async def init_db():
         # Import all models here to ensure they're registered
         from models import user, trip, diary, place, place_list, expense, participant, route, settings
         from models import audit_log  # Audit logging
+        from models import media  # Photo/video media
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
 
         # Run migrations for existing tables
         await run_migrations(conn)
+
+        # Backfill media rows from legacy photos arrays
+        await backfill_media(conn)
 
         # Initialize default settings
         await init_default_settings(conn)

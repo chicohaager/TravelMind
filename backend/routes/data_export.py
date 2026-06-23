@@ -23,6 +23,7 @@ from models.user import User
 from models.trip import Trip
 from models.diary import DiaryEntry
 from models.place import Place
+from models.media import Media
 from models.expense import Expense
 from routes.auth import get_current_active_user
 from services.audit_service import audit_service
@@ -80,7 +81,8 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
         "trips": [],
         "diary_entries": [],
         "places": [],
-        "expenses": []
+        "expenses": [],
+        "media": []
     }
 
     # User profile (excluding sensitive fields)
@@ -146,6 +148,15 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
             expense_data = model_to_dict(expense)
             data["expenses"].append(expense_data)
 
+    # Media (photos owned by the user, across all their trips)
+    media_result = await db.execute(
+        select(Media)
+        .where(Media.owner_id == user.id)
+        .order_by(Media.created_at.desc())
+    )
+    for item in media_result.scalars().all():
+        data["media"].append(model_to_dict(item))
+
     return data
 
 
@@ -193,6 +204,12 @@ def create_export_zip(data: Dict[str, Any], include_readme: bool = True) -> io.B
                 json.dumps(data["expenses"], indent=2, default=str, ensure_ascii=False)
             )
 
+        if data.get("media"):
+            zip_file.writestr(
+                "media.json",
+                json.dumps(data["media"], indent=2, default=str, ensure_ascii=False)
+            )
+
         # README file
         if include_readme:
             readme_content = """# TravelMind Data Export
@@ -204,6 +221,7 @@ This archive contains all your personal data from TravelMind.
 - `data.json` - Complete export with all data in a single file
 - `profile.json` - Your user profile information
 - `trips.json` - All your trips
+- `media.json` - Metadata for all your photos
 - `diary_entries.json` - All your diary entries
 - `places.json` - All places from your trips
 - `expenses.json` - All expenses from your trips

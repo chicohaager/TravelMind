@@ -9,10 +9,8 @@ from sqlalchemy import select
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
-import os
-import uuid
-import magic
 from pathlib import Path
+from utils.images import validate_image, process_and_save
 import structlog
 
 from models.database import get_db
@@ -28,7 +26,6 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/participants")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
@@ -79,21 +76,6 @@ class ParticipantResponse(BaseModel):
 
 
 # Helper functions
-def validate_file_type(contents: bytes, filename: str) -> bool:
-    """
-    Validate file type by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    # Check extension first
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    # Check actual MIME type using file contents
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
 
 
 async def save_participant_photo(upload_file: UploadFile, participant_id: int) -> str:
@@ -109,23 +91,22 @@ async def save_participant_photo(upload_file: UploadFile, participant_id: int) -
         )
 
     # Validate file type (extension AND mime type)
-    if not validate_file_type(contents, upload_file.filename):
+    if not validate_image(contents, upload_file.filename):
         raise HTTPException(
             status_code=400,
             detail=f"Ungültiger Dateityp. Erlaubt: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # Generate unique filename
-    extension = upload_file.filename.split(".")[-1].lower()
-    unique_filename = f"participant_{participant_id}_{uuid.uuid4()}.{extension}"
-    file_path = UPLOAD_DIR / unique_filename
-
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    # Normalize, auto-orient and compress. Participant photos stay small; no thumbnail needed.
+    try:
+        processed = process_and_save(
+            contents, UPLOAD_DIR, "/uploads/participants", make_thumb=False, full_max_edge=512
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Ungültiges Bild: {exc}")
 
     # Return relative URL path
-    return f"/uploads/participants/{unique_filename}"
+    return processed.url
 
 
 # Endpoints

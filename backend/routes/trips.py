@@ -11,11 +11,10 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
 import os
-import uuid
-import magic
 from pathlib import Path
 from services.geocoding import geocoding_service
 from utils.rate_limits import limiter, RateLimits
+from utils.images import validate_image, process_and_save
 from models.database import get_db
 from models.trip import Trip
 from models.user import User
@@ -35,7 +34,6 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/trips")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 # Demo mode configuration
@@ -118,23 +116,6 @@ class TripResponse(BaseModel):
 
 
 # Helper functions
-def validate_file_type(contents: bytes, filename: str) -> bool:
-    """
-    Validate file type by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    # Check extension first
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    # Check actual MIME type using python-magic
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
-
-
 async def save_upload_file(upload_file: UploadFile, trip_id: int) -> str:
     """
     Save uploaded file and return the file path.
@@ -151,25 +132,22 @@ async def save_upload_file(upload_file: UploadFile, trip_id: int) -> str:
         )
 
     # Validate file type by content (security check)
-    if not validate_file_type(contents, upload_file.filename):
+    if not validate_image(contents, upload_file.filename):
         raise HTTPException(
             status_code=400,
             detail=f"Ungültiger Dateityp. Nur Bilder erlaubt: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # Generate unique filename
-    extension = upload_file.filename.split(".")[-1].lower()
-    unique_filename = f"{trip_id}_{uuid.uuid4()}.{extension}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Normalize, auto-orient, compress to WebP and generate a thumbnail (used on trip cards).
+    try:
+        processed = process_and_save(contents, UPLOAD_DIR, "/uploads/trips")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Ungültiges Bild: {exc}")
 
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(contents)
-
-    logger.info("file_uploaded", trip_id=trip_id, filename=unique_filename, size=len(contents))
+    logger.info("file_uploaded", trip_id=trip_id, filename=Path(processed.url).name, size=processed.size_bytes)
 
     # Return relative URL path
-    return f"/uploads/trips/{unique_filename}"
+    return processed.url
 
 
 async def get_or_create_demo_user(db: AsyncSession) -> Optional[User]:
@@ -395,10 +373,12 @@ async def get_pending_invitations(
 
     Returns list of trips the user has been invited to but hasn't responded yet.
     """
-    # Get pending invitations
+    # Get pending invitations together with each trip's owner in a single query
+    # (avoids an N+1 lookup of the owner per invitation).
     result = await db.execute(
-        select(Participant, Trip)
+        select(Participant, Trip, User)
         .join(Trip, Participant.trip_id == Trip.id)
+        .join(User, Trip.owner_id == User.id)
         .where(
             Participant.user_id == current_user.id,
             Participant.invitation_status == InvitationStatus.PENDING.value
@@ -408,13 +388,7 @@ async def get_pending_invitations(
     rows = result.all()
 
     invitations = []
-    for participant, trip in rows:
-        # Get owner info
-        owner_result = await db.execute(
-            select(User).where(User.id == trip.owner_id)
-        )
-        owner = owner_result.scalar_one_or_none()
-
+    for participant, trip, owner in rows:
         invitations.append({
             "participant_id": participant.id,
             "trip_id": trip.id,
@@ -685,11 +659,14 @@ async def get_trip_summary(
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
-    # Verify ownership if authenticated
-    if current_user and trip.owner_id != current_user.id:
+    # Authenticated users must be owner or accepted participant; anonymous
+    # access is only allowed in demo mode (consistent with the other endpoints).
+    if current_user:
+        await verify_trip_access(trip, current_user, db, require_edit=False)
+    elif not ENABLE_DEMO_MODE:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this trip"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
         )
 
     # Count places
@@ -843,22 +820,31 @@ async def share_trip(
     existing_participant = result.scalar_one_or_none()
 
     if existing_participant:
-        raise HTTPException(
-            status_code=400,
-            detail="User is already invited to this trip."
+        # A previously declined invitation can be re-sent: reset it to pending
+        # instead of rejecting (otherwise the user can never be re-invited).
+        if existing_participant.invitation_status == InvitationStatus.DECLINED.value:
+            existing_participant.permission = share_request.permission
+            existing_participant.invitation_status = InvitationStatus.PENDING.value
+            existing_participant.invited_at = datetime.now(timezone.utc)
+            existing_participant.accepted_at = None
+            participant = existing_participant
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="User is already invited to this trip."
+            )
+    else:
+        # Create participant invitation
+        participant = Participant(
+            trip_id=trip_id,
+            user_id=invited_user.id,
+            name=invited_user.full_name or invited_user.username,
+            email=invited_user.email,
+            permission=share_request.permission,
+            invitation_status=InvitationStatus.PENDING.value
         )
+        db.add(participant)
 
-    # Create participant invitation
-    participant = Participant(
-        trip_id=trip_id,
-        user_id=invited_user.id,
-        name=invited_user.full_name or invited_user.username,
-        email=invited_user.email,
-        permission=share_request.permission,
-        invitation_status=InvitationStatus.PENDING.value
-    )
-
-    db.add(participant)
     await db.commit()
     await db.refresh(participant)
 

@@ -41,14 +41,48 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor for handling errors
+// Endpoints where a 401 must NOT trigger a refresh/redirect
+// (wrong-password login, register, and the refresh call itself).
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh']
+
+const isAuthEndpoint = (url = '') => AUTH_ENDPOINTS.some((path) => url.includes(path))
+
+// Response interceptor: single-retry token refresh on 401
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+  async (error) => {
+    const originalRequest = error.config
+
+    // Only handle 401s that are not from auth endpoints and have not been retried yet
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthEndpoint(originalRequest.url)
+    ) {
+      originalRequest._retry = true
+
+      try {
+        // Attempt a single token refresh
+        const { data } = await api.post('/auth/refresh')
+        const newToken = data?.access_token || data?.token
+        if (!newToken) {
+          throw new Error('No token returned from refresh')
+        }
+
+        // Persist new token and retry the original request with it
+        localStorage.setItem('token', newToken)
+        originalRequest.headers = originalRequest.headers || {}
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return api(originalRequest)
+      } catch (refreshError) {
+        // Refresh failed: clear token and redirect to login
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
+      }
     }
+
     return Promise.reject(error)
   }
 )
@@ -138,6 +172,13 @@ export const placesService = {
   },
   deletePhoto: (placeId, photoUrl) =>
     api.delete(`/places/places/${placeId}/photo`, { params: { photo_url: photoUrl } }),
+}
+
+// Media Services (photos as first-class items with caption / GPS / capture time)
+export const mediaService = {
+  getTripMedia: (tripId) => api.get(`/media/trip/${tripId}`),
+  updateCaption: (mediaId, caption) => api.patch(`/media/${mediaId}`, { caption }),
+  delete: (mediaId) => api.delete(`/media/${mediaId}`),
 }
 
 // Timeline Services

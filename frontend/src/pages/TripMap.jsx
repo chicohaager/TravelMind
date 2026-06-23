@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Map, ArrowLeft, Loader } from 'lucide-react'
+import { Map, ArrowLeft, Loader, Image as ImageIcon } from 'lucide-react'
 import { toast, Toaster } from 'react-hot-toast'
 import InteractiveMap from '../components/InteractiveMap'
 import RouteBuilder from '../components/RouteBuilder'
-import { tripsService, placesService, routesService } from '../services/api'
+import { tripsService, placesService, routesService, mediaService } from '../services/api'
 import { useTranslation } from 'react-i18next'
 
 export default function TripMap() {
@@ -13,6 +13,7 @@ export default function TripMap() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [routes, setRoutes] = useState([])
+  const [showPhotos, setShowPhotos] = useState(true)
 
   // Fetch trip data
   const { data: trip, isLoading: tripLoading } = useQuery({
@@ -27,7 +28,7 @@ export default function TripMap() {
   const { data: places = [], isLoading: placesLoading } = useQuery({
     queryKey: ['places', id],
     queryFn: async () => {
-      const response = await placesService.getByTrip(id)
+      const response = await placesService.getPlaces(id)
       return response.data
     },
   })
@@ -40,6 +41,18 @@ export default function TripMap() {
       return response.data
     },
   })
+
+  // Fetch trip media; keep only geotagged diary photos for map markers
+  const { data: allMedia = [] } = useQuery({
+    queryKey: ['media', id],
+    queryFn: async () => {
+      const response = await mediaService.getTripMedia(id)
+      return response.data
+    },
+  })
+  const geoPhotos = allMedia.filter(
+    (m) => m.diary_entry_id != null && m.latitude != null && m.longitude != null
+  )
 
   useEffect(() => {
     if (routesData) {
@@ -111,11 +124,24 @@ export default function TripMap() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Map */}
           <div className="lg:col-span-2">
+            {geoPhotos.length > 0 && (
+              <label className="flex items-center gap-2 mb-3 text-sm text-gray-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showPhotos}
+                  onChange={(e) => setShowPhotos(e.target.checked)}
+                  className="rounded"
+                />
+                <ImageIcon className="w-4 h-4 text-indigo-600" />
+                {t('map:showPhotos', 'Fotos auf der Karte anzeigen')} ({geoPhotos.length})
+              </label>
+            )}
             <div className="card p-0 overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
-              {places.length > 0 ? (
+              {places.length > 0 || geoPhotos.length > 0 ? (
                 <InteractiveMap
                   places={places}
                   routes={routes}
+                  photos={showPhotos ? geoPhotos : []}
                   center={trip.latitude && trip.longitude ? [trip.latitude, trip.longitude] : undefined}
                   zoom={12}
                 />

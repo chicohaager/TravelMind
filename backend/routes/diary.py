@@ -6,16 +6,16 @@ CRUD operations for diary entries
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request, status
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, Field
+from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import List, Optional
 from datetime import datetime, timezone
 from io import BytesIO
 import os
-import uuid
-import magic
 from pathlib import Path
 from utils.rate_limits import limiter, RateLimits
+from utils.images import validate_image, process_and_save
 import structlog
 from openai import OpenAI
 
@@ -23,33 +23,47 @@ from models.database import get_db
 from models.diary import DiaryEntry
 from models.trip import Trip
 from models.user import User
+from models.media import Media
 from routes.auth import get_current_active_user, get_optional_user
+from routes.media import MediaResponse
 from utils.access_control import verify_trip_access
+from utils.images import derive_thumb_url, delete_upload_file
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
+
+
+async def verify_diary_edit_access(entry, current_user: User, db: AsyncSession) -> None:
+    """
+    Authorize editing/deleting a diary entry.
+
+    Permitted: the entry's author, the trip owner (for moderation), or a
+    superuser. This avoids the owner being locked out of moderating entries
+    written by editor-participants, while still keeping editors from altering
+    each other's personal entries.
+    """
+    if current_user.is_superuser or entry.author_id == current_user.id:
+        return
+
+    trip_result = await db.execute(select(Trip).where(Trip.id == entry.trip_id))
+    trip = trip_result.scalar_one_or_none()
+    if trip and trip.owner_id == current_user.id:
+        return
+
+    logger.warning(
+        "unauthorized_diary_edit",
+        entry_id=entry.id,
+        user_id=current_user.id,
+        author_id=entry.author_id,
+    )
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
 
 # Upload configuration
 UPLOAD_DIR = Path("./uploads/diary")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-
-def validate_photo_type(contents: bytes, filename: str) -> bool:
-    """
-    Validate photo file type by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
 
 
 class DiaryEntryCreate(BaseModel):
@@ -73,15 +87,20 @@ class DiaryEntryResponse(BaseModel):
     location_name: Optional[str]
     latitude: Optional[float]
     longitude: Optional[float]
-    photos: List[str]
+    media: List[MediaResponse] = []
     tags: List[str]
     mood: Optional[str]
     rating: Optional[int]
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+    @computed_field
+    @property
+    def photos(self) -> List[str]:
+        """Backward-compatible URL list, derived from `media` (the source of truth)."""
+        return [m.url for m in self.media]
 
 
 @router.get("/{trip_id}", response_model=List[DiaryEntryResponse])
@@ -101,9 +120,10 @@ async def get_diary_entries(
     # Verify trip exists and user has access (owner or participant)
     await verify_trip_access(trip_id, current_user, db, require_edit=False)
 
-    # Get diary entries with pagination
+    # Get diary entries with pagination (media eager-loaded for the response)
     result = await db.execute(
         select(DiaryEntry)
+        .options(selectinload(DiaryEntry.media))
         .where(DiaryEntry.trip_id == trip_id)
         .order_by(DiaryEntry.entry_date.desc())
         .offset(skip)
@@ -114,6 +134,16 @@ async def get_diary_entries(
     logger.info("diary_entries_fetched", trip_id=trip_id, user_id=current_user.id, count=len(entries))
 
     return entries
+
+
+async def _load_entry_with_media(entry_id: int, db: AsyncSession) -> DiaryEntry:
+    """Re-fetch a diary entry with its media eager-loaded for the response."""
+    result = await db.execute(
+        select(DiaryEntry)
+        .options(selectinload(DiaryEntry.media))
+        .where(DiaryEntry.id == entry_id)
+    )
+    return result.scalar_one()
 
 
 # Handler function for creating diary entries
@@ -130,7 +160,8 @@ async def _create_diary_entry_handler(
     # Set author
     author_id = current_user.id
 
-    # Create new entry
+    # Create new entry. Photos live in the media table (source of truth), not the
+    # legacy `photos` column.
     new_entry = DiaryEntry(
         trip_id=trip_id,
         author_id=author_id,
@@ -140,7 +171,7 @@ async def _create_diary_entry_handler(
         location_name=entry.location_name,
         latitude=entry.latitude,
         longitude=entry.longitude,
-        photos=entry.photos,
+        photos=[],
         tags=entry.tags,
         mood=entry.mood,
         rating=entry.rating
@@ -150,9 +181,23 @@ async def _create_diary_entry_handler(
     await db.commit()
     await db.refresh(new_entry)
 
+    # Backward-compat: if a legacy client supplied photo URLs on create, register
+    # them as media rows.
+    if entry.photos:
+        for i, url in enumerate(entry.photos):
+            db.add(Media(
+                owner_id=author_id,
+                trip_id=trip_id,
+                diary_entry_id=new_entry.id,
+                url=url,
+                thumb_url=derive_thumb_url(url),
+                order_index=i,
+            ))
+        await db.commit()
+
     logger.info("diary_entry_created", entry_id=new_entry.id, trip_id=trip_id, user_id=current_user.id)
 
-    return new_entry
+    return await _load_entry_with_media(new_entry.id, db)
 
 
 @router.post("/{trip_id}", response_model=DiaryEntryResponse, status_code=201)
@@ -186,30 +231,27 @@ async def update_diary_entry(
     if not existing_entry:
         raise HTTPException(status_code=404, detail="Diary entry not found")
 
-    # Verify ownership
-    if existing_entry.author_id != current_user.id:
-        logger.warning("unauthorized_diary_update", entry_id=entry_id, user_id=current_user.id, author_id=existing_entry.author_id)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    # Verify edit rights (author, trip owner, or superuser)
+    await verify_diary_edit_access(existing_entry, current_user, db)
 
-    # Update fields
+    # Update fields. Photos are managed via the media table / media endpoints,
+    # so the legacy `photos` column is intentionally left untouched here.
     existing_entry.title = entry.title
     existing_entry.content = entry.content
     existing_entry.entry_date = entry.entry_date or existing_entry.entry_date
     existing_entry.location_name = entry.location_name
     existing_entry.latitude = entry.latitude
     existing_entry.longitude = entry.longitude
-    existing_entry.photos = entry.photos
     existing_entry.tags = entry.tags
     existing_entry.mood = entry.mood
     existing_entry.rating = entry.rating
     existing_entry.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
-    await db.refresh(existing_entry)
 
     logger.info("diary_entry_updated", entry_id=entry_id, user_id=current_user.id)
 
-    return existing_entry
+    return await _load_entry_with_media(entry_id, db)
 
 
 @router.delete("/{entry_id}", status_code=204)
@@ -228,10 +270,8 @@ async def delete_diary_entry(
     if not entry:
         raise HTTPException(status_code=404, detail="Diary entry not found")
 
-    # Verify ownership
-    if entry.author_id != current_user.id:
-        logger.warning("unauthorized_diary_delete", entry_id=entry_id, user_id=current_user.id, author_id=entry.author_id)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    # Verify edit rights (author, trip owner, or superuser)
+    await verify_diary_edit_access(entry, current_user, db)
 
     await db.delete(entry)
     await db.commit()
@@ -342,9 +382,10 @@ async def export_diary_pdf(
     # Verify trip exists and user has access
     trip = await verify_trip_access(trip_id, current_user, db, require_edit=False)
 
-    # Get diary entries
+    # Get diary entries (media eager-loaded for embedding photos)
     result = await db.execute(
         select(DiaryEntry)
+        .options(selectinload(DiaryEntry.media))
         .where(DiaryEntry.trip_id == trip_id)
         .order_by(DiaryEntry.entry_date.asc())
     )
@@ -446,16 +487,17 @@ async def export_diary_pdf(
                 story.append(Paragraph(para.strip().replace('\n', '<br/>'), styles['Normal']))
                 story.append(Spacer(1, 0.1*inch))
 
-        # Photos
-        if entry.photos and len(entry.photos) > 0:
+        # Photos (from media, the source of truth)
+        photo_urls = [m.url for m in entry.media]
+        if photo_urls:
             story.append(Spacer(1, 0.2*inch))
 
             # Process photos in groups of 2 per row
             photo_rows = []
-            for photo_idx in range(0, len(entry.photos), 2):
+            for photo_idx in range(0, len(photo_urls), 2):
                 row_images = []
 
-                for photo_url in entry.photos[photo_idx:photo_idx + 2]:
+                for photo_url in photo_urls[photo_idx:photo_idx + 2]:
                     try:
                         # Convert URL path to file system path SAFELY
                         # photo_url is like "/uploads/diary/uuid.jpg"
@@ -539,10 +581,8 @@ async def upload_diary_photo(
     if not entry:
         raise HTTPException(status_code=404, detail="Diary entry not found")
 
-    # Verify ownership
-    if entry.author_id != current_user.id:
-        logger.warning("unauthorized_diary_access", entry_id=entry_id, user_id=current_user.id, author_id=entry.author_id)
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    # Verify edit rights (author, trip owner, or superuser)
+    await verify_diary_edit_access(entry, current_user, db)
 
     # Read file content
     content = await file.read()
@@ -555,37 +595,64 @@ async def upload_diary_photo(
         )
 
     # CRITICAL: Validate file type by content (security check)
-    if not validate_photo_type(content, file.filename):
+    if not validate_image(content, file.filename):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid file type. Only images allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # Generate unique filename
-    file_ext = file.filename.split('.')[-1].lower()
-    unique_filename = f"{uuid.uuid4()}.{file_ext}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Normalize, compress to WebP, generate a thumbnail and read EXIF metadata.
+    try:
+        processed = process_and_save(content, UPLOAD_DIR, "/uploads/diary")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(content)
+    # Append after existing media (preserve order).
+    count_result = await db.execute(
+        select(func.count()).select_from(Media).where(Media.diary_entry_id == entry_id)
+    )
+    next_index = count_result.scalar() or 0
 
-    # Add photo to entry
-    photo_url = f"/uploads/diary/{unique_filename}"
-    if entry.photos is None:
-        entry.photos = []
-    entry.photos = entry.photos + [photo_url]  # Create new list for SQLAlchemy change tracking
+    new_media = Media(
+        owner_id=current_user.id,
+        trip_id=entry.trip_id,
+        diary_entry_id=entry_id,
+        url=processed.url,
+        thumb_url=processed.thumb_url,
+        mime_type="image/webp",
+        width=processed.width,
+        height=processed.height,
+        size_bytes=processed.size_bytes,
+        taken_at=processed.taken_at,
+        latitude=processed.latitude,
+        longitude=processed.longitude,
+        order_index=next_index,
+    )
+    db.add(new_media)
+
+    # Auto-geotag: if the entry has no coordinates yet, adopt the photo's GPS.
+    if entry.latitude is None and processed.latitude is not None:
+        entry.latitude = processed.latitude
+        entry.longitude = processed.longitude
+
     entry.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
-    await db.refresh(entry)
+    await db.refresh(new_media)
 
-    logger.info("diary_photo_uploaded", entry_id=entry_id, filename=unique_filename, user_id=current_user.id)
+    logger.info(
+        "diary_photo_uploaded",
+        entry_id=entry_id,
+        media_id=new_media.id,
+        user_id=current_user.id,
+        geotagged=processed.latitude is not None,
+    )
 
     return {
         "message": "Photo uploaded successfully",
-        "photo_url": photo_url,
-        "entry": entry
+        "photo_url": processed.url,
+        "thumb_url": processed.thumb_url,
+        "media": MediaResponse.model_validate(new_media),
     }
 
 
@@ -598,7 +665,11 @@ async def delete_diary_photo(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Delete a photo from a diary entry. Requires authentication."""
+    """Delete a photo (by URL) from a diary entry. Requires authentication.
+
+    Kept URL-based for backward compatibility; internally it removes the
+    corresponding media row (the source of truth) and its files.
+    """
     # Get entry
     result = await db.execute(select(DiaryEntry).where(DiaryEntry.id == entry_id))
     entry = result.scalar_one_or_none()
@@ -606,50 +677,30 @@ async def delete_diary_photo(
     if not entry:
         raise HTTPException(status_code=404, detail="Diary entry not found")
 
-    # Verify ownership
-    if entry.author_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Verify edit rights (author, trip owner, or superuser)
+    await verify_diary_edit_access(entry, current_user, db)
 
-    # Check if photo exists in entry
-    if not entry.photos or photo_url not in entry.photos:
+    # Find the media row for this URL
+    media_result = await db.execute(
+        select(Media).where(Media.diary_entry_id == entry_id, Media.url == photo_url)
+    )
+    media = media_result.scalar_one_or_none()
+    if not media:
         raise HTTPException(status_code=404, detail="Photo not found in entry")
 
-    # Remove from entry
-    new_photos = [p for p in entry.photos if p != photo_url]
-    entry.photos = new_photos
+    thumb_url = media.thumb_url
+    await db.delete(media)
     entry.updated_at = datetime.now(timezone.utc)
-
     await db.commit()
-    await db.refresh(entry)
 
-    # Delete file if exists (with path traversal protection)
-    try:
-        # Security: Extract only the filename, reject any path manipulation
-        filename = Path(photo_url).name
+    # Remove files (full + thumbnail), contained within the uploads root.
+    delete_upload_file(photo_url)
+    if thumb_url and thumb_url != photo_url:
+        delete_upload_file(thumb_url)
 
-        # Validate filename doesn't contain path traversal sequences
-        if '/' in filename or '\\' in filename or '..' in filename or not filename:
-            logger.warning("photo_delete_path_traversal_attempt", entry_id=entry_id, photo_url=photo_url)
-            raise HTTPException(status_code=400, detail="Invalid photo URL")
+    logger.info("diary_photo_deleted", entry_id=entry_id, user_id=current_user.id)
 
-        file_path = UPLOAD_DIR / filename
-
-        # Verify the resolved path is within UPLOAD_DIR
-        if not str(file_path.resolve()).startswith(str(UPLOAD_DIR.resolve())):
-            logger.warning("photo_delete_path_escape_attempt", entry_id=entry_id, photo_url=photo_url)
-            raise HTTPException(status_code=400, detail="Invalid file path")
-
-        if file_path.exists():
-            os.remove(file_path)
-            logger.info("diary_photo_file_deleted", entry_id=entry_id, filename=filename)
-    except Exception as e:
-        # Log error but don't fail the request
-        logger.warning("diary_photo_file_deletion_failed", entry_id=entry_id, error=str(e))
-
-    return {
-        "message": "Photo deleted successfully",
-        "entry": entry
-    }
+    return {"message": "Photo deleted successfully"}
 
 # ==================== Audio Transcription ====================
 

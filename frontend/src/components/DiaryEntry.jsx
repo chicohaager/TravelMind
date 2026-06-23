@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Calendar, MapPin, Star, Tag, Smile, Meh, Frown, X, Edit, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
 
 const moodIcons = {
   happy: { icon: Smile, color: 'text-green-500', label: 'Glücklich' },
@@ -127,7 +128,9 @@ export default function DiaryEntry({ entry, onEdit, onDelete }) {
               className="cursor-pointer hover:opacity-80 transition-opacity"
             >
               <img
-                src={photo}
+                src={getThumbUrl(photo)}
+                onError={onThumbError(photo)}
+                loading="lazy"
                 alt={`Foto ${i + 1}`}
                 className="w-full h-24 object-cover rounded-lg"
               />
@@ -149,7 +152,7 @@ export default function DiaryEntry({ entry, onEdit, onDelete }) {
             <X className="w-6 h-6 text-white" />
           </button>
           <img
-            src={selectedPhoto}
+            src={getPhotoUrl(selectedPhoto)}
             alt="Vergrößertes Foto"
             className="max-w-full max-h-full object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
