@@ -453,9 +453,14 @@ async def split_expense_equally(
     if paid_by not in [p.id for p in participants]:
         raise HTTPException(status_code=404, detail="Participant who paid not found")
 
-    # Calculate equal split
-    per_person = amount / len(participants)
+    # Calculate equal split, rounded to cents; give the rounding remainder to
+    # the last participant so the splits sum exactly to the expense amount
+    # (otherwise budget-summary balances don't net to zero).
+    n = len(participants)
+    per_person = round(amount / n, 2)
     splits = [{"participant_id": p.id, "amount": per_person} for p in participants]
+    if splits:
+        splits[-1]["amount"] = round(amount - per_person * (n - 1), 2)
 
     # Create expense
     expense_date = datetime.fromisoformat(date).date() if date else datetime.now().date()

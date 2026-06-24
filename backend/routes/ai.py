@@ -35,11 +35,15 @@ def _parse_ai_json(response: str):
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        candidates = [p for p in (text.find("{"), text.find("[")) if p != -1]
-        start = min(candidates) if candidates else -1
-        end = max(text.rfind("}"), text.rfind("]"))
-        if start != -1 and end > start:
-            return json.loads(text[start:end + 1])
+        # Try array and object extraction independently so a stray bracket in a
+        # preamble can't make us slice across mismatched delimiters.
+        for open_ch, close_ch in (("[", "]"), ("{", "}")):
+            start, end = text.find(open_ch), text.rfind(close_ch)
+            if start != -1 and end > start:
+                try:
+                    return json.loads(text[start:end + 1])
+                except json.JSONDecodeError:
+                    continue
         raise
 
 

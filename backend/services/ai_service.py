@@ -67,6 +67,8 @@ class ClaudeProvider(AIProvider):
 
         # Run synchronous API call in thread pool to avoid blocking event loop
         response = await asyncio.to_thread(self.client.messages.create, **kwargs)
+        if not response.content or not getattr(response.content[0], "text", None):
+            raise RuntimeError("Claude returned an empty or non-text response")
         return response.content[0].text
 
 
@@ -100,6 +102,8 @@ class OpenAIProvider(AIProvider):
             temperature=temperature
         )
 
+        if not response.choices or not response.choices[0].message.content:
+            raise RuntimeError("OpenAI returned an empty response")
         return response.choices[0].message.content
 
 
@@ -134,7 +138,10 @@ class GeminiProvider(AIProvider):
             generation_config=generation_config
         )
 
-        return response.text
+        text = getattr(response, "text", None)
+        if not text:
+            raise RuntimeError("Gemini returned an empty or blocked response")
+        return text
 
 
 class GroqProvider(AIProvider):
@@ -167,6 +174,8 @@ class GroqProvider(AIProvider):
             temperature=temperature
         )
 
+        if not response.choices or not response.choices[0].message.content:
+            raise RuntimeError("Groq returned an empty response")
         return response.choices[0].message.content
 
 
