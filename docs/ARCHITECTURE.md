@@ -545,6 +545,7 @@ test('user can create trip', async () => {
 - **Öffentliche read-only Share-Links** für Reisetagebücher (Privacy-Schalter, Token, `/share/:token`, `/api/public/diary/{token}`)
 - **Drag-&-Drop-Foto-Sortierung** im Tagebuch (`@hello-pangea/dnd`, `PATCH /api/diary/{entry_id}/photos/order`)
 - **Foto-Timeline** (`/timeline`, nach Aufnahmemonat gruppiert) + **Lightbox-Feinschliff** (Aufnahmedatum, Preload, Swipe) + **HEIC-Status** (`/api/capabilities`, HEIC im Datei-Picker)
+- **In-App-Benachrichtigungen** (Navbar-Glocke, Reise-Einladungen empfangen/angenommen/abgelehnt, `/api/notifications`)
 
 ### 🔜 Als Nächstes
 
@@ -552,7 +553,7 @@ _Kern-Roadmap abgearbeitet — nächste Ideen siehe „Später"._
 
 ### 💡 Später
 
-- 🔔 Benachrichtigungen, 📈 Analytics-Dashboard
+- 📈 Analytics-Dashboard
 - 💬 Echtzeit-Kollaboration (WebSocket)
 - 📱 Native Mobile App (React Native)
 
