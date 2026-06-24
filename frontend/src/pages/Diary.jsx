@@ -16,7 +16,6 @@ export default function Diary() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedEntry, setSelectedEntry] = useState(null)
   const [editingEntry, setEditingEntry] = useState(null)
   const [expandedEntries, setExpandedEntries] = useState(new Set())
   const [lightbox, setLightbox] = useState({ open: false, items: [], index: 0 })
@@ -31,7 +30,7 @@ export default function Diary() {
   })
 
   // Fetch diary entries from API (if tripId is provided)
-  const { data: entries = [], isLoading: isLoadingEntries, error } = useQuery({
+  const { data: entries = [], isLoading: isLoadingEntries } = useQuery({
     queryKey: ['diary', tripId],
     queryFn: async () => {
       const response = await diaryService.getEntries(tripId)
@@ -56,7 +55,7 @@ export default function Diary() {
             trip,
             entries: response.data
           }
-        } catch (error) {
+        } catch {
           return {
             trip,
             entries: []
@@ -167,11 +166,6 @@ export default function Diary() {
       }
       return newSet
     })
-  }
-
-  const openEntryModal = (entry) => {
-    setSelectedEntry(entry)
-    setIsModalOpen(true)
   }
 
   const openLightbox = (items, index) => {

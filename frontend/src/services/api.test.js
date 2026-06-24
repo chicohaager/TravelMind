@@ -2,7 +2,7 @@
  * API Service Tests
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock axios before importing api
 vi.mock('axios', () => {
@@ -28,6 +28,9 @@ vi.mock('axios', () => {
 describe('API Service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Re-run module bodies on each dynamic import so the top-level
+    // axios.create() in api.js fires per test (calls are cleared above).
+    vi.resetModules()
     // Reset localStorage mock
     window.localStorage.getItem.mockReturnValue(null)
   })
