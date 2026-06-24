@@ -543,10 +543,9 @@ test('user can create trip', async () => {
 - **Backup/Restore** für DB + Uploads (Skripte + Doku, ZimaOS-Anhang)
 - **Reise-übergreifende Foto-Galerie** (`/media/gallery`, nach Reise gruppiert, geteilte Lightbox)
 - **Öffentliche read-only Share-Links** für Reisetagebücher (Privacy-Schalter, Token, `/share/:token`, `/api/public/diary/{token}`)
+- **Drag-&-Drop-Foto-Sortierung** im Tagebuch (`@hello-pangea/dnd`, `PATCH /api/diary/{entry_id}/photos/order`)
 
 ### 🔜 Als Nächstes
-
-- 🗂️ Drag-&-Drop-Sortierung der Fotos (order_index ist vorbereitet)
 - 🧠 HEIC-Galerie/Lightbox-Feinschliff, Foto-Timeline
 
 ### 💡 Später
