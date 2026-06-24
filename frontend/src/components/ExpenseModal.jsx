@@ -115,8 +115,8 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
     const totalAmount = parseFloat(formData.amount)
     const totalSplits = getTotalSplits()
 
-    // Validate splits
-    if (Math.abs(totalSplits - totalAmount) > 0.01) {
+    // Validate splits only when the expense is actually split among participants.
+    if (formData.splits.length > 0 && Math.abs(totalSplits - totalAmount) > 0.01) {
       alert(t('budget:splitSumError')
         .replace('{splitSum}', totalSplits.toFixed(2))
         .replace('{totalAmount}', totalAmount.toFixed(2)))
@@ -129,7 +129,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
       currency: formData.currency,
       category: formData.category,
       date: formData.date,
-      paid_by: parseInt(formData.paid_by),
+      paid_by: formData.paid_by ? parseInt(formData.paid_by) : null,
       notes: formData.notes || null,
       splits: formData.splits.map((split) => ({
         participant_id: split.participant_id,
@@ -144,7 +144,8 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
 
   const totalSplits = getTotalSplits()
   const totalAmount = parseFloat(formData.amount) || 0
-  const isValid = Math.abs(totalSplits - totalAmount) <= 0.01
+  // Solo trips have no participants to split among, so there is nothing to balance.
+  const isValid = participants.length === 0 || Math.abs(totalSplits - totalAmount) <= 0.01
 
   return (
     <AnimatePresence>
@@ -253,20 +254,22 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                       className="input"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      <User className="w-4 h-4 inline mr-1" />
-                      {t('budget:paidByLabel')} *
-                    </label>
-                    <select name="paid_by" value={formData.paid_by} onChange={handleChange} required className="input">
-                      <option value="">{t('budget:paidByPlaceholder')}</option>
-                      {participants.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {participants.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        <User className="w-4 h-4 inline mr-1" />
+                        {t('budget:paidByLabel')} *
+                      </label>
+                      <select name="paid_by" value={formData.paid_by} onChange={handleChange} required className="input">
+                        <option value="">{t('budget:paidByPlaceholder')}</option>
+                        {participants.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Notes */}
@@ -282,7 +285,8 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                   />
                 </div>
 
-                {/* Split Mode */}
+                {/* Split Mode — only when there are participants to split among */}
+                {participants.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <Users className="w-4 h-4 inline mr-1" />
@@ -352,6 +356,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                     )}
                   </div>
                 </div>
+                )}
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
