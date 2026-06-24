@@ -15,6 +15,7 @@ from io import BytesIO
 import os
 from pathlib import Path
 from utils.rate_limits import limiter, RateLimits
+import asyncio
 from utils.images import validate_image, process_and_save
 import structlog
 from openai import OpenAI
@@ -615,7 +616,7 @@ async def upload_diary_photo(
 
     # Normalize, compress to WebP, generate a thumbnail and read EXIF metadata.
     try:
-        processed = process_and_save(content, UPLOAD_DIR, "/uploads/diary")
+        processed = await asyncio.to_thread(process_and_save, content, UPLOAD_DIR, "/uploads/diary")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 

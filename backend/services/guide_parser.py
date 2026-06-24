@@ -122,7 +122,10 @@ Text to analyze:
 """
 
         try:
-            message = self.claude_client.messages.create(
+            # Run the synchronous Anthropic SDK call in a thread so it doesn't
+            # block the event loop for the multi-second Claude round-trip.
+            message = await asyncio.to_thread(
+                self.claude_client.messages.create,
                 model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=4096,
                 messages=[

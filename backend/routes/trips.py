@@ -15,6 +15,7 @@ import secrets
 from pathlib import Path
 from services.geocoding import geocoding_service
 from utils.rate_limits import limiter, RateLimits
+import asyncio
 from utils.images import validate_image, process_and_save
 from models.database import get_db
 from models.trip import Trip
@@ -145,7 +146,7 @@ async def save_upload_file(upload_file: UploadFile, trip_id: int) -> str:
 
     # Normalize, auto-orient, compress to WebP and generate a thumbnail (used on trip cards).
     try:
-        processed = process_and_save(contents, UPLOAD_DIR, "/uploads/trips")
+        processed = await asyncio.to_thread(process_and_save, contents, UPLOAD_DIR, "/uploads/trips")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Ungültiges Bild: {exc}")
 

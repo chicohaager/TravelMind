@@ -16,6 +16,7 @@ from models.user import User
 from routes.auth import get_current_active_user
 from services.audit_service import audit_service
 from utils.rate_limits import limiter, RateLimits
+import asyncio
 from utils.images import validate_image, process_and_save
 
 router = APIRouter()
@@ -256,8 +257,8 @@ async def upload_avatar(
 
     # Normalize, auto-orient and compress. Avatars stay small; no thumbnail needed.
     try:
-        processed = process_and_save(
-            contents, UPLOAD_DIR, "/uploads/avatars", make_thumb=False, full_max_edge=512
+        processed = await asyncio.to_thread(
+            process_and_save, contents, UPLOAD_DIR, "/uploads/avatars", make_thumb=False, full_max_edge=512
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")

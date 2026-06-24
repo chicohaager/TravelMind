@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import List, Optional
 from datetime import datetime, timezone
 from utils.rate_limits import limiter, RateLimits
+import asyncio
 from utils.images import validate_image, process_and_save, derive_thumb_url, delete_upload_file
 import structlog
 from pathlib import Path
@@ -972,7 +973,7 @@ async def upload_place_photo(
 
     # Normalize, compress to WebP and generate a thumbnail.
     try:
-        processed = process_and_save(content, UPLOAD_DIR, "/uploads/places")
+        processed = await asyncio.to_thread(process_and_save, content, UPLOAD_DIR, "/uploads/places")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 
