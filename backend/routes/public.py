@@ -31,7 +31,8 @@ class PublicMedia(BaseModel):
     url: str
     thumb_url: Optional[str] = None
     caption: Optional[str] = None
-    taken_at: Optional[datetime] = None
+    # taken_at deliberately omitted: exact photo-capture timestamps are not
+    # exposed on the unauthenticated public share (data minimization).
     width: Optional[int] = None
     height: Optional[int] = None
 

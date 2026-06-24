@@ -3,7 +3,7 @@ User Settings Router
 Manage user preferences including AI provider configuration
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -12,6 +12,7 @@ from models.database import get_db
 from models.user import User, AIProvider
 from routes.auth import get_current_active_user
 from utils.encryption import encryption_service
+from utils.rate_limits import limiter
 
 router = APIRouter()
 
@@ -90,7 +91,9 @@ async def get_ai_settings(
 
 
 @router.put("/settings/ai", response_model=AISettingsResponse)
+@limiter.limit("20/minute")
 async def update_ai_settings(
+    request: Request,
     settings: AISettingsUpdate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
@@ -138,7 +141,9 @@ async def update_ai_settings(
 
 
 @router.delete("/settings/ai")
+@limiter.limit("20/minute")
 async def delete_ai_settings(
+    request: Request,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -162,7 +167,9 @@ async def delete_ai_settings(
 
 
 @router.post("/settings/ai/validate")
+@limiter.limit("10/minute")
 async def validate_api_key(
+    request: Request,
     settings: AISettingsUpdate,
     current_user: User = Depends(get_current_active_user)
 ):

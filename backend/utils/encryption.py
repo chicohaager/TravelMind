@@ -5,6 +5,7 @@ Securely encrypts and decrypts API keys using Fernet symmetric encryption with p
 
 import os
 import base64
+import logging
 import secrets
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -12,6 +13,8 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class EncryptionService:
@@ -106,10 +109,11 @@ class EncryptionService:
             # Decrypt
             decrypted = cipher.decrypt(ciphertext.encode())
             return decrypted.decode()
-        except Exception as e:
-            # If decryption fails, return empty string
-            # This can happen if salt changed or SECRET_KEY changed
-            print(f"Decryption error: {e}")
+        except Exception:
+            # Decryption can fail if the salt or SECRET_KEY changed. Log the
+            # failure type only (never the ciphertext/key material) and signal
+            # failure to the caller.
+            logger.warning("API key decryption failed (salt/SECRET_KEY mismatch?)")
             return ""
 
 
