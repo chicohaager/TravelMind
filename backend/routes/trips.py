@@ -25,6 +25,7 @@ from models.expense import Expense
 from models.participant import Participant, PermissionLevel, InvitationStatus
 from routes.auth import get_current_user, get_optional_user, get_current_active_user
 from services.audit_service import audit_service
+from services import notification_service
 from sqlalchemy import or_
 import structlog
 
@@ -896,6 +897,16 @@ async def share_trip(
         )
         db.add(participant)
 
+    # Notify the invited user.
+    notification_service.create_notification(
+        db,
+        user_id=invited_user.id,
+        type=notification_service.INVITE_RECEIVED,
+        trip_id=trip_id,
+        actor_name=current_user.full_name or current_user.username,
+        trip_title=trip.title,
+    )
+
     await db.commit()
     await db.refresh(participant)
 
@@ -969,6 +980,18 @@ async def accept_trip_invitation(
     participant.invitation_status = InvitationStatus.ACCEPTED.value
     participant.accepted_at = datetime.now(timezone.utc)
 
+    # Notify the trip owner that the invitation was accepted.
+    trip = (await db.execute(select(Trip).where(Trip.id == trip_id))).scalar_one_or_none()
+    if trip:
+        notification_service.create_notification(
+            db,
+            user_id=trip.owner_id,
+            type=notification_service.INVITE_ACCEPTED,
+            trip_id=trip_id,
+            actor_name=current_user.full_name or current_user.username,
+            trip_title=trip.title,
+        )
+
     await db.commit()
 
     logger.info(
@@ -1016,6 +1039,18 @@ async def decline_trip_invitation(
 
     # Decline invitation
     participant.invitation_status = InvitationStatus.DECLINED.value
+
+    # Notify the trip owner that the invitation was declined.
+    trip = (await db.execute(select(Trip).where(Trip.id == trip_id))).scalar_one_or_none()
+    if trip:
+        notification_service.create_notification(
+            db,
+            user_id=trip.owner_id,
+            type=notification_service.INVITE_DECLINED,
+            trip_id=trip_id,
+            actor_name=current_user.full_name or current_user.username,
+            trip_title=trip.title,
+        )
 
     await db.commit()
 

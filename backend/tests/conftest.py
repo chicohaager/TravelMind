@@ -31,6 +31,7 @@ from models.audit_log import AuditLog
 from models.route import Route
 from models.place_list import PlaceList
 from models.media import Media
+from models.notification import Notification
 
 # Test database URL (in-memory SQLite for speed)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
