@@ -7,6 +7,8 @@ import toast from 'react-hot-toast'
 import { useState } from 'react'
 import DiaryModal from '@components/DiaryModal'
 import Lightbox from '@components/Lightbox'
+import SharePanel from '@components/SharePanel'
+import { useAuth } from '@/contexts/AuthContext'
 import { useTranslation } from 'react-i18next'
 import { getThumbUrl, onThumbError } from '@/utils/images'
 
@@ -15,6 +17,7 @@ export default function Diary() {
   const { tripId } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
   const [expandedEntries, setExpandedEntries] = useState(new Set())
@@ -28,6 +31,8 @@ export default function Diary() {
       return response.data
     }
   })
+
+  const currentTrip = tripId ? trips.find((tr) => tr.id === Number(tripId)) : null
 
   // Fetch diary entries from API (if tripId is provided)
   const { data: entries = [], isLoading: isLoadingEntries } = useQuery({
@@ -201,6 +206,11 @@ export default function Diary() {
           </button>
         )}
       </div>
+
+      {/* Public sharing (owner of the selected trip only) */}
+      {tripId && currentTrip && user?.id === currentTrip.owner_id && (
+        <SharePanel trip={currentTrip} />
+      )}
 
       {/* Loading State */}
       {isLoading && (

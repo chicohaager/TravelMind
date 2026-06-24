@@ -119,6 +119,14 @@ export const tripsService = {
     })
   },
   geocode: (location) => api.get(`/trips/geocode/${encodeURIComponent(location)}`),
+  // Public read-only diary sharing
+  setPublish: (id, { is_public, regenerate = false }) =>
+    api.patch(`/trips/${id}/publish`, { is_public, regenerate }),
+}
+
+// Public (unauthenticated) read-only diary share
+export const publicService = {
+  getDiary: (token) => api.get(`/public/diary/${token}`),
 }
 
 // Diary Services
