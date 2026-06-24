@@ -79,6 +79,7 @@ backend/uploads/
 
 # Development artifacts
 frontend/dev-dist/
+frontend/html/
 
 # Large media files in root
 *.jpg
