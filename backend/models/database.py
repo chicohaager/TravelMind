@@ -239,10 +239,19 @@ async def init_db():
     Initialize database tables
     """
     async with engine.begin() as conn:
+        # Serialize concurrent initializers (e.g. multiple gunicorn workers each
+        # running the lifespan) so the idempotent setup below doesn't race on
+        # CREATE TYPE/TABLE — Postgres ENUM creation isn't concurrency-safe. The
+        # transaction-level advisory lock auto-releases on commit. Postgres only.
+        if conn.dialect.name == "postgresql":
+            from sqlalchemy import text
+            await conn.execute(text("SELECT pg_advisory_xact_lock(727274)"))
+
         # Import all models here to ensure they're registered
         from models import user, trip, diary, place, place_list, expense, participant, route, settings
         from models import audit_log  # Audit logging
         from models import media  # Photo/video media
+        from models import notification  # In-app notifications
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
