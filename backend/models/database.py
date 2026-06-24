@@ -131,6 +131,29 @@ async def run_migrations(conn):
                 await conn.execute(text(sql))
                 print(f"  ✓ Added {column} column to places table")
 
+        # Check trips table columns (public read-only sharing — see migration 0004)
+        result = await conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='trips'
+        """))
+        trip_columns = [row[0] for row in result.fetchall()]
+
+        trip_migrations = [
+            ('is_public', "ALTER TABLE trips ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT false"),
+            ('share_token', "ALTER TABLE trips ADD COLUMN share_token VARCHAR(64)"),
+        ]
+
+        for column, sql in trip_migrations:
+            if column not in trip_columns:
+                await conn.execute(text(sql))
+                print(f"  ✓ Added {column} column to trips table")
+
+        # Unique index backing share-link lookups (idempotent)
+        await conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_trips_share_token ON trips (share_token)"
+        ))
+
     except Exception as e:
         print(f"  ⚠️  Migration warning: {e}")
 
