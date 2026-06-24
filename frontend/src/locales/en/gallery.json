@@ -6,5 +6,8 @@
   "emptyHint": "Upload photos in your diary entries — they'll show up here.",
   "error": "Could not load photos.",
   "photoCount_one": "{{count}} photo",
-  "photoCount_other": "{{count}} photos"
+  "photoCount_other": "{{count}} photos",
+  "timelineTitle": "Photo timeline",
+  "timelineSubtitle": "Your photos in chronological order by capture date",
+  "noDate": "No date"
 }

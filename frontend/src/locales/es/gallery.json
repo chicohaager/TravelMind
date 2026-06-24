@@ -6,5 +6,8 @@
   "emptyHint": "Sube fotos en las entradas de tu diario y aparecerán aquí.",
   "error": "No se pudieron cargar las fotos.",
   "photoCount_one": "{{count}} foto",
-  "photoCount_other": "{{count}} fotos"
+  "photoCount_other": "{{count}} fotos",
+  "timelineTitle": "Cronología de fotos",
+  "timelineSubtitle": "Tus fotos en orden cronológico por fecha de captura",
+  "noDate": "Sin fecha"
 }

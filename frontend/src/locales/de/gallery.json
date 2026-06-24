@@ -6,5 +6,8 @@
   "emptyHint": "Lade Fotos in deinen Tagebucheinträgen hoch — sie erscheinen dann hier.",
   "error": "Fotos konnten nicht geladen werden.",
   "photoCount_one": "{{count}} Foto",
-  "photoCount_other": "{{count}} Fotos"
+  "photoCount_other": "{{count}} Fotos",
+  "timelineTitle": "Foto-Timeline",
+  "timelineSubtitle": "Deine Fotos chronologisch nach Aufnahmedatum",
+  "noDate": "Ohne Datum"
 }
