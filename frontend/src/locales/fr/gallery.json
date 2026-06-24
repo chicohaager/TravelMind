@@ -6,5 +6,8 @@
   "emptyHint": "Ajoutez des photos dans vos entrées de journal — elles apparaîtront ici.",
   "error": "Impossible de charger les photos.",
   "photoCount_one": "{{count}} photo",
-  "photoCount_other": "{{count}} photos"
+  "photoCount_other": "{{count}} photos",
+  "timelineTitle": "Chronologie photo",
+  "timelineSubtitle": "Vos photos par ordre chronologique de prise de vue",
+  "noDate": "Sans date"
 }

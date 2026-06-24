@@ -17,6 +17,7 @@ const TripMap = lazyWithRetry(() => import('@pages/TripMap'))
 const AIAssistant = lazyWithRetry(() => import('@pages/AIAssistant'))
 const Diary = lazyWithRetry(() => import('@pages/Diary'))
 const Gallery = lazyWithRetry(() => import('@pages/Gallery'))
+const Timeline = lazyWithRetry(() => import('@pages/Timeline'))
 const PublicDiary = lazyWithRetry(() => import('@pages/PublicDiary'))
 const Budget = lazyWithRetry(() => import('@pages/Budget'))
 const Transcribe = lazyWithRetry(() => import('@pages/Transcribe'))
@@ -66,6 +67,7 @@ function App() {
             <Route path="diary" element={<Diary />} />
             <Route path="diary/:tripId" element={<Diary />} />
             <Route path="gallery" element={<Gallery />} />
+            <Route path="timeline" element={<Timeline />} />
             <Route path="transcribe" element={<Transcribe />} />
             <Route path="transkribieren" element={<Transcribe />} />
             <Route path="profile" element={<Profile />} />

@@ -146,11 +146,20 @@ async def test_cross_trip_gallery_is_scoped_to_accessible_trips(
     assert len(items) == 1
     assert items[0]["trip_id"] == trip.id
     assert items[0]["trip_title"] == "Lisbon"
+    # created_at is exposed so the timeline can group when taken_at is null.
+    assert items[0]["created_at"] is not None
 
     # A user with no access to the trip sees an empty gallery.
     other = await client.get("/api/media/gallery", headers=other_auth_headers)
     assert other.status_code == 200
     assert other.json() == []
+
+
+@pytest.mark.asyncio
+async def test_capabilities_reports_heic_support(client):
+    resp = await client.get("/api/capabilities")
+    assert resp.status_code == 200
+    assert isinstance(resp.json()["heic_supported"], bool)
 
 
 @pytest.mark.asyncio

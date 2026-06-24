@@ -45,9 +45,10 @@ class MediaResponse(BaseModel):
 
 
 class GalleryMediaResponse(MediaResponse):
-    """A media item enriched with its trip, for the cross-trip gallery."""
+    """A media item enriched with its trip, for the cross-trip gallery/timeline."""
     trip_id: int
     trip_title: str
+    created_at: Optional[datetime] = None  # grouping fallback when taken_at is null
 
 
 class MediaUpdate(BaseModel):
@@ -126,6 +127,7 @@ async def get_gallery_media(
             **MediaResponse.model_validate(media).model_dump(),
             trip_id=media.trip_id,
             trip_title=trip_title,
+            created_at=media.created_at,
         )
         for media, trip_title in result.all()
     ]
