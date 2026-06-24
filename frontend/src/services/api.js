@@ -202,6 +202,14 @@ export const systemService = {
   capabilities: () => api.get('/capabilities'),
 }
 
+// In-app notifications
+export const notificationsService = {
+  list: (params) => api.get('/notifications', { params }),
+  unreadCount: () => api.get('/notifications/unread-count'),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllRead: () => api.post('/notifications/read-all'),
+}
+
 // Timeline Services
 export const timelineService = {
   getTimeline: (tripId) => api.get(`/timeline/${tripId}/timeline`),
