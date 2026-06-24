@@ -542,10 +542,10 @@ test('user can create trip', async () => {
 - **Route-Code-Splitting** (React.lazy)
 - **Backup/Restore** für DB + Uploads (Skripte + Doku, ZimaOS-Anhang)
 - **Reise-übergreifende Foto-Galerie** (`/media/gallery`, nach Reise gruppiert, geteilte Lightbox)
+- **Öffentliche read-only Share-Links** für Reisetagebücher (Privacy-Schalter, Token, `/share/:token`, `/api/public/diary/{token}`)
 
 ### 🔜 Als Nächstes
 
-- 🔗 Öffentliche, read-only Share-Links für Reisetagebücher (mit Privacy-Schalter)
 - 🗂️ Drag-&-Drop-Sortierung der Fotos (order_index ist vorbereitet)
 - 🧠 HEIC-Galerie/Lightbox-Feinschliff, Foto-Timeline
 
