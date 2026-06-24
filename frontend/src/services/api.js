@@ -135,6 +135,8 @@ export const diaryService = {
   create: (tripId, data) => api.post(`/diary/${tripId}`, data),
   update: (entryId, data) => api.put(`/diary/${entryId}`, data),
   delete: (entryId) => api.delete(`/diary/${entryId}`),
+  reorderPhotos: (entryId, mediaIds) =>
+    api.patch(`/diary/${entryId}/photos/order`, { media_ids: mediaIds }),
   uploadPhoto: (entryId, file) => {
     const formData = new FormData()
     formData.append('file', file)

@@ -9,6 +9,7 @@ import DiaryModal from '@components/DiaryModal'
 import Lightbox from '@components/Lightbox'
 import SharePanel from '@components/SharePanel'
 import { useAuth } from '@/contexts/AuthContext'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useTranslation } from 'react-i18next'
 import { getThumbUrl, onThumbError } from '@/utils/images'
 
@@ -185,6 +186,29 @@ export default function Diary() {
     queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
     queryClient.invalidateQueries({ queryKey: ['allDiaryEntries'] })
   }
+
+  const reorderMutation = useMutation({
+    mutationFn: ({ entryId, mediaIds }) => diaryService.reorderPhotos(entryId, mediaIds),
+    onError: () => {
+      toast.error(t('common:error', 'Fehler'))
+      // Revert the optimistic reorder from the server's truth.
+      queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
+    },
+  })
+
+  const handlePhotoDragEnd = (entry) => (result) => {
+    if (!result.destination || result.destination.index === result.source.index) return
+    const media = Array.from(entry.media)
+    const [moved] = media.splice(result.source.index, 1)
+    media.splice(result.destination.index, 0, moved)
+    // Optimistically reflect the new order, then persist it.
+    queryClient.setQueryData(['diary', tripId], (old) =>
+      old?.map((e) => (e.id === entry.id ? { ...e, media } : e))
+    )
+    reorderMutation.mutate({ entryId: entry.id, mediaIds: media.map((m) => m.id) })
+  }
+
+  const canEdit = currentTrip && user?.id === currentTrip.owner_id
 
   return (
     <div className="space-y-6">
@@ -432,28 +456,63 @@ export default function Diary() {
 
                 {/* Photos */}
                 {entry.media && entry.media.length > 0 && (
-                  <div className={`flex flex-wrap gap-2 mb-3`}>
-                    {(expandedEntries.has(entry.id) ? entry.media : entry.media.slice(0, 3)).map((m, i) => (
-                      <img
-                        key={m.id ?? i}
-                        src={getThumbUrl(m.url)}
-                        onError={onThumbError(m.url)}
-                        loading="lazy"
-                        alt={m.caption || `Photo ${i + 1}`}
-                        title={m.caption || undefined}
-                        onClick={() => openLightbox(entry.media, i)}
-                        className={`${expandedEntries.has(entry.id) ? 'w-32 h-32' : 'w-20 h-20'} object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
-                      />
-                    ))}
-                    {!expandedEntries.has(entry.id) && entry.media.length > 3 && (
-                      <div
-                        onClick={() => openLightbox(entry.media, 3)}
-                        className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-sm text-gray-500 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        +{entry.media.length - 3}
-                      </div>
-                    )}
-                  </div>
+                  expandedEntries.has(entry.id) && canEdit && entry.media.length > 1 ? (
+                    /* Expanded + editable: drag to reorder (click still opens the lightbox). */
+                    <DragDropContext onDragEnd={handlePhotoDragEnd(entry)}>
+                      <Droppable droppableId={`media-${entry.id}`} direction="horizontal">
+                        {(dropProvided) => (
+                          <div
+                            ref={dropProvided.innerRef}
+                            {...dropProvided.droppableProps}
+                            className="flex flex-wrap gap-2 mb-3"
+                          >
+                            {entry.media.map((m, i) => (
+                              <Draggable key={m.id} draggableId={`media-${m.id}`} index={i}>
+                                {(dragProvided, snapshot) => (
+                                  <img
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    src={getThumbUrl(m.url)}
+                                    onError={onThumbError(m.url)}
+                                    loading="lazy"
+                                    alt={m.caption || `Photo ${i + 1}`}
+                                    title={m.caption || undefined}
+                                    onClick={() => openLightbox(entry.media, i)}
+                                    className={`w-32 h-32 object-cover rounded-lg cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity ${snapshot.isDragging ? 'ring-2 ring-primary-500 opacity-90' : ''}`}
+                                  />
+                                )}
+                              </Draggable>
+                            ))}
+                            {dropProvided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
+                  ) : (
+                    <div className={`flex flex-wrap gap-2 mb-3`}>
+                      {(expandedEntries.has(entry.id) ? entry.media : entry.media.slice(0, 3)).map((m, i) => (
+                        <img
+                          key={m.id ?? i}
+                          src={getThumbUrl(m.url)}
+                          onError={onThumbError(m.url)}
+                          loading="lazy"
+                          alt={m.caption || `Photo ${i + 1}`}
+                          title={m.caption || undefined}
+                          onClick={() => openLightbox(entry.media, i)}
+                          className={`${expandedEntries.has(entry.id) ? 'w-32 h-32' : 'w-20 h-20'} object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
+                        />
+                      ))}
+                      {!expandedEntries.has(entry.id) && entry.media.length > 3 && (
+                        <div
+                          onClick={() => openLightbox(entry.media, 3)}
+                          className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-sm text-gray-500 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          +{entry.media.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )
                 )}
 
                 {/* Tags */}
