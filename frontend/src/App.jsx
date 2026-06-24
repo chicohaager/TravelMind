@@ -17,6 +17,7 @@ const TripMap = lazyWithRetry(() => import('@pages/TripMap'))
 const AIAssistant = lazyWithRetry(() => import('@pages/AIAssistant'))
 const Diary = lazyWithRetry(() => import('@pages/Diary'))
 const Gallery = lazyWithRetry(() => import('@pages/Gallery'))
+const PublicDiary = lazyWithRetry(() => import('@pages/PublicDiary'))
 const Budget = lazyWithRetry(() => import('@pages/Budget'))
 const Transcribe = lazyWithRetry(() => import('@pages/Transcribe'))
 const Profile = lazyWithRetry(() => import('@pages/Profile'))
@@ -44,6 +45,7 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/share/:token" element={<PublicDiary />} />
 
           {/* Protected routes (require authentication) */}
           <Route

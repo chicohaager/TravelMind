@@ -17,8 +17,9 @@ import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
  *   onClose       - called when the lightbox should close
  *   onCaptionSaved- optional callback after a caption is saved (e.g. to
  *                   invalidate the caller's queries)
+ *   readOnly      - hide the caption editor (e.g. on public share pages)
  */
-export default function Lightbox({ open, items = [], initialIndex = 0, onClose, onCaptionSaved }) {
+export default function Lightbox({ open, items = [], initialIndex = 0, onClose, onCaptionSaved, readOnly = false }) {
   const { t } = useTranslation()
   const [index, setIndex] = useState(initialIndex)
   const [captionDraft, setCaptionDraft] = useState('')
@@ -126,24 +127,32 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
         className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 w-[90vw] max-w-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex w-full gap-2">
-          <input
-            type="text"
-            value={captionDraft}
-            onChange={(e) => setCaptionDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') saveCaption() }}
-            placeholder={t('diary:captionPlaceholder', 'Bildunterschrift hinzufügen…')}
-            maxLength={500}
-            className="flex-1 px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50 text-sm"
-          />
-          <button
-            onClick={saveCaption}
-            disabled={saveCaptionMutation.isPending || captionDraft === (current?.caption || '')}
-            className="px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {t('common:save', 'Speichern')}
-          </button>
-        </div>
+        {readOnly ? (
+          current?.caption ? (
+            <p className="text-white/90 text-sm text-center px-3 py-2 rounded-lg bg-white/10 max-w-full truncate">
+              {current.caption}
+            </p>
+          ) : null
+        ) : (
+          <div className="flex w-full gap-2">
+            <input
+              type="text"
+              value={captionDraft}
+              onChange={(e) => setCaptionDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') saveCaption() }}
+              placeholder={t('diary:captionPlaceholder', 'Bildunterschrift hinzufügen…')}
+              maxLength={500}
+              className="flex-1 px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50 text-sm"
+            />
+            <button
+              onClick={saveCaption}
+              disabled={saveCaptionMutation.isPending || captionDraft === (current?.caption || '')}
+              className="px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {t('common:save', 'Speichern')}
+            </button>
+          </div>
+        )}
 
         {items.length > 1 && (
           <div className="flex gap-2">

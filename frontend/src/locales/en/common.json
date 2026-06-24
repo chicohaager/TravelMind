@@ -54,6 +54,20 @@
     "copyFailed": "Copy failed",
     "email": "Email",
     "tripTo": "My trip to {{destination}}",
-    "checkOutTrip": "Check out my trip!"
+    "checkOutTrip": "Check out my trip!",
+    "public": {
+      "title": "Public sharing",
+      "hint": "Create a read-only link to this travel diary. Anyone with the link can read it without an account.",
+      "enabled": "Public – anyone with the link can read the diary",
+      "disabled": "Private – only you and travel companions",
+      "toggle": "Make diary public",
+      "regenerate": "Generate new link",
+      "regenerateHint": "The previous link stops working immediately.",
+      "linkLabel": "Public link",
+      "pageFooter": "Made with TravelMind",
+      "notFound": "This travel diary is not publicly available (anymore).",
+      "loading": "Loading diary…",
+      "empty": "This trip has no diary entries yet."
+    }
   }
 }

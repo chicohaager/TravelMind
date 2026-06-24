@@ -51,6 +51,20 @@
     "copyFailed": "Échec de la copie",
     "email": "E-mail",
     "tripTo": "Mon voyage à {{destination}}",
-    "checkOutTrip": "Découvrez mon voyage !"
+    "checkOutTrip": "Découvrez mon voyage !",
+    "public": {
+      "title": "Partage public",
+      "hint": "Créez un lien en lecture seule vers ce journal de voyage. Toute personne disposant du lien peut le lire sans compte.",
+      "enabled": "Public – toute personne avec le lien peut lire le journal",
+      "disabled": "Privé – seulement vous et vos compagnons de voyage",
+      "toggle": "Rendre le journal public",
+      "regenerate": "Générer un nouveau lien",
+      "regenerateHint": "Le lien précédent cesse immédiatement de fonctionner.",
+      "linkLabel": "Lien public",
+      "pageFooter": "Créé avec TravelMind",
+      "notFound": "Ce journal de voyage n'est pas (plus) accessible publiquement.",
+      "loading": "Chargement du journal…",
+      "empty": "Ce voyage n'a pas encore d'entrées de journal."
+    }
   }
 }
