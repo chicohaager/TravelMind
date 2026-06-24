@@ -59,9 +59,10 @@ USER travelmind
 # Expose port
 EXPOSE 80
 
-# Health check
+# Health check — use 127.0.0.1 (nginx listens IPv4-only; "localhost" resolves to
+# IPv6 ::1 in this image and would false-fail) with busybox-compatible wget flags.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+    CMD wget -q -O /dev/null http://127.0.0.1:80/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
