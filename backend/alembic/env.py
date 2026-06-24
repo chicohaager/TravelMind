@@ -33,6 +33,7 @@ from models.route import Route
 from models.settings import Settings
 from models.media import Media
 from models.audit_log import AuditLog
+from models.notification import Notification
 
 # This is the Alembic Config object
 config = context.config
