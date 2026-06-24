@@ -55,7 +55,7 @@ class ExpenseCreate(BaseModel):
     currency: str = "EUR"
     category: str = "other"
     date: date
-    paid_by: int
+    paid_by: Optional[int] = None  # optional: solo trips have no participants to attribute
     notes: Optional[str] = None
     receipt_url: Optional[str] = None
     splits: List[dict] = []  # Simple list of dicts instead of ParticipantSplit
@@ -184,8 +184,8 @@ async def _create_expense_handler(
     )
     participants = {p.id: p.name for p in participants_result.scalars().all()}
 
-    # Validate paid_by participant exists
-    if expense.paid_by not in participants:
+    # Validate paid_by participant exists (when attributed — solo trips may omit it).
+    if expense.paid_by is not None and expense.paid_by not in participants:
         raise HTTPException(status_code=404, detail="Participant who paid not found")
 
     # Validate all split participants exist
@@ -196,13 +196,14 @@ async def _create_expense_handler(
                 detail=f"Participant {split.get('participant_id')} not found"
             )
 
-    # Validate splits sum to total amount (with small tolerance for rounding)
-    total_split = sum(split.get("amount", 0) for split in expense.splits)
-    if abs(total_split - expense.amount) > 0.01:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Splits total ({total_split}) must equal expense amount ({expense.amount})"
-        )
+    # Validate splits sum to total amount (only when the expense is actually split).
+    if expense.splits:
+        total_split = sum(split.get("amount", 0) for split in expense.splits)
+        if abs(total_split - expense.amount) > 0.01:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Splits total ({total_split}) must equal expense amount ({expense.amount})"
+            )
 
     new_expense = Expense(
         trip_id=trip_id,
