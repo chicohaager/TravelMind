@@ -40,9 +40,13 @@ export function initSentry() {
     // Integrations
     integrations: [
       Sentry.browserTracingIntegration(),
+      // Mask all text and inputs in session replay so secrets the user types
+      // (AI API keys, passwords — incl. when the key field is toggled to plain
+      // text) are never sent to Sentry.
       Sentry.replayIntegration({
-        maskAllText: false,
-        blockAllMedia: false,
+        maskAllText: true,
+        maskAllInputs: true,
+        blockAllMedia: true,
       }),
     ],
 
