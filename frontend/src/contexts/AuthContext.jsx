@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { authService } from '@services/api'
+import { clearUserContext } from '@/utils/sentry'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext(null)
@@ -20,14 +21,23 @@ export function AuthProvider({ children }) {
     }
   }, [token])
 
+  // Clear local session state without any user-facing toast (used for stale
+  // tokens on load and as the shared teardown for an explicit logout).
+  const clearSession = () => {
+    localStorage.removeItem('token')
+    setToken(null)
+    setUser(null)
+    clearUserContext()
+  }
+
   const loadUser = async () => {
     try {
       const response = await authService.getCurrentUser()
       setUser(response.data)
     } catch (error) {
       console.error('Failed to load user:', error)
-      // Token might be invalid, clear it
-      logout()
+      // Stale/invalid token: clear silently, do NOT fire a "logged out" toast.
+      clearSession()
     } finally {
       setLoading(false)
     }
@@ -70,10 +80,15 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    setToken(null)
-    setUser(null)
+  const logout = async () => {
+    // Best-effort server-side revoke (refresh cookie/session); ignore failures
+    // so logout always succeeds locally even when offline or already expired.
+    try {
+      await authService.logout()
+    } catch (_) {
+      // intentionally ignored
+    }
+    clearSession()
     toast.success(t('auth:logoutSuccessful'))
   }
 
