@@ -33,6 +33,18 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
+def _to_naive_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Coerce a datetime to tz-naive UTC.
+
+    ``entry_date`` is a ``TIMESTAMP WITHOUT TIME ZONE`` column, so a tz-aware
+    value (e.g. an ISO string with an offset, or ``datetime.now(timezone.utc)``)
+    makes asyncpg raise ``can't subtract offset-naive and offset-aware``.
+    """
+    if dt is not None and dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
 async def verify_diary_edit_access(entry, current_user: User, db: AsyncSession) -> None:
     """
     Authorize editing/deleting a diary entry.
@@ -167,7 +179,7 @@ async def _create_diary_entry_handler(
         author_id=author_id,
         title=entry.title,
         content=entry.content,
-        entry_date=entry.entry_date or datetime.now(timezone.utc),
+        entry_date=_to_naive_utc(entry.entry_date) or datetime.now(timezone.utc).replace(tzinfo=None),
         location_name=entry.location_name,
         latitude=entry.latitude,
         longitude=entry.longitude,
@@ -238,7 +250,7 @@ async def update_diary_entry(
     # so the legacy `photos` column is intentionally left untouched here.
     existing_entry.title = entry.title
     existing_entry.content = entry.content
-    existing_entry.entry_date = entry.entry_date or existing_entry.entry_date
+    existing_entry.entry_date = _to_naive_utc(entry.entry_date) or existing_entry.entry_date
     existing_entry.location_name = entry.location_name
     existing_entry.latitude = entry.latitude
     existing_entry.longitude = entry.longitude
