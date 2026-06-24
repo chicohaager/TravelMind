@@ -123,7 +123,7 @@ Text to analyze:
 
         try:
             message = self.claude_client.messages.create(
-                model=os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022"),
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=4096,
                 messages=[
                     {
