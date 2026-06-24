@@ -541,10 +541,10 @@ test('user can create trip', async () => {
 - **Volltextsuche** (Postgres FTS + ILIKE-Fallback, Navbar-Dropdown)
 - **Route-Code-Splitting** (React.lazy)
 - **Backup/Restore** für DB + Uploads (Skripte + Doku, ZimaOS-Anhang)
+- **Reise-übergreifende Foto-Galerie** (`/media/gallery`, nach Reise gruppiert, geteilte Lightbox)
 
 ### 🔜 Als Nächstes
 
-- 🖼️ Reise-übergreifende Foto-Galerie (nutzt die Media-Tabelle)
 - 🔗 Öffentliche, read-only Share-Links für Reisetagebücher (mit Privacy-Schalter)
 - 🗂️ Drag-&-Drop-Sortierung der Fotos (order_index ist vorbereitet)
 - 🧠 HEIC-Galerie/Lightbox-Feinschliff, Foto-Timeline
@@ -558,4 +558,4 @@ test('user can create trip', async () => {
 ---
 
 **Dokumentations-Version**: 2.0
-**Letztes Update**: 2026-06-23
+**Letztes Update**: 2026-06-24
