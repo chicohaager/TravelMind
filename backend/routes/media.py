@@ -5,9 +5,9 @@ Manage individual media items (photos) that belong to diary entries or places.
 The media table is the source of truth for photos; see models/media.py.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request, status
+from fastapi import APIRouter, HTTPException, Depends, Request, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime
@@ -15,6 +15,8 @@ import structlog
 
 from models.database import get_db
 from models.media import Media
+from models.trip import Trip
+from models.participant import Participant, InvitationStatus
 from models.user import User
 from routes.auth import get_current_active_user
 from utils.access_control import verify_trip_access
@@ -40,6 +42,12 @@ class MediaResponse(BaseModel):
     place_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GalleryMediaResponse(MediaResponse):
+    """A media item enriched with its trip, for the cross-trip gallery."""
+    trip_id: int
+    trip_title: str
 
 
 class MediaUpdate(BaseModel):
@@ -73,6 +81,54 @@ async def get_trip_media(
         .order_by(Media.taken_at.desc().nullslast(), Media.created_at.desc())
     )
     return result.scalars().all()
+
+
+@router.get("/gallery", response_model=List[GalleryMediaResponse])
+@limiter.limit(RateLimits.DIARY_LIST)
+async def get_gallery_media(
+    request: Request,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(200, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """All media across every trip the user can see, newest capture first.
+
+    Powers the cross-trip photo gallery. Scoping mirrors the trip list: a normal
+    user sees photos from their own trips plus trips shared with them via an
+    accepted invitation; a superuser sees all.
+    """
+    query = (
+        select(Media, Trip.title)
+        .join(Trip, Media.trip_id == Trip.id)
+        .order_by(Media.taken_at.desc().nullslast(), Media.created_at.desc())
+    )
+
+    if not current_user.is_superuser:
+        # Trips the user participates in with an accepted invitation.
+        shared_result = await db.execute(
+            select(Participant.trip_id).where(
+                Participant.user_id == current_user.id,
+                Participant.invitation_status == InvitationStatus.ACCEPTED.value,
+            )
+        )
+        shared_trip_ids = [row[0] for row in shared_result.fetchall()]
+        query = query.where(
+            or_(
+                Trip.owner_id == current_user.id,
+                Trip.id.in_(shared_trip_ids) if shared_trip_ids else False,
+            )
+        )
+
+    result = await db.execute(query.offset(skip).limit(limit))
+    return [
+        GalleryMediaResponse(
+            **MediaResponse.model_validate(media).model_dump(),
+            trip_id=media.trip_id,
+            trip_title=trip_title,
+        )
+        for media, trip_title in result.all()
+    ]
 
 
 @router.patch("/{media_id}", response_model=MediaResponse)
