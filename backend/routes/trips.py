@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
 import os
+import secrets
 from pathlib import Path
 from services.geocoding import geocoding_service
 from utils.rate_limits import limiter, RateLimits
@@ -90,6 +91,9 @@ class TripResponse(BaseModel):
     budget: Optional[float] = Field(None, example=1500.0)
     currency: str = Field(default="EUR", example="EUR")
     cover_image: Optional[str] = Field(None, example="/uploads/trips/1_abc123.jpg")
+    owner_id: int = Field(..., example=1)
+    is_public: bool = Field(False, example=False)
+    share_token: Optional[str] = Field(None, example="iX2k9...")
     created_at: datetime = Field(..., example="2025-01-15T10:30:00Z")
     updated_at: Optional[datetime] = Field(None, example="2025-01-16T14:45:00Z")
 
@@ -752,6 +756,53 @@ class ShareParticipantResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PublishUpdate(BaseModel):
+    is_public: bool = Field(..., description="Whether the trip's diary is publicly readable")
+    regenerate: bool = Field(False, description="Mint a new share token, revoking any existing link")
+
+
+class PublishResponse(BaseModel):
+    is_public: bool
+    share_token: Optional[str] = None
+    share_path: Optional[str] = None  # e.g. /share/<token>
+
+
+@router.patch("/{trip_id}/publish", response_model=PublishResponse)
+@limiter.limit(RateLimits.TRIP_UPDATE)
+async def set_trip_publish(
+    request: Request,
+    trip_id: int,
+    update: PublishUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Enable/disable public read-only sharing of this trip's diary (owner only).
+
+    A token is minted on first publish and reused afterwards, so the public URL
+    stays stable across off/on toggles. `regenerate` mints a fresh token,
+    immediately revoking any previously shared link.
+    """
+    result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip, current_user, db)
+
+    if update.is_public and (trip.share_token is None or update.regenerate):
+        trip.share_token = secrets.token_urlsafe(32)
+    trip.is_public = update.is_public
+
+    await db.commit()
+    await db.refresh(trip)
+    logger.info("trip_publish_set", trip_id=trip_id, is_public=trip.is_public, user_id=current_user.id)
+
+    return PublishResponse(
+        is_public=trip.is_public,
+        share_token=trip.share_token,
+        share_path=f"/share/{trip.share_token}" if trip.share_token else None,
+    )
 
 
 @router.post("/{trip_id}/share", response_model=ShareParticipantResponse, status_code=201)
