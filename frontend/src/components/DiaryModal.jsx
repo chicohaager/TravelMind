@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import AudioRecorder from './AudioRecorder'
 import NativeCamera from './NativeCamera'
 import { useTranslation } from 'react-i18next'
+import { getPhotoUrl } from '@/utils/images'
 
 export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = null, entryId = null }) {
   const { t } = useTranslation()
@@ -436,7 +437,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                       {formData.photos.map((photoUrl, index) => (
                         <div key={index} className="relative group">
                           <img
-                            src={photoUrl}
+                            src={getPhotoUrl(photoUrl)}
                             alt={t('diary:photoLabel').replace('{index}', index + 1)}
                             className="w-full h-24 object-cover rounded-lg"
                           />
