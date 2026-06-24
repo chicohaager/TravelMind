@@ -128,6 +128,32 @@ async def test_caption_update_and_gallery_and_delete(client, trip, auth_headers)
 
 
 @pytest.mark.asyncio
+async def test_cross_trip_gallery_is_scoped_to_accessible_trips(
+    client, trip, auth_headers, other_auth_headers
+):
+    entry_id = await _create_entry(client, trip.id, auth_headers)
+    upload = await client.post(
+        f"/api/diary/{entry_id}/upload-photo",
+        files={"file": ("photo.jpg", _jpeg_bytes(), "image/jpeg")},
+        headers=auth_headers,
+    )
+    assert upload.status_code == 200, upload.text
+
+    # The owner sees the photo, enriched with its trip id + title for grouping.
+    gallery = await client.get("/api/media/gallery", headers=auth_headers)
+    assert gallery.status_code == 200
+    items = gallery.json()
+    assert len(items) == 1
+    assert items[0]["trip_id"] == trip.id
+    assert items[0]["trip_title"] == "Lisbon"
+
+    # A user with no access to the trip sees an empty gallery.
+    other = await client.get("/api/media/gallery", headers=other_auth_headers)
+    assert other.status_code == 200
+    assert other.json() == []
+
+
+@pytest.mark.asyncio
 async def test_other_user_cannot_modify_media(client, trip, auth_headers, other_auth_headers):
     entry_id = await _create_entry(client, trip.id, auth_headers)
     upload = await client.post(
