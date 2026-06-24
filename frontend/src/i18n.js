@@ -9,6 +9,7 @@ import enNav from './locales/en/nav.json'
 import enAuth from './locales/en/auth.json'
 import enTrips from './locales/en/trips.json'
 import enDiary from './locales/en/diary.json'
+import enGallery from './locales/en/gallery.json'
 import enPlaces from './locales/en/places.json'
 import enAi from './locales/en/ai.json'
 import enSettings from './locales/en/settings.json'
@@ -36,6 +37,7 @@ import deNav from './locales/de/nav.json'
 import deAuth from './locales/de/auth.json'
 import deTrips from './locales/de/trips.json'
 import deDiary from './locales/de/diary.json'
+import deGallery from './locales/de/gallery.json'
 import dePlaces from './locales/de/places.json'
 import deAi from './locales/de/ai.json'
 import deSettings from './locales/de/settings.json'
@@ -63,6 +65,7 @@ import frNav from './locales/fr/nav.json'
 import frAuth from './locales/fr/auth.json'
 import frTrips from './locales/fr/trips.json'
 import frDiary from './locales/fr/diary.json'
+import frGallery from './locales/fr/gallery.json'
 import frPlaces from './locales/fr/places.json'
 import frAi from './locales/fr/ai.json'
 import frSettings from './locales/fr/settings.json'
@@ -90,6 +93,7 @@ import esNav from './locales/es/nav.json'
 import esAuth from './locales/es/auth.json'
 import esTrips from './locales/es/trips.json'
 import esDiary from './locales/es/diary.json'
+import esGallery from './locales/es/gallery.json'
 import esPlaces from './locales/es/places.json'
 import esAi from './locales/es/ai.json'
 import esSettings from './locales/es/settings.json'
@@ -118,6 +122,7 @@ export const namespaces = [
   'auth',
   'trips',
   'diary',
+  'gallery',
   'places',
   'ai',
   'settings',
@@ -155,6 +160,7 @@ const resources = {
     auth: enAuth,
     trips: enTrips,
     diary: enDiary,
+    gallery: enGallery,
     places: enPlaces,
     ai: enAi,
     settings: enSettings,
@@ -182,6 +188,7 @@ const resources = {
     auth: deAuth,
     trips: deTrips,
     diary: deDiary,
+    gallery: deGallery,
     places: dePlaces,
     ai: deAi,
     settings: deSettings,
@@ -209,6 +216,7 @@ const resources = {
     auth: frAuth,
     trips: frTrips,
     diary: frDiary,
+    gallery: frGallery,
     places: frPlaces,
     ai: frAi,
     settings: frSettings,
@@ -236,6 +244,7 @@ const resources = {
     auth: esAuth,
     trips: esTrips,
     diary: esDiary,
+    gallery: esGallery,
     places: esPlaces,
     ai: esAi,
     settings: esSettings,

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Map, Sparkles, BookOpen, X, DollarSign, ChevronDown, ChevronRight, Mic } from 'lucide-react'
+import { Home, Map, Sparkles, BookOpen, X, DollarSign, ChevronDown, ChevronRight, Mic, GalleryThumbnails } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -21,6 +21,7 @@ export default function Sidebar({ open, onClose }) {
     },
     { name: t('budget:title'), href: '/budget', icon: DollarSign },
     { name: t('nav:diary'), href: '/diary', icon: BookOpen },
+    { name: t('nav:gallery'), href: '/gallery', icon: GalleryThumbnails },
     { name: 'Transcription', href: '/transcribe', icon: Mic },
   ]
 

@@ -1,0 +1,10 @@
+{
+  "title": "Galería",
+  "subtitle": "Todas las fotos de tus viajes en un solo lugar",
+  "loading": "Cargando fotos…",
+  "empty": "Aún no hay fotos.",
+  "emptyHint": "Sube fotos en las entradas de tu diario y aparecerán aquí.",
+  "error": "No se pudieron cargar las fotos.",
+  "photoCount_one": "{{count}} foto",
+  "photoCount_other": "{{count}} fotos"
+}
