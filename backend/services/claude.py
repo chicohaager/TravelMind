@@ -21,7 +21,7 @@ class ClaudeService:
             raise ValueError("CLAUDE_API_KEY not found in environment variables")
 
         self.client = Anthropic(api_key=self.api_key)
-        self.model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+        self.model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
         self.max_tokens = int(os.getenv("CLAUDE_MAX_TOKENS", "2048"))
 
     async def suggest_destinations(

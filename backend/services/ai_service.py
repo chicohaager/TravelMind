@@ -42,7 +42,7 @@ class AIProvider(ABC):
 class ClaudeProvider(AIProvider):
     """Anthropic Claude provider"""
 
-    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6"):
         self.client = Anthropic(api_key=api_key)
         self.model = model
 
@@ -73,7 +73,7 @@ class ClaudeProvider(AIProvider):
 class OpenAIProvider(AIProvider):
     """OpenAI GPT provider"""
 
-    def __init__(self, api_key: str, model: str = "gpt-4-turbo-preview"):
+    def __init__(self, api_key: str, model: str = "gpt-5.4"):
         self.client = openai.OpenAI(api_key=api_key)
         self.model = model
 
@@ -106,7 +106,7 @@ class OpenAIProvider(AIProvider):
 class GeminiProvider(AIProvider):
     """Google Gemini provider"""
 
-    def __init__(self, api_key: str, model: str = "gemini-pro"):
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash"):
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model)
 
@@ -140,7 +140,7 @@ class GeminiProvider(AIProvider):
 class GroqProvider(AIProvider):
     """Groq provider (fast, free inference with Llama models)"""
 
-    def __init__(self, api_key: str, model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, api_key: str, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
         self.client = Groq(api_key=api_key)
         self.model = model
 
