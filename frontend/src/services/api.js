@@ -197,6 +197,11 @@ export const searchService = {
   search: (q) => api.get('/search', { params: { q } }),
 }
 
+// System capabilities (server feature flags the UI adapts to)
+export const systemService = {
+  capabilities: () => api.get('/capabilities'),
+}
+
 // Timeline Services
 export const timelineService = {
   getTimeline: (tripId) => api.get(`/timeline/${tripId}/timeline`),

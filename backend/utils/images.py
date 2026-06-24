@@ -82,6 +82,11 @@ if _HEIF_SUPPORTED:
     ALLOWED_EXTENSIONS |= {"heic", "heif"}
     ALLOWED_MIME_TYPES |= {"image/heic", "image/heif"}
 
+
+def heic_supported() -> bool:
+    """Whether HEIC/HEIF uploads can be decoded (pillow_heif is installed)."""
+    return _HEIF_SUPPORTED
+
 # Derivative sizes, measured on the long edge in pixels.
 FULL_MAX_EDGE = 2560
 THUMB_MAX_EDGE = 400

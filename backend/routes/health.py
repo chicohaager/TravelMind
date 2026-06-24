@@ -237,6 +237,14 @@ async def liveness_probe():
     return {"status": "alive"}
 
 
+@router.get("/capabilities", tags=["System"])
+async def capabilities():
+    """Server feature flags the frontend adapts to (e.g. HEIC/HEIF support)."""
+    from utils.images import heic_supported
+
+    return {"heic_supported": heic_supported()}
+
+
 @router.get("/health/ready", tags=["System"])
 async def readiness_probe(db: AsyncSession = Depends(get_db)):
     """
