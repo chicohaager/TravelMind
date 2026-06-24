@@ -746,8 +746,8 @@ async def get_audit_stats(
     category_counts = dict(category_result.all())
 
     # Failed events in last 24 hours
-    from datetime import timedelta
-    yesterday = datetime.now() - timedelta(hours=24)
+    from datetime import timedelta, timezone
+    yesterday = datetime.now(timezone.utc) - timedelta(hours=24)
     failed_result = await db.execute(
         select(func.count(AuditLog.id))
         .where(AuditLog.status == "failure")
