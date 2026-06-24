@@ -94,3 +94,6 @@ frontend/html/
 *.tmp
 *.bak
 .env.new
+
+# Lokale Recovery-Dumps (nicht committen)
+_recovery/
