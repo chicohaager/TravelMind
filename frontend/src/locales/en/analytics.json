@@ -1,0 +1,17 @@
+{
+  "title": "Analytics",
+  "subtitle": "Statistics across all your trips",
+  "loading": "Loading statistics…",
+  "empty": "No data yet — create trips, entries and expenses.",
+  "error": "Could not load statistics.",
+  "trips": "Trips",
+  "entries": "Diary entries",
+  "photos": "Photos",
+  "travelDays": "Travel days",
+  "totalSpend": "Total spend",
+  "spendByCategory": "Spend by category",
+  "spendByCurrency": "Spend by currency",
+  "photosByTrip": "Photos per trip",
+  "entriesByTrip": "Entries per trip",
+  "tripsByYear": "Trips per year"
+}

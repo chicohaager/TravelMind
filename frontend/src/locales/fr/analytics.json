@@ -1,0 +1,17 @@
+{
+  "title": "Analytique",
+  "subtitle": "Statistiques sur tous vos voyages",
+  "loading": "Chargement des statistiques…",
+  "empty": "Aucune donnée — créez des voyages, des entrées et des dépenses.",
+  "error": "Impossible de charger les statistiques.",
+  "trips": "Voyages",
+  "entries": "Entrées de journal",
+  "photos": "Photos",
+  "travelDays": "Jours de voyage",
+  "totalSpend": "Dépenses totales",
+  "spendByCategory": "Dépenses par catégorie",
+  "spendByCurrency": "Dépenses par devise",
+  "photosByTrip": "Photos par voyage",
+  "entriesByTrip": "Entrées par voyage",
+  "tripsByYear": "Voyages par an"
+}
