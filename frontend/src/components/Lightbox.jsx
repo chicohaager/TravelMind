@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
@@ -20,9 +20,10 @@ import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
  *   readOnly      - hide the caption editor (e.g. on public share pages)
  */
 export default function Lightbox({ open, items = [], initialIndex = 0, onClose, onCaptionSaved, readOnly = false }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [index, setIndex] = useState(initialIndex)
   const [captionDraft, setCaptionDraft] = useState('')
+  const touchStartX = useRef(null)
 
   // Sync internal state whenever the lightbox is (re)opened on a given photo.
   useEffect(() => {
@@ -72,14 +73,37 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  // Preload the neighbouring full-size images so navigation feels instant.
+  useEffect(() => {
+    if (!open || items.length < 2) return
+    for (const i of [(index + 1) % items.length, (index - 1 + items.length) % items.length]) {
+      const img = new Image()
+      img.src = getPhotoUrl(items[i]?.url)
+    }
+  }, [open, index, items])
+
+  // Swipe left/right to navigate on touch devices.
+  const onTouchStart = (e) => { touchStartX.current = e.changedTouches[0]?.clientX ?? null }
+  const onTouchEnd = (e) => {
+    if (touchStartX.current === null || items.length < 2) return
+    const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX.current
+    if (Math.abs(dx) > 50) (dx < 0 ? nextPhoto : prevPhoto)()
+    touchStartX.current = null
+  }
+
   if (!open) return null
 
   const current = items[index]
+  const takenAt = current?.taken_at
+    ? new Date(current.taken_at).toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', day: 'numeric' })
+    : null
 
   return (
     <div
       className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
       onClick={onClose}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
     >
       {/* Close Button */}
       <button
@@ -89,9 +113,15 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
         <X className="w-8 h-8" />
       </button>
 
-      {/* Photo Counter */}
-      <div className="absolute top-4 left-4 text-white text-sm">
-        {index + 1} / {items.length}
+      {/* Photo Counter + capture date */}
+      <div className="absolute top-4 left-4 text-white text-sm flex items-center gap-3">
+        <span>{index + 1} / {items.length}</span>
+        {takenAt && (
+          <span className="inline-flex items-center gap-1 text-white/80">
+            <Calendar className="w-4 h-4" />
+            {takenAt}
+          </span>
+        )}
       </div>
 
       {/* Previous Button */}
