@@ -202,6 +202,11 @@ export const systemService = {
   capabilities: () => api.get('/capabilities'),
 }
 
+// Analytics dashboard (cross-trip aggregate statistics)
+export const analyticsService = {
+  summary: () => api.get('/analytics/summary'),
+}
+
 // In-app notifications
 export const notificationsService = {
   list: (params) => api.get('/notifications', { params }),

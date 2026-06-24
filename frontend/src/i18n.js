@@ -11,6 +11,7 @@ import enTrips from './locales/en/trips.json'
 import enDiary from './locales/en/diary.json'
 import enNotifications from './locales/en/notifications.json'
 import enGallery from './locales/en/gallery.json'
+import enAnalytics from './locales/en/analytics.json'
 import enPlaces from './locales/en/places.json'
 import enAi from './locales/en/ai.json'
 import enSettings from './locales/en/settings.json'
@@ -40,6 +41,7 @@ import deTrips from './locales/de/trips.json'
 import deDiary from './locales/de/diary.json'
 import deNotifications from './locales/de/notifications.json'
 import deGallery from './locales/de/gallery.json'
+import deAnalytics from './locales/de/analytics.json'
 import dePlaces from './locales/de/places.json'
 import deAi from './locales/de/ai.json'
 import deSettings from './locales/de/settings.json'
@@ -69,6 +71,7 @@ import frTrips from './locales/fr/trips.json'
 import frDiary from './locales/fr/diary.json'
 import frNotifications from './locales/fr/notifications.json'
 import frGallery from './locales/fr/gallery.json'
+import frAnalytics from './locales/fr/analytics.json'
 import frPlaces from './locales/fr/places.json'
 import frAi from './locales/fr/ai.json'
 import frSettings from './locales/fr/settings.json'
@@ -98,6 +101,7 @@ import esTrips from './locales/es/trips.json'
 import esDiary from './locales/es/diary.json'
 import esNotifications from './locales/es/notifications.json'
 import esGallery from './locales/es/gallery.json'
+import esAnalytics from './locales/es/analytics.json'
 import esPlaces from './locales/es/places.json'
 import esAi from './locales/es/ai.json'
 import esSettings from './locales/es/settings.json'
@@ -128,6 +132,7 @@ export const namespaces = [
   'diary',
   'notifications',
   'gallery',
+  'analytics',
   'places',
   'ai',
   'settings',
@@ -167,6 +172,7 @@ const resources = {
     diary: enDiary,
     notifications: enNotifications,
     gallery: enGallery,
+    analytics: enAnalytics,
     places: enPlaces,
     ai: enAi,
     settings: enSettings,
@@ -196,6 +202,7 @@ const resources = {
     diary: deDiary,
     notifications: deNotifications,
     gallery: deGallery,
+    analytics: deAnalytics,
     places: dePlaces,
     ai: deAi,
     settings: deSettings,
@@ -225,6 +232,7 @@ const resources = {
     diary: frDiary,
     notifications: frNotifications,
     gallery: frGallery,
+    analytics: frAnalytics,
     places: frPlaces,
     ai: frAi,
     settings: frSettings,
@@ -254,6 +262,7 @@ const resources = {
     diary: esDiary,
     notifications: esNotifications,
     gallery: esGallery,
+    analytics: esAnalytics,
     places: esPlaces,
     ai: esAi,
     settings: esSettings,
