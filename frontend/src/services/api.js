@@ -177,6 +177,7 @@ export const placesService = {
 // Media Services (photos as first-class items with caption / GPS / capture time)
 export const mediaService = {
   getTripMedia: (tripId) => api.get(`/media/trip/${tripId}`),
+  getGallery: (params) => api.get('/media/gallery', { params }),
   updateCaption: (mediaId, caption) => api.patch(`/media/${mediaId}`, { caption }),
   delete: (mediaId) => api.delete(`/media/${mediaId}`),
 }
