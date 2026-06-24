@@ -544,9 +544,11 @@ test('user can create trip', async () => {
 - **Reise-übergreifende Foto-Galerie** (`/media/gallery`, nach Reise gruppiert, geteilte Lightbox)
 - **Öffentliche read-only Share-Links** für Reisetagebücher (Privacy-Schalter, Token, `/share/:token`, `/api/public/diary/{token}`)
 - **Drag-&-Drop-Foto-Sortierung** im Tagebuch (`@hello-pangea/dnd`, `PATCH /api/diary/{entry_id}/photos/order`)
+- **Foto-Timeline** (`/timeline`, nach Aufnahmemonat gruppiert) + **Lightbox-Feinschliff** (Aufnahmedatum, Preload, Swipe) + **HEIC-Status** (`/api/capabilities`, HEIC im Datei-Picker)
 
 ### 🔜 Als Nächstes
-- 🧠 HEIC-Galerie/Lightbox-Feinschliff, Foto-Timeline
+
+_Kern-Roadmap abgearbeitet — nächste Ideen siehe „Später"._
 
 ### 💡 Später
 
