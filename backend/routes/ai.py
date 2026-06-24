@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Request
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import json
+import re
 import urllib.parse
 import asyncio
 from services.ai_service import create_ai_service
@@ -17,6 +18,29 @@ from models.user import User
 from utils.encryption import encryption_service
 
 router = APIRouter()
+
+
+def _parse_ai_json(response: str):
+    """Parse a JSON object/array from an AI response.
+
+    Models (Claude, GPT, …) frequently wrap JSON in ```json code fences or add
+    a short preamble, so a bare json.loads() fails with "Expecting value: line 1
+    column 1". Strip fences, then fall back to extracting the outermost {...} or
+    [...]. Raises json.JSONDecodeError if nothing parseable is found.
+    """
+    text = (response or "").strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        candidates = [p for p in (text.find("{"), text.find("[")) if p != -1]
+        start = min(candidates) if candidates else -1
+        end = max(text.rfind("}"), text.rfind("]"))
+        if start != -1 and end > start:
+            return json.loads(text[start:end + 1])
+        raise
 
 
 # Helper function to get user's AI service
@@ -280,8 +304,8 @@ async def get_trip_suggestions(
             context={"destination": suggestions_request.destination}
         )
 
-        # Parse JSON response
-        suggestions = json.loads(response)
+        # Parse JSON response (tolerates code fences / preamble)
+        suggestions = _parse_ai_json(response)
 
         return suggestions
     except json.JSONDecodeError as e:
@@ -363,8 +387,8 @@ Wichtig:
             context={"destination": recommendations_request.destination}
         )
 
-        # Parse JSON response
-        recommendations = json.loads(response)
+        # Parse JSON response (tolerates code fences / preamble)
+        recommendations = _parse_ai_json(response)
 
         # Enhance each recommendation with image URL and Google Maps link
         # Fetch photos in parallel for better performance
