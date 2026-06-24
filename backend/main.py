@@ -17,7 +17,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import structlog
 
 # Import routes
-from routes import trips, diary, places, timeline, budget, ai, auth, users, participants, admin, user_settings, routes as route_routes, health, data_export, password_reset, media, search, public, notifications
+from routes import trips, diary, places, timeline, budget, ai, auth, users, participants, admin, user_settings, routes as route_routes, health, data_export, password_reset, media, search, public, notifications, analytics
 
 # Import error handlers
 from utils.error_handlers import (
@@ -252,6 +252,7 @@ app.include_router(media.router, prefix="/api/media", tags=["Media"])
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(places.router, prefix="/api/places", tags=["Places"])
 app.include_router(route_routes.router, tags=["Routes"])  # prefix already defined in router
 app.include_router(timeline.router, prefix="/api/timeline", tags=["Timeline"])
