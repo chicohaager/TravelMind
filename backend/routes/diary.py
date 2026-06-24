@@ -714,6 +714,46 @@ async def delete_diary_photo(
 
     return {"message": "Photo deleted successfully"}
 
+
+class PhotoOrderUpdate(BaseModel):
+    media_ids: List[int] = Field(..., description="This entry's media ids in the desired display order")
+
+
+@router.patch("/{entry_id}/photos/order", response_model=List[MediaResponse])
+@limiter.limit(RateLimits.DIARY_UPDATE)
+async def reorder_entry_photos(
+    request: Request,
+    entry_id: int,
+    payload: PhotoOrderUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Persist a new display order for a diary entry's photos (drag & drop)."""
+    result = await db.execute(select(DiaryEntry).where(DiaryEntry.id == entry_id))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Diary entry not found")
+    await verify_diary_edit_access(entry, current_user, db)
+
+    media_result = await db.execute(select(Media).where(Media.diary_entry_id == entry_id))
+    media_by_id = {m.id: m for m in media_result.scalars().all()}
+
+    # Require an exact permutation of the entry's media, so the order is unambiguous.
+    if set(payload.media_ids) != set(media_by_id.keys()):
+        raise HTTPException(status_code=400, detail="media_ids must list exactly this entry's photos")
+
+    for index, mid in enumerate(payload.media_ids):
+        media_by_id[mid].order_index = index
+    entry.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    ordered = await db.execute(
+        select(Media).where(Media.diary_entry_id == entry_id).order_by(Media.order_index)
+    )
+    logger.info("diary_photos_reordered", entry_id=entry_id, user_id=current_user.id)
+    return ordered.scalars().all()
+
+
 # ==================== Audio Transcription ====================
 
 @router.post("/transcribe-audio")
