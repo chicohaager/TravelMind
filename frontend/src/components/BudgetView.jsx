@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
-import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '../utils/errorHandler'
@@ -218,7 +217,6 @@ export default function BudgetView({ tripId, participants }) {
                 setIsExpenseModalOpen(true)
               }}
               className="btn btn-primary btn-sm"
-              disabled={!participants || participants.length === 0}
             >
               <Plus className="w-4 h-4" />
               {t('budget:addExpense')}
@@ -231,22 +229,16 @@ export default function BudgetView({ tripId, participants }) {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 {t('budget:noExpensesYet')}
               </p>
-              {participants && participants.length > 0 ? (
-                <button
-                  onClick={() => {
-                    setEditingExpense(null)
-                    setIsExpenseModalOpen(true)
-                  }}
-                  className="btn btn-primary"
-                >
-                  <Plus className="w-4 h-4" />
-                  {t('budget:addFirstExpense')}
-                </button>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-500">
-                  {t('budget:addParticipantsFirst')}
-                </p>
-              )}
+              <button
+                onClick={() => {
+                  setEditingExpense(null)
+                  setIsExpenseModalOpen(true)
+                }}
+                className="btn btn-primary"
+              >
+                <Plus className="w-4 h-4" />
+                {t('budget:addFirstExpense')}
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
