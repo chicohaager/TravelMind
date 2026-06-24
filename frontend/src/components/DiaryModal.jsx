@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { X, Calendar, MapPin, Star, Tag, Smile, Meh, Frown, Image, Upload } from 'lucide-react'
+import { X, Calendar, MapPin, Star, Tag, Smile, Meh, Frown, Image, Upload, AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { diaryService } from '@services/api'
+import { useQuery } from '@tanstack/react-query'
+import { diaryService, systemService } from '@services/api'
 import toast from 'react-hot-toast'
 import AudioRecorder from './AudioRecorder'
 import NativeCamera from './NativeCamera'
@@ -9,6 +10,17 @@ import { useTranslation } from 'react-i18next'
 
 export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = null, entryId = null }) {
   const { t } = useTranslation()
+
+  // Server capabilities (e.g. whether HEIC/HEIF uploads can be decoded).
+  const { data: caps } = useQuery({
+    queryKey: ['capabilities'],
+    queryFn: async () => (await systemService.capabilities()).data,
+    staleTime: Infinity,
+  })
+  const heicSupported = caps?.heic_supported
+  const photoAccept =
+    'image/jpeg,image/jpg,image/png,image/gif,image/webp' +
+    (heicSupported ? ',image/heic,image/heif,.heic,.heif' : '')
 
   const moodOptions = [
     { value: 'happy', icon: Smile, labelKey: 'diary.moodHappy', color: 'text-green-500' },
@@ -471,12 +483,20 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                     <span className="text-sm text-gray-600">{t('diary:selectPhotos')}</span>
                     <input
                       type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      accept={photoAccept}
                       multiple
                       onChange={handleFileSelect}
                       className="hidden"
                     />
                   </label>
+
+                  {/* HEIC status: warn only when the server can't decode iPhone photos */}
+                  {caps && !heicSupported && (
+                    <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      {t('diary:heicUnsupported', 'HEIC/HEIF wird auf diesem Server nicht unterstützt.')}
+                    </p>
+                  )}
 
                   {/* Native Camera */}
                   <div className="mt-3">
