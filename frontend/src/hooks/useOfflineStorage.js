@@ -84,8 +84,10 @@ export const useOfflineTrips = (apiQuery) => {
   const query = useQuery({
     ...apiQuery,
     enabled: isOnline && apiQuery.enabled !== false,
-    onSuccess: async (data) => {
-      // Save to IndexedDB
+    // react-query v5 removed the useQuery onSuccess callback, so persist to
+    // IndexedDB inside the queryFn instead (the old onSuccess never ran).
+    queryFn: async (ctx) => {
+      const data = await apiQuery.queryFn(ctx)
       try {
         if (Array.isArray(data)) {
           await indexedDB.saveTrips(data)
@@ -94,7 +96,7 @@ export const useOfflineTrips = (apiQuery) => {
       } catch (error) {
         console.error('Error caching trips:', error)
       }
-      apiQuery.onSuccess?.(data)
+      return data
     }
   })
 
@@ -135,7 +137,8 @@ export const useOfflineDiary = (tripId, apiQuery) => {
   const query = useQuery({
     ...apiQuery,
     enabled: isOnline && !!tripId && apiQuery.enabled !== false,
-    onSuccess: async (data) => {
+    queryFn: async (ctx) => {
+      const data = await apiQuery.queryFn(ctx)
       try {
         if (Array.isArray(data)) {
           await indexedDB.saveDiaryEntries(data)
@@ -143,7 +146,7 @@ export const useOfflineDiary = (tripId, apiQuery) => {
       } catch (error) {
         console.error('Error caching diary entries:', error)
       }
-      apiQuery.onSuccess?.(data)
+      return data
     }
   })
 
@@ -183,7 +186,8 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
   const query = useQuery({
     ...apiQuery,
     enabled: isOnline && !!tripId && apiQuery.enabled !== false,
-    onSuccess: async (data) => {
+    queryFn: async (ctx) => {
+      const data = await apiQuery.queryFn(ctx)
       try {
         if (Array.isArray(data)) {
           await indexedDB.savePlaces(data)
@@ -191,7 +195,7 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
       } catch (error) {
         console.error('Error caching places:', error)
       }
-      apiQuery.onSuccess?.(data)
+      return data
     }
   })
 
