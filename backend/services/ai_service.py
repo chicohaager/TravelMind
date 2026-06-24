@@ -318,7 +318,8 @@ Ausgabe: Markdown-formatiert mit Absätzen"""
     async def chat(
         self,
         user_message: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        max_tokens: int = 2048
     ) -> str:
         """Chat with AI about travel topics"""
         system_prompt = """Du bist ein lokaler Reiseexperte und beantwortest Fragen direkt und spezifisch.
@@ -334,7 +335,7 @@ WICHTIG:
 
 Antworte immer in natürlichem Deutsch, strukturiert und hilfreich."""
 
-        return await self.provider.chat(user_message, system_prompt=system_prompt, max_tokens=2048)
+        return await self.provider.chat(user_message, system_prompt=system_prompt, max_tokens=max_tokens)
 
     async def get_local_tips(self, destination: str, category: str = "all") -> List[Dict[str, str]]:
         """Get local tips and hidden gems"""
