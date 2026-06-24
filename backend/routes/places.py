@@ -693,12 +693,12 @@ async def search_guides_auto(
         prompt = f"""Du bist ein Reiseexperte. Erstelle eine Liste der besten Orte und Attraktionen für {request.destination}.
 
 Gib eine umfassende Liste mit verschiedenen Kategorien:
-- Top-Sehenswürdigkeiten (5-7)
-- Beliebte Restaurants (3-4)
-- Aussichtspunkte (2-3)
-- Parks und Natur (2-3)
-- Museen oder kulturelle Orte (2-3)
-- Strände (falls zutreffend) (2-3)
+- Top-Sehenswürdigkeiten (4-5)
+- Beliebte Restaurants (2-3)
+- Aussichtspunkte (1-2)
+- Parks und Natur (1-2)
+- Museen oder kulturelle Orte (1-2)
+- Strände (falls zutreffend) (1-2)
 
 Antworte AUSSCHLIESSLICH mit einem validen JSON-Array in diesem Format:
 [
@@ -715,7 +715,7 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Array in diesem Format:
 ]
 
 Wichtig:
-- Maximal 20-25 Orte
+- Maximal 15 Orte
 - Deutsche Sprache für name, description
 - image_search in ENGLISCH für Bildsuche
 - **ECHTE GPS-Koordinaten (latitude, longitude) für jeden Ort - NICHT 0,0!**
@@ -724,9 +724,13 @@ Wichtig:
 - Verschiedene Kategorien mischen
 - Reale, existierende Orte mit korrekten Koordinaten"""
 
+        # Need a high token budget: ~15 places with descriptions, addresses and
+        # GPS easily exceed the 2048 default and would truncate the JSON array
+        # before its closing bracket ("No JSON array found in AI response").
         response = await ai_service.chat(
             user_message=prompt,
-            context={"destination": request.destination}
+            context={"destination": request.destination},
+            max_tokens=8192
         )
 
         # Parse AI response - handle markdown code blocks and extra text
