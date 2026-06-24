@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
 from pathlib import Path
+import asyncio
 from utils.images import validate_image, process_and_save
 import structlog
 
@@ -99,8 +100,8 @@ async def save_participant_photo(upload_file: UploadFile, participant_id: int) -
 
     # Normalize, auto-orient and compress. Participant photos stay small; no thumbnail needed.
     try:
-        processed = process_and_save(
-            contents, UPLOAD_DIR, "/uploads/participants", make_thumb=False, full_max_edge=512
+        processed = await asyncio.to_thread(
+            process_and_save, contents, UPLOAD_DIR, "/uploads/participants", make_thumb=False, full_max_edge=512
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Ungültiges Bild: {exc}")
