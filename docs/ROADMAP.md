@@ -429,7 +429,7 @@ wieder von Hand gemessen und damit vom Zufall abhängig.
 
 | # | Schritt | Prüfung |
 | --- | --- | --- |
-| 5.1 | Backend-Coverage 53 % → 75 %, zuerst `diary`, `timeline`, `admin`, `ai_service`, `guide_parser` | `pytest --cov` ≥ 75 %, CI bricht darunter |
+| 5.1 | ✅ Backend-Coverage 53 % → **75,18 %**, 71 → 483 Tests; CI-Schranke von 50 auf 75 angehoben | `pytest --cov` ≥ 75 %, Gegenkontrolle mit 76 gefahren |
 | 5.2 | Frontend: die acht wichtigsten Flows als Component-Tests, E2E in **DE-Locale** gegen Postgres | Suite grün; ein eingebauter Fehler wird rot |
 | 5.3 | ✅ i18n-Gate: Skript vergleicht die Key-Sets aller Sprachen, die 7 fehlenden es/fr-Keys ergänzen | Skript → Exit 0; ein entfernter Key macht CI rot |
 | 5.4 | ✅ Locales nachladen statt statisch importieren | index-Chunk 227,0 → 103,1 kB; im Browser 2 Anfragen statt 57 |
@@ -520,3 +520,26 @@ Ehrlich benannt, damit niemand es für geprüft hält:
 - **Die Modell-IDs** `gpt-5.4`, `gemini-3.5-flash`, `meta-llama/llama-4-maverick-17b-128e-instruct`
   sind ungeprüft — dafür braucht es die Provider-Dokumentation.
 - **Die Ursache des Produktionsausfalls** ist nicht gemessen, nur der Zustand.
+
+---
+
+## Was die Testarbeit an ECHTEN Fehlern gefunden hat
+
+Nicht der Nebeneffekt — der eigentliche Ertrag. Jeder Punkt ist durch
+Sabotage in beide Richtungen belegt.
+
+| Fund | Wirkung | Wie er sich versteckt hat |
+|---|---|---|
+| **Ortsliste löschen löschte alle Orte darin** | Datenverlust bei einem Klick | Der Bestätigungsdialog versprach wörtlich „Orte werden nicht gelöscht". Die Datenbankregel sagte `SET NULL`, die ORM-Kaskade kam ihr zuvor. |
+| **Die drei DSGVO-Endpunkte haben nie funktioniert** | Datenmitnahme (Art. 20) und Löschantrag (Art. 17) antworteten immer 422 | `request` ohne Typangabe wurde zum Pflicht-Query-Parameter. Code lädt, App startet, `/docs` zeigt sie an. |
+| **Der API-Schlüssel stand in KI-Fehlermeldungen** | Der Wert, den die App verschlüsselt ablegt, stand im Klartext in der HTTP-Antwort | `detail=f"…{str(e)}"` an zehn Stellen — Anbieter schreiben den Schlüssel in ihre Meldung. |
+| **Alle vier Modell-IDs veraltet, die von Groq gelöscht** | Jede KI-Anfrage ohne eigene Konfiguration schlug fehl | Groq ist der kostenlose Standardanbieter; die ID stand nicht mehr in der Herstellerliste. |
+| **Kein Foto über 1 MB hochladbar** | Handyfotos (2–5 MB) wurden mit 413 abgewiesen | `client_max_body_size` fehlte in nginx, Standard 1 MB — das Backend erlaubt 10 MB. |
+| **Kontowechsel zeigte die Daten des vorigen Kontos** | Auf geteilten Rechnern ein Leseloch ohne Token | React-Query-Schlüssel ohne Konto, `staleTime` 5 min, kein `clear()` beim An- oder Abmelden. |
+| **18 rohe i18n-Schlüssel im Bildschirm** | `diary.moodHappy` statt „Glücklich" | Der Schlüssel lag in einer Eigenschaft; der Wächter prüfte nur `t('…')`-Aufrufe. |
+| **Die tägliche Sicherung war stillgelegt** | Der Lauf um 03:00 wäre abgebrochen | Mein eigenes Deploy-Skript löschte das bind-gemountete Skriptverzeichnis; laufende Container sahen ein leeres `/skripte`. |
+| **`/api/health` stürzte auf 500 ab**, wenn eine Teilprüfung warf | Der Ausfall nahm die Auskunft mit, die sagen soll, was ausgefallen ist | `asyncio.gather` ohne `return_exceptions`. |
+
+Korrigiert wurde außerdem eine **falsche Behauptung in `CLAUDE.md`**: ein Datum
+ohne Uhrzeit werde abgewiesen. An allen fünf Modellen mit Datumsfeld gemessen
+— es wird angenommen, Pydantic ergänzt Mitternacht.
