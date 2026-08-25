@@ -4,10 +4,14 @@ import { motion } from 'framer-motion'
 import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
 import { aktuelleLocale } from '@/utils/format'
 
+// Nur Symbol und Farbe — die Beschriftung kommt aus `diary:moodHappy` usw.
+// Bis 2026-08-25 stand hier zusaetzlich ein fest deutsches `label`, das nie
+// gerendert wurde: unerreichbarer Text, der in einer englischen Oberflaeche
+// deutsch gewesen waere, sobald ihn jemand angezeigt haette.
 const moodIcons = {
-  happy: { icon: Smile, color: 'text-green-500', label: 'Glücklich' },
-  neutral: { icon: Meh, color: 'text-yellow-500', label: 'Neutral' },
-  sad: { icon: Frown, color: 'text-red-500', label: 'Traurig' },
+  happy: { icon: Smile, color: 'text-green-500' },
+  neutral: { icon: Meh, color: 'text-yellow-500' },
+  sad: { icon: Frown, color: 'text-red-500' },
 }
 
 export default function DiaryEntry({ entry, onEdit, onDelete }) {

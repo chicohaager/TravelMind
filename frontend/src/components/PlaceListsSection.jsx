@@ -12,17 +12,20 @@ import PlaceCard from './PlaceCard'
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
 
+// Nur der Schluessel steht hier; uebersetzt wird beim Rendern. Fest
+// verdrahtete englische Beschriftungen standen bis 2026-08-25 in JEDER
+// Oberflaeche, auch der deutschen.
 const EMOJI_PRESETS = [
-  { emoji: '🍽️', label: 'Restaurants' },
-  { emoji: '🏛️', label: 'Museums' },
-  { emoji: '🏖️', label: 'Beaches' },
-  { emoji: '🌳', label: 'Parks' },
-  { emoji: '🎯', label: 'Attractions' },
-  { emoji: '🛍️', label: 'Shopping' },
-  { emoji: '🎉', label: 'Nightlife' },
-  { emoji: '☕', label: 'Cafes' },
-  { emoji: '🏨', label: 'Hotels' },
-  { emoji: '👁️', label: 'Viewpoints' },
+  { emoji: '🍽️', schluessel: 'restaurant' },
+  { emoji: '🏛️', schluessel: 'museum' },
+  { emoji: '🏖️', schluessel: 'beach' },
+  { emoji: '🌳', schluessel: 'park' },
+  { emoji: '🎯', schluessel: 'attraction' },
+  { emoji: '🛍️', schluessel: 'shopping' },
+  { emoji: '🎉', schluessel: 'nightlife' },
+  { emoji: '☕', schluessel: 'cafe' },
+  { emoji: '🏨', schluessel: 'hotel' },
+  { emoji: '👁️', schluessel: 'viewpoint' },
 ]
 
 const COLOR_PRESETS = [
@@ -301,7 +304,7 @@ export default function PlaceListsSection({
             <div>
               <label className="block text-sm font-medium mb-2">{t('placeLists:icon')}</label>
               <div className="flex flex-wrap gap-2">
-                {EMOJI_PRESETS.map(({ emoji, label }) => (
+                {EMOJI_PRESETS.map(({ emoji, schluessel }) => (
                   <button
                     key={emoji}
                     onClick={() => setNewListIcon(emoji)}
@@ -311,7 +314,7 @@ export default function PlaceListsSection({
                         ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
                     )}
-                    title={label}
+                    title={t(`places:categories.${schluessel}`)}
                   >
                     {emoji}
                   </button>
