@@ -10,5 +10,7 @@
   "logout": "Logout",
   "login": "Login",
   "register": "Register",
-  "transcribe": "Transcription"
+  "transcribe": "Transcription",
+  "openMenu": "Open menu",
+  "userMenu": "User menu"
 }
