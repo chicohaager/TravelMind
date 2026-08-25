@@ -291,7 +291,19 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
-    lng: 'en',
+
+    // KEIN festes `lng` hier.
+    //
+    // Bis 2026-08-25 stand hier `lng: 'en'`. Sobald i18next eine feste Sprache
+    // bekommt, uebergeht es den LanguageDetector vollstaendig — der war also
+    // konfiguriert und ohne jede Wirkung. Folge: JEDER Nutzer sah Englisch,
+    // auch bei `navigator.languages = ['de-DE','de',…]`, und der Wert 'en'
+    // wurde zusaetzlich in localStorage festgeschrieben.
+    //
+    // supportedLngs + load:'languageOnly' sorgen dafuer, dass 'de-DE' auf 'de'
+    // faellt statt auf den Fallback.
+    supportedLngs: ['en', 'de', 'es', 'fr'],
+    load: 'languageOnly',
     debug: false,
 
     // Default namespace
