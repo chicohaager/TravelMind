@@ -24,8 +24,8 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
   const [activeTab, setActiveTab] = useState('about')
 
   const TABS = [
-    { id: 'about', labelKey: 'places.tabAbout', icon: Info },
-    { id: 'photos', labelKey: 'places.tabPhotos', icon: ImageIcon },
+    { id: 'about', labelKey: 'places:tabAbout', icon: Info },
+    { id: 'photos', labelKey: 'places:tabPhotos', icon: ImageIcon },
   ]
 
   if (!isOpen || !place) return null

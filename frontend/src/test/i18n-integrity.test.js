@@ -139,6 +139,62 @@ describe('i18n: Namensräume werden mit Doppelpunkt angesprochen', () => {
   })
 })
 
+describe('i18n: kein Namensraum mit Punkt, auch nicht in einer Variablen', () => {
+  /*
+   * Erweiterung vom 2026-08-25, nachdem der Betreiber drei Bildschirmfotos mit rohen
+   * Schlüsseln geschickt hat: `diary.moodHappy` im Stimmungswähler,
+   * `budget.categories.other` in der Kategorieliste.
+   *
+   * Der Scanner darüber prüft `t('…')`-Aufrufe. Diese Stellen sahen anders
+   * aus — der Schlüssel lag in einer Eigenschaft:
+   *
+   *     { value: 'happy', labelKey: 'diary.moodHappy' }   …   t(mood.labelKey)
+   *
+   * Der Aufruf war sauber, die Zeichenkette nicht. 18 Fundstellen in 5
+   * Dateien, alle live sichtbar. Der Wächter war grün und blind.
+   *
+   * Deshalb sucht diese Prüfung die ZEICHENKETTE, wo immer sie steht: ein
+   * Literal, das mit einem echten Namensraum plus Punkt beginnt.
+   */
+  const namensraeume = readdirSync(localesVerzeichnis + '/' + REFERENZSPRACHE)
+    .filter((d) => d.endsWith('.json'))
+    .map((d) => basename(d, '.json'))
+
+  const punktMuster = new RegExp(`['"\`](${namensraeume.join('|')})\\.([A-Za-z0-9_.]+)['"\`]`, 'g')
+
+  const quellen = dateienRekursiv(srcVerzeichnis, ['.js', '.jsx']).filter(
+    (d) => !/\.(test|spec)\.jsx?$/.test(basename(d))
+  )
+
+  it('findet überhaupt Namensräume und Quelldateien', () => {
+    expect(namensraeume.length).toBeGreaterThan(20)
+    expect(quellen.length).toBeGreaterThan(20)
+  })
+
+  it('keine Zeichenkette spricht einen Namensraum mit Punkt an', () => {
+    const verstoesse = []
+    for (const datei of quellen) {
+      const zeilen = readFileSync(datei, 'utf8').split('\n')
+      zeilen.forEach((zeile, i) => {
+        for (const treffer of zeile.matchAll(punktMuster)) {
+          verstoesse.push(`${relative(srcVerzeichnis, datei)}:${i + 1}  ${treffer[0]}`)
+        }
+      })
+    }
+    expect(verstoesse).toEqual([])
+  })
+
+  it('Positivkontrolle: der Scanner erkennt die Form aus dem Fehlerbild', () => {
+    const kuenstlich = "  { value: 'happy', labelKey: 'diary.moodHappy' },"
+    expect([...kuenstlich.matchAll(punktMuster)].length).toBe(1)
+  })
+
+  it('Gegenkontrolle: die Doppelpunkt-Form löst NICHT aus', () => {
+    const sauber = "  { value: 'happy', labelKey: 'diary:moodHappy' },"
+    expect([...sauber.matchAll(punktMuster)].length).toBe(0)
+  })
+})
+
 describe('i18n: <html lang> folgt der Sprache', () => {
   // In index.html stand fest lang="de". Am 2026-08-25 in der Produktion
   // gemessen: Oberfläche auf Spanisch, Attribut weiter auf 'de'.
