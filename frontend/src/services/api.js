@@ -1,21 +1,27 @@
 import axios from 'axios'
 
-// In development, ALWAYS use relative URLs to leverage Vite proxy
-// In production, use the configured API URL
+// Die Adresse der API ist RELATIV, ausser jemand konfiguriert ausdruecklich
+// etwas anderes.
+//
+// Vorher stand hier ein Fallback auf 'http://localhost:8137'. Der greift genau
+// dann, wenn VITE_API_URL beim Bauen nicht gesetzt ist — und backt eine absolute
+// Adresse in ein Bundle, das anschliessend unter jedem beliebigen Hostnamen
+// ausgeliefert wird. In der Produktion auf .143 hat der Browser deshalb am
+// 2026-08-25 gegen localhost gepostet und jeder Login scheiterte mit 503,
+// waehrend dieselbe Anmeldung per curl gegen /api sauber 200 lieferte.
+//
+// Relativ ist fuer diese App immer richtig: im Betrieb proxyt nginx /api und
+// /uploads an das Backend, in der Entwicklung tut der Vite-Proxy dasselbe.
+// VITE_API_URL bleibt als Ausweg fuer den Fall, dass API und Oberflaeche
+// getrennt betrieben werden — aber nur, wenn es jemand bewusst setzt.
 const isDev = import.meta.env.DEV
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8137'
+const configuredApiUrl = import.meta.env.VITE_API_URL
 
-// Force relative URLs in development
-let baseURL
-if (isDev || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-  baseURL = '/api'
-} else {
-  baseURL = `${API_URL}/api`
-}
+const baseURL = configuredApiUrl ? `${configuredApiUrl.replace(/\/+$/, '')}/api` : '/api'
 
 // Only log in development
 if (isDev) {
-  console.log('API Config:', { isDev, API_URL, baseURL, hostname: window.location.hostname })
+  console.log('API Config:', { isDev, configuredApiUrl, baseURL, hostname: window.location.hostname })
 }
 
 // Create axios instance with timeout
