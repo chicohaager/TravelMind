@@ -227,7 +227,11 @@ describe('i18n: keine fest verdrahteten Beschriftungen in Komponenten', () => {
     const raus = []
     for (const datei of dateien) {
       const rel = relative(srcVerzeichnis, datei)
-      if (rel.startsWith('test/')) continue // Testfixtures sieht kein Nutzer
+      // Testdateien sieht kein Nutzer. Die Ausnahme haengt am DATEINAMEN,
+      // nicht am Verzeichnis: Komponententests liegen neben ihrer
+      // Komponente (src/contexts/AuthContext.test.jsx), und eine
+      // Verzeichnisregel haette sie uebersehen.
+      if (rel.startsWith('test/') || /\.(test|spec)\.jsx?$/.test(rel)) continue
       if (rel === UNERREICHBAR) continue
       const zeilen = readFileSync(datei, 'utf8').split('\n')
       zeilen.forEach((zeile, i) => {
