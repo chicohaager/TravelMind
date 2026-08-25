@@ -128,3 +128,107 @@ async def auth_token(client: AsyncClient, test_user: User) -> str:
 def auth_headers(auth_token: str) -> dict:
     """Get authorization headers"""
     return {"Authorization": f"Bearer {auth_token}"}
+
+
+# ── Gemeinsame Fixtures ─────────────────────────────────────────────────────
+#
+# Bis 2026-08-25 baute jede Testdatei sich Reise, Zweitnutzer und deren Token
+# selbst. Das ist nicht nur Doppelarbeit: jede Kopie kann anders sein, und ein
+# Test, der eine Berechtigung prueft, haengt dann an einem Aufbau, ueber den er
+# nichts aussagt. Vorhandene Dateien duerfen die Namen weiter lokal
+# ueberschreiben — pytest laesst die naehere Definition gewinnen.
+
+
+@pytest_asyncio.fixture
+async def test_trip(db_session: AsyncSession, test_user: User):
+    """Eine Reise, die dem test_user gehoert."""
+    from datetime import datetime
+
+    trip = Trip(
+        title="Testreise nach Lissabon",
+        destination="Lissabon",
+        description="Zum Pruefen",
+        latitude=38.7223,
+        longitude=-9.1393,
+        start_date=datetime(2026, 9, 1),
+        end_date=datetime(2026, 9, 8),
+        budget=1200.0,
+        currency="EUR",
+        interests=["culture", "food"],
+        owner_id=test_user.id,
+    )
+    db_session.add(trip)
+    await db_session.commit()
+    await db_session.refresh(trip)
+    return trip
+
+
+@pytest_asyncio.fixture
+async def other_user(db_session: AsyncSession) -> User:
+    """Ein zweiter, unbeteiligter Nutzer — fuer jede Zugriffspruefung noetig."""
+    user = User(
+        username="otheruser",
+        email="other@example.com",
+        hashed_password=User.hash_password("otherpass123"),
+        full_name="Other User",
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def other_auth_headers(client: AsyncClient, other_user: User) -> dict:
+    response = await client.post(
+        "/api/auth/login",
+        data={"username": "otheruser", "password": "otherpass123"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest_asyncio.fixture
+async def admin_user(db_session: AsyncSession) -> User:
+    user = User(
+        username="adminuser",
+        email="admin@example.com",
+        hashed_password=User.hash_password("adminpass123"),
+        full_name="Admin User",
+        is_active=True,
+        is_superuser=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def admin_headers(client: AsyncClient, admin_user: User) -> dict:
+    response = await client.post(
+        "/api/auth/login",
+        data={"username": "adminuser", "password": "adminpass123"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest_asyncio.fixture
+async def test_place(db_session: AsyncSession, test_trip):
+    """Ein Ort in der Testreise."""
+    place = Place(
+        name="Torre de Belém",
+        description="Turm am Tejo",
+        latitude=38.6916,
+        longitude=-9.2160,
+        category="sight",
+        trip_id=test_trip.id,
+    )
+    db_session.add(place)
+    await db_session.commit()
+    await db_session.refresh(place)
+    return place
