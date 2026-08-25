@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import i18n from '../i18n'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname, basename, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -135,5 +136,21 @@ describe('i18n: Namensräume werden mit Doppelpunkt angesprochen', () => {
     // Gegenkontrolle: die richtige Schreibweise darf NICHT anschlagen
     const richtig = "const x = t(`interests:${interest}`, interest)"
     expect(namensraumMitPunkt(richtig)).toEqual([])
+  })
+})
+
+describe('i18n: <html lang> folgt der Sprache', () => {
+  // In index.html stand fest lang="de". Am 2026-08-25 in der Produktion
+  // gemessen: Oberfläche auf Spanisch, Attribut weiter auf 'de'.
+  for (const sprache of ['de', 'en', 'es', 'fr']) {
+    it(`setzt lang="${sprache}", wenn auf '${sprache}' gewechselt wird`, async () => {
+      await i18n.changeLanguage(sprache)
+      expect(document.documentElement.getAttribute('lang')).toBe(sprache)
+    })
+  }
+
+  it('schneidet die Region ab: "de-DE" ergibt lang="de"', async () => {
+    await i18n.changeLanguage('de-DE')
+    expect(document.documentElement.getAttribute('lang')).toBe('de')
   })
 })

@@ -323,4 +323,23 @@ i18n
     }
   })
 
+/**
+ * `<html lang>` an die tatsaechliche Sprache binden.
+ *
+ * In index.html stand fest `lang="de"`, und niemand hat es je angefasst. Am
+ * 2026-08-25 in der Produktion gemessen: die Oberflaeche stand auf Spanisch,
+ * das Attribut weiter auf 'de'. Vorlesesoftware waehlt danach ihre Aussprache
+ * und haette spanischen Text deutsch vorgelesen; Suchmaschinen und die
+ * Silbentrennung des Browsers richten sich ebenfalls danach.
+ */
+const spracheAmDokumentSetzen = (sprache) => {
+  const nurSprache = String(sprache || 'en').split('-')[0]
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('lang', nurSprache)
+  }
+}
+
+spracheAmDokumentSetzen(i18n.resolvedLanguage || i18n.language)
+i18n.on('languageChanged', spracheAmDokumentSetzen)
+
 export default i18n
