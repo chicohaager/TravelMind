@@ -13,7 +13,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
-
 // Create custom marker icon
 // iconType wurde entgegengenommen und nie ausgewertet — der Marker unten baut
 // ein festes SVG. Der Parameter ist deshalb entfallen; wer ihn zurueckwill,
@@ -46,9 +45,10 @@ const createCustomIcon = (color = '#6366F1') => {
 const createPhotoIcon = (thumbSrc) => {
   const size = 46
   return L.divIcon({
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid white;` +
-          `box-shadow:0 1px 5px rgba(0,0,0,0.4);background-image:url('${thumbSrc}');` +
-          `background-size:cover;background-position:center;"></div>`,
+    html:
+      `<div style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid white;` +
+      `box-shadow:0 1px 5px rgba(0,0,0,0.4);background-image:url('${thumbSrc}');` +
+      `background-size:cover;background-position:center;"></div>`,
     className: 'photo-marker',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
@@ -58,9 +58,7 @@ const createPhotoIcon = (thumbSrc) => {
 
 // True only for places that have usable numeric coordinates.
 const hasValidCoords = (p) =>
-  p &&
-  Number.isFinite(Number(p.latitude)) &&
-  Number.isFinite(Number(p.longitude))
+  p && Number.isFinite(Number(p.latitude)) && Number.isFinite(Number(p.longitude))
 
 // Component to center map on places. Only fits bounds when the actual set of
 // place IDs changes, so a manual pan is not overridden on every re-render.
@@ -75,15 +73,13 @@ function MapCenterController({ places, photos = [] }) {
     // Key based on the set of point IDs (order-independent), so a manual pan is
     // not overridden on re-render but a changed set (e.g. photos loaded) refits.
     const key = points
-      .map(p => `${p.id ?? ''}:${p.latitude},${p.longitude}`)
+      .map((p) => `${p.id ?? ''}:${p.latitude},${p.longitude}`)
       .sort()
       .join('|')
     if (key === lastFittedKey.current) return
     lastFittedKey.current = key
 
-    const bounds = L.latLngBounds(
-      points.map(p => [Number(p.latitude), Number(p.longitude)])
-    )
+    const bounds = L.latLngBounds(points.map((p) => [Number(p.latitude), Number(p.longitude)]))
     map.fitBounds(bounds, { padding: [50, 50] })
   }, [places, photos, map])
 
@@ -104,7 +100,7 @@ const categoryColors = {
   other: '#6b7280',
   sight: '#8b5cf6',
   activity: '#f97316',
-  transport: '#64748b'
+  transport: '#64748b',
 }
 
 export default function InteractiveMap({
@@ -119,7 +115,7 @@ export default function InteractiveMap({
   // eslint-disable-next-line no-unused-vars
   editable = false,
   center = [51.505, -0.09],
-  zoom = 13
+  zoom = 13,
 }) {
   const { t } = useTranslation(['map', 'places'])
   const [, setSelectedPlace] = useState(null)
@@ -157,9 +153,9 @@ export default function InteractiveMap({
     if (!route.place_ids || route.place_ids.length === 0) return []
 
     return route.place_ids
-      .map(placeId => places.find(p => p.id === placeId))
-      .filter(place => place && hasValidCoords(place))
-      .map(place => [Number(place.latitude), Number(place.longitude)])
+      .map((placeId) => places.find((p) => p.id === placeId))
+      .filter((place) => place && hasValidCoords(place))
+      .map((place) => [Number(place.latitude), Number(place.longitude)])
   }
 
   return (
@@ -190,7 +186,12 @@ export default function InteractiveMap({
                 color: route.color || '#6366F1',
                 weight: route.line_width || 3,
                 opacity: 0.7,
-                dashArray: route.line_style === 'dashed' ? '10, 10' : route.line_style === 'dotted' ? '2, 5' : null,
+                dashArray:
+                  route.line_style === 'dashed'
+                    ? '10, 10'
+                    : route.line_style === 'dotted'
+                      ? '2, 5'
+                      : null,
               }}
               eventHandlers={{
                 click: () => handleRouteClick(route),
@@ -198,7 +199,9 @@ export default function InteractiveMap({
             >
               <Popup>
                 <div className="font-semibold">{route.name}</div>
-                {route.description && <div className="text-sm text-gray-600 mt-1">{route.description}</div>}
+                {route.description && (
+                  <div className="text-sm text-gray-600 mt-1">{route.description}</div>
+                )}
                 {route.total_distance && (
                   <div className="text-sm text-gray-500 mt-1">
                     Distance: {route.total_distance.toFixed(1)} km
@@ -233,9 +236,7 @@ export default function InteractiveMap({
                 {place.description && (
                   <p className="text-sm text-gray-600 mt-2">{place.description}</p>
                 )}
-                {place.address && (
-                  <p className="text-xs text-gray-500 mt-2">{place.address}</p>
-                )}
+                {place.address && <p className="text-xs text-gray-500 mt-2">{place.address}</p>}
                 {place.rating && (
                   <div className="flex items-center mt-2">
                     <span className="text-yellow-500 mr-1">★</span>
@@ -261,9 +262,7 @@ export default function InteractiveMap({
                   alt={photo.caption || ''}
                   className="w-full rounded-md mb-1"
                 />
-                {photo.caption && (
-                  <p className="text-sm text-gray-700">{photo.caption}</p>
-                )}
+                {photo.caption && <p className="text-sm text-gray-700">{photo.caption}</p>}
                 {photo.taken_at && (
                   <p className="text-xs text-gray-400 mt-1">
                     {new Date(photo.taken_at).toLocaleDateString()}
@@ -283,20 +282,22 @@ export default function InteractiveMap({
           {/* Places legend */}
           {places.length > 0 && (
             <div className="mb-3">
-              <div className="text-xs font-medium text-gray-500 mb-2">{t('map:places')}: {places.length}</div>
+              <div className="text-xs font-medium text-gray-500 mb-2">
+                {t('map:places')}: {places.length}
+              </div>
               <div className="flex flex-wrap gap-1.5">
-                {Array.from(new Set(places.map(p => p.category))).filter(Boolean).map(category => (
-                  <span
-                    key={category}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-white rounded-full shadow-sm"
-                    style={{ backgroundColor: categoryColors[category] || '#6b7280' }}
-                  >
+                {Array.from(new Set(places.map((p) => p.category)))
+                  .filter(Boolean)
+                  .map((category) => (
                     <span
-                      className="w-1.5 h-1.5 rounded-full bg-white/40"
-                    />
-                    {t(`places:categories.${category}`, category)}
-                  </span>
-                ))}
+                      key={category}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-white rounded-full shadow-sm"
+                      style={{ backgroundColor: categoryColors[category] || '#6b7280' }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                      {t(`places:categories.${category}`, category)}
+                    </span>
+                  ))}
               </div>
             </div>
           )}
@@ -304,9 +305,11 @@ export default function InteractiveMap({
           {/* Routes legend */}
           {routes.length > 0 && (
             <div>
-              <div className="text-xs font-medium text-gray-500 mb-2">{t('map:routes')}: {routes.length}</div>
+              <div className="text-xs font-medium text-gray-500 mb-2">
+                {t('map:routes')}: {routes.length}
+              </div>
               <div className="space-y-1.5">
-                {routes.slice(0, 3).map(route => (
+                {routes.slice(0, 3).map((route) => (
                   <div key={route.id} className="flex items-center gap-2 text-xs">
                     <div
                       className="w-5 h-1 rounded-full"
@@ -316,7 +319,9 @@ export default function InteractiveMap({
                   </div>
                 ))}
                 {routes.length > 3 && (
-                  <div className="text-xs text-gray-400 mt-1">{t('map:moreRoutes', { count: routes.length - 3 })}</div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {t('map:moreRoutes', { count: routes.length - 3 })}
+                  </div>
                 )}
               </div>
             </div>

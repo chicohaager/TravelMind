@@ -148,10 +148,7 @@ export default function Register() {
               </div>
 
               <div className="text-center">
-                <Link
-                  to="/login"
-                  className="btn btn-primary w-full"
-                >
+                <Link to="/login" className="btn btn-primary w-full">
                   {t('auth:toLogin')}
                 </Link>
               </div>
@@ -159,120 +156,120 @@ export default function Register() {
           ) : (
             /* Form */
             <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium mb-2">
-                {t('auth:username')} *
-              </label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder={t('auth:usernamePlaceholder')}
-                required
-                minLength={3}
-                maxLength={50}
-                className="input"
-                autoComplete="username"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                {t('auth:email')} *
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder={t('auth:emailPlaceholder')}
-                required
-                className="input"
-                autoComplete="email"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium mb-2">
-                {t('auth:fullName')} ({t('auth:optional')})
-              </label>
-              <input
-                type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder={t('auth:fullNamePlaceholder')}
-                className="input"
-                autoComplete="name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
-                {t('auth:password')} *
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder={t('auth:passwordPlaceholder')}
-                required
-                minLength={8}
-                className="input"
-                autoComplete="new-password"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {t('auth:minCharacters')}
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
-                {t('auth:confirmPassword')} *
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder={t('auth:passwordPlaceholder')}
-                required
-                className="input"
-                autoComplete="new-password"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary w-full flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  {t('auth:registering')}
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-5 h-5" />
-                  {t('auth:register')}
-                </>
+              {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                </div>
               )}
-            </button>
-          </form>
+
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium mb-2">
+                  {t('auth:username')} *
+                </label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder={t('auth:usernamePlaceholder')}
+                  required
+                  minLength={3}
+                  maxLength={50}
+                  className="input"
+                  autoComplete="username"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium mb-2">
+                  {t('auth:email')} *
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder={t('auth:emailPlaceholder')}
+                  required
+                  className="input"
+                  autoComplete="email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium mb-2">
+                  {t('auth:fullName')} ({t('auth:optional')})
+                </label>
+                <input
+                  type="text"
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder={t('auth:fullNamePlaceholder')}
+                  className="input"
+                  autoComplete="name"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium mb-2">
+                  {t('auth:password')} *
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder={t('auth:passwordPlaceholder')}
+                  required
+                  minLength={8}
+                  className="input"
+                  autoComplete="new-password"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t('auth:minCharacters')}
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
+                  {t('auth:confirmPassword')} *
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder={t('auth:passwordPlaceholder')}
+                  required
+                  className="input"
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    {t('auth:registering')}
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5" />
+                    {t('auth:register')}
+                  </>
+                )}
+              </button>
+            </form>
           )}
 
           {/* Footer - Only show when registration is open */}
@@ -280,10 +277,7 @@ export default function Register() {
             <div className="mt-6 text-center text-sm">
               <p className="text-gray-600 dark:text-gray-400">
                 {t('auth:haveAccount')}{' '}
-                <Link
-                  to="/login"
-                  className="text-primary-500 hover:text-primary-600 font-medium"
-                >
+                <Link to="/login" className="text-primary-500 hover:text-primary-600 font-medium">
                   {t('auth:loginNow')}
                 </Link>
               </p>

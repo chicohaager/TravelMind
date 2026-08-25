@@ -1,5 +1,18 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Map, Sparkles, BookOpen, X, DollarSign, ChevronDown, ChevronRight, Mic, GalleryThumbnails, CalendarClock, BarChart3 } from 'lucide-react'
+import {
+  Home,
+  Map,
+  Sparkles,
+  BookOpen,
+  X,
+  DollarSign,
+  ChevronDown,
+  ChevronRight,
+  Mic,
+  GalleryThumbnails,
+  CalendarClock,
+  BarChart3,
+} from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -17,7 +30,7 @@ export default function Sidebar({ open, onClose }) {
       children: [
         { name: t('trips:title'), href: '/trips' },
         { name: t('nav:ai'), href: '/ai', icon: Sparkles },
-      ]
+      ],
     },
     { name: t('budget:title'), href: '/budget', icon: DollarSign },
     { name: t('nav:diary'), href: '/diary', icon: BookOpen },
@@ -28,9 +41,9 @@ export default function Sidebar({ open, onClose }) {
   ]
 
   const toggleMenu = (itemName) => {
-    setOpenMenus(prev => ({
+    setOpenMenus((prev) => ({
       ...prev,
-      [itemName]: !prev[itemName]
+      [itemName]: !prev[itemName],
     }))
   }
 
@@ -39,7 +52,7 @@ export default function Sidebar({ open, onClose }) {
       return location.pathname === item.href
     }
     if (item.children) {
-      return item.children.some(child => location.pathname === child.href)
+      return item.children.some((child) => location.pathname === child.href)
     }
     return false
   }
@@ -47,12 +60,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       {/* Mobile overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {open && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />}
 
       {/* Sidebar */}
       <aside

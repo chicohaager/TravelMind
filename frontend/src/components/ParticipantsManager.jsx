@@ -25,7 +25,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
       if (selectedPhoto) {
         await uploadPhotoMutation.mutateAsync({
           participantId: newParticipant.id,
-          file: selectedPhoto
+          file: selectedPhoto,
         })
       }
 
@@ -35,7 +35,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
     },
     onError: () => {
       toast.error(t('tripDetail:participantAddError'))
-    }
+    },
   })
 
   // Upload photo mutation
@@ -52,7 +52,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
     onError: () => {
       toast.error(t('tripDetail:participantPhotoUploadError'))
       setUploadingForId(null)
-    }
+    },
   })
 
   // Delete participant mutation
@@ -66,7 +66,7 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
     },
     onError: () => {
       toast.error(t('tripDetail:participantRemoveError'))
-    }
+    },
   })
 
   const handlePhotoSelect = (e, participantId) => {
@@ -164,7 +164,9 @@ export default function ParticipantsManager({ tripId, participants = [], isEditi
               <div className="flex-1">
                 <div className="font-medium">{participant.name}</div>
                 {participant.email && (
-                  <div className="text-xs text-gray-600 dark:text-gray-400">{participant.email}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {participant.email}
+                  </div>
                 )}
                 {participant.role && (
                   <div className="text-xs text-gray-500">{participant.role}</div>

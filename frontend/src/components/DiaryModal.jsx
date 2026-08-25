@@ -1,5 +1,17 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { X, Calendar, MapPin, Star, Tag, Smile, Meh, Frown, Image, Upload, AlertTriangle } from 'lucide-react'
+import {
+  X,
+  Calendar,
+  MapPin,
+  Star,
+  Tag,
+  Smile,
+  Meh,
+  Frown,
+  Image,
+  Upload,
+  AlertTriangle,
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { diaryService, systemService } from '@services/api'
@@ -9,7 +21,13 @@ import NativeCamera from './NativeCamera'
 import { useTranslation } from 'react-i18next'
 import { getPhotoUrl } from '@/utils/images'
 
-export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = null, entryId = null }) {
+export default function DiaryModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData = null,
+  entryId = null,
+}) {
   const { t } = useTranslation()
 
   // Server capabilities (e.g. whether HEIC/HEIF uploads can be decoded).
@@ -26,7 +44,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
   const moodOptions = [
     { value: 'happy', icon: Smile, labelKey: 'diary.moodHappy', color: 'text-green-500' },
     { value: 'neutral', icon: Meh, labelKey: 'diary.moodNeutral', color: 'text-yellow-500' },
-    { value: 'sad', icon: Frown, labelKey: 'diary.moodSad', color: 'text-red-500' }
+    { value: 'sad', icon: Frown, labelKey: 'diary.moodSad', color: 'text-red-500' },
   ]
   const [formData, setFormData] = useState({
     title: '',
@@ -36,7 +54,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
     mood: '',
     rating: 0,
     tags: [],
-    photos: []
+    photos: [],
   })
 
   const [newTag, setNewTag] = useState('')
@@ -50,10 +68,10 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
   // Create preview URLs with proper cleanup to prevent memory leaks
   const previewUrls = useMemo(() => {
     // Revoke old URLs first before creating new ones
-    createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url))
+    createdUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
 
     // Create new URLs for current files
-    const newUrls = selectedFiles.map(file => URL.createObjectURL(file))
+    const newUrls = selectedFiles.map((file) => URL.createObjectURL(file))
     createdUrlsRef.current = newUrls
     return newUrls
   }, [selectedFiles])
@@ -61,7 +79,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
   // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
-      createdUrlsRef.current.forEach(url => URL.revokeObjectURL(url))
+      createdUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
     }
   }, [])
 
@@ -77,7 +95,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
         mood: initialData.mood || '',
         rating: initialData.rating || 0,
         tags: initialData.tags || [],
-        photos: initialData.photos || []
+        photos: initialData.photos || [],
       })
       setPhotosToDelete([])
     } else if (!isOpen) {
@@ -90,7 +108,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
         mood: '',
         rating: 0,
         tags: [],
-        photos: []
+        photos: [],
       })
       setSelectedFiles([])
       setPhotosToDelete([])
@@ -106,7 +124,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
+        tags: [...prev.tags, newTag.trim()],
       }))
       setNewTag('')
     }
@@ -115,7 +133,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
   const removeTag = (tag) => {
     setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter((t) => t !== tag)
+      tags: prev.tags.filter((t) => t !== tag),
     }))
   }
 
@@ -123,7 +141,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
     // Append transcribed text to content
     setFormData((prev) => ({
       ...prev,
-      content: prev.content ? prev.content + '\n\n' + text : text
+      content: prev.content ? prev.content + '\n\n' + text : text,
     }))
     toast.success(t('diary:audioTranscribed'))
   }
@@ -143,7 +161,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
     setPhotosToDelete((prev) => [...prev, photoUrl])
     setFormData((prev) => ({
       ...prev,
-      photos: prev.photos.filter((p) => p !== photoUrl)
+      photos: prev.photos.filter((p) => p !== photoUrl),
     }))
   }
 
@@ -157,7 +175,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
     const entryData = {
       ...formData,
       entry_date: formData.entry_date ? `${formData.entry_date}T00:00:00` : null,
-      rating: formData.rating || null
+      rating: formData.rating || null,
     }
 
     try {
@@ -207,7 +225,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
         mood: '',
         rating: 0,
         tags: [],
-        photos: []
+        photos: [],
       })
       setSelectedFiles([])
       setPhotosToDelete([])
@@ -257,7 +275,9 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
               <form onSubmit={handleSubmit} className="p-3 sm:p-6 space-y-4 sm:space-y-6">
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('diary:entryTitle')} *</label>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('diary:entryTitle')} *
+                  </label>
                   <input
                     type="text"
                     name="title"
@@ -315,7 +335,9 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
 
                   {/* Audio Recording */}
                   <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <label className="block text-sm font-medium mb-3">{t('diary:voiceInputLabel')}</label>
+                    <label className="block text-sm font-medium mb-3">
+                      {t('diary:voiceInputLabel')}
+                    </label>
                     <AudioRecorder onTranscriptReceived={handleTranscriptReceived} />
                   </div>
                 </div>
@@ -331,7 +353,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                         onClick={() =>
                           setFormData((prev) => ({
                             ...prev,
-                            mood: prev.mood === mood.value ? '' : mood.value
+                            mood: prev.mood === mood.value ? '' : mood.value,
                           }))
                         }
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors ${
@@ -358,7 +380,7 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                         onClick={() =>
                           setFormData((prev) => ({
                             ...prev,
-                            rating: prev.rating === star ? 0 : star
+                            rating: prev.rating === star ? 0 : star,
                           }))
                         }
                         className="transition-colors"
@@ -495,21 +517,19 @@ export default function DiaryModal({ isOpen, onClose, onSubmit, initialData = nu
                   {caps && !heicSupported && (
                     <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      {t('diary:heicUnsupported', 'HEIC/HEIF wird auf diesem Server nicht unterstützt.')}
+                      {t(
+                        'diary:heicUnsupported',
+                        'HEIC/HEIF wird auf diesem Server nicht unterstützt.'
+                      )}
                     </p>
                   )}
 
                   {/* Native Camera */}
                   <div className="mt-3">
-                    <NativeCamera
-                      onPhotoTaken={handleCameraPhoto}
-                      disabled={uploadingPhoto}
-                    />
+                    <NativeCamera onPhotoTaken={handleCameraPhoto} disabled={uploadingPhoto} />
                   </div>
 
-                  <p className="text-xs text-gray-500 mt-2">
-                    {t('diary:fileTypesInfo')}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-2">{t('diary:fileTypesInfo')}</p>
                 </div>
 
                 {/* Buttons */}

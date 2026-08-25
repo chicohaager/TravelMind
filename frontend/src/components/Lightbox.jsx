@@ -19,7 +19,14 @@ import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
  *                   invalidate the caller's queries)
  *   readOnly      - hide the caption editor (e.g. on public share pages)
  */
-export default function Lightbox({ open, items = [], initialIndex = 0, onClose, onCaptionSaved, readOnly = false }) {
+export default function Lightbox({
+  open,
+  items = [],
+  initialIndex = 0,
+  onClose,
+  onCaptionSaved,
+  readOnly = false,
+}) {
   const { t, i18n } = useTranslation()
   const [index, setIndex] = useState(initialIndex)
   const [captionDraft, setCaptionDraft] = useState('')
@@ -33,10 +40,13 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
     }
   }, [open, initialIndex]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const goTo = useCallback((i) => {
-    setIndex(i)
-    setCaptionDraft(items[i]?.caption || '')
-  }, [items])
+  const goTo = useCallback(
+    (i) => {
+      setIndex(i)
+      setCaptionDraft(items[i]?.caption || '')
+    },
+    [items]
+  )
 
   const nextPhoto = useCallback(() => {
     goTo((index + 1) % items.length)
@@ -61,12 +71,15 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
   }
 
   // Keyboard navigation while the lightbox is open.
-  const handleKeyDown = useCallback((e) => {
-    if (!open) return
-    if (e.key === 'Escape') onClose?.()
-    if (e.key === 'ArrowLeft') prevPhoto()
-    if (e.key === 'ArrowRight') nextPhoto()
-  }, [open, onClose, prevPhoto, nextPhoto])
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (!open) return
+      if (e.key === 'Escape') onClose?.()
+      if (e.key === 'ArrowLeft') prevPhoto()
+      if (e.key === 'ArrowRight') nextPhoto()
+    },
+    [open, onClose, prevPhoto, nextPhoto]
+  )
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -83,7 +96,9 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
   }, [open, index, items])
 
   // Swipe left/right to navigate on touch devices.
-  const onTouchStart = (e) => { touchStartX.current = e.changedTouches[0]?.clientX ?? null }
+  const onTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0]?.clientX ?? null
+  }
   const onTouchEnd = (e) => {
     if (touchStartX.current === null || items.length < 2) return
     const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX.current
@@ -95,7 +110,11 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
 
   const current = items[index]
   const takenAt = current?.taken_at
-    ? new Date(current.taken_at).toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(current.taken_at).toLocaleDateString(i18n.language, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
     : null
 
   return (
@@ -115,7 +134,9 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
 
       {/* Photo Counter + capture date */}
       <div className="absolute top-4 left-4 text-white text-sm flex items-center gap-3">
-        <span>{index + 1} / {items.length}</span>
+        <span>
+          {index + 1} / {items.length}
+        </span>
         {takenAt && (
           <span className="inline-flex items-center gap-1 text-white/80">
             <Calendar className="w-4 h-4" />
@@ -127,7 +148,10 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
       {/* Previous Button */}
       {items.length > 1 && (
         <button
-          onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+          onClick={(e) => {
+            e.stopPropagation()
+            prevPhoto()
+          }}
           className="absolute left-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
         >
           <ChevronLeft className="w-8 h-8" />
@@ -145,7 +169,10 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
       {/* Next Button */}
       {items.length > 1 && (
         <button
-          onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+          onClick={(e) => {
+            e.stopPropagation()
+            nextPhoto()
+          }}
           className="absolute right-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
         >
           <ChevronRight className="w-8 h-8" />
@@ -169,7 +196,9 @@ export default function Lightbox({ open, items = [], initialIndex = 0, onClose, 
               type="text"
               value={captionDraft}
               onChange={(e) => setCaptionDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') saveCaption() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveCaption()
+              }}
               placeholder={t('diary:captionPlaceholder', 'Bildunterschrift hinzufügen…')}
               maxLength={500}
               className="flex-1 px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50 text-sm"

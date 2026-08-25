@@ -3,13 +3,20 @@ import { motion, Reorder, AnimatePresence } from 'framer-motion'
 import TimelineEntryCard from './TimelineEntryCard'
 import { aktuelleLocale } from '@/utils/format'
 
-export default function TimelineDay({ day, onReorder, onDeleteEntry, onOptimize, isExpanded, onToggleExpand }) {
+export default function TimelineDay({
+  day,
+  onReorder,
+  onDeleteEntry,
+  onOptimize,
+  isExpanded,
+  onToggleExpand,
+}) {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr)
     return date.toLocaleDateString(aktuelleLocale(), {
       weekday: 'long',
       day: '2-digit',
-      month: 'long'
+      month: 'long',
     })
   }
 
@@ -63,11 +70,7 @@ export default function TimelineDay({ day, onReorder, onDeleteEntry, onOptimize,
                 Optimieren
               </button>
             )}
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5" />
-            ) : (
-              <ChevronDown className="w-5 h-5" />
-            )}
+            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </div>
         </div>
       </div>

@@ -49,39 +49,39 @@ function App() {
         <OfflineIndicator />
         <Suspense fallback={<PageLoader />}>
           <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/share/:token" element={<PublicDiary />} />
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/share/:token" element={<PublicDiary />} />
 
-          {/* Protected routes (require authentication) */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/trips" replace />} />
-            <Route path="trips" element={<Trips />} />
-            <Route path="trips/:id" element={<TripDetail />} />
-            <Route path="trips/:id/map" element={<TripMap />} />
-            <Route path="trips/:id/edit" element={<Navigate to="/trips" replace />} />
-            <Route path="ai" element={<AIAssistant />} />
-            <Route path="budget" element={<Budget />} />
-            <Route path="diary" element={<Diary />} />
-            <Route path="diary/:tripId" element={<Diary />} />
-            <Route path="gallery" element={<Gallery />} />
-            <Route path="timeline" element={<Timeline />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="transcribe" element={<Transcribe />} />
-            <Route path="transkribieren" element={<Transcribe />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="admin" element={<AdminPanel />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
+            {/* Protected routes (require authentication) */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/trips" replace />} />
+              <Route path="trips" element={<Trips />} />
+              <Route path="trips/:id" element={<TripDetail />} />
+              <Route path="trips/:id/map" element={<TripMap />} />
+              <Route path="trips/:id/edit" element={<Navigate to="/trips" replace />} />
+              <Route path="ai" element={<AIAssistant />} />
+              <Route path="budget" element={<Budget />} />
+              <Route path="diary" element={<Diary />} />
+              <Route path="diary/:tripId" element={<Diary />} />
+              <Route path="gallery" element={<Gallery />} />
+              <Route path="timeline" element={<Timeline />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="transcribe" element={<Transcribe />} />
+              <Route path="transkribieren" element={<Transcribe />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="admin" element={<AdminPanel />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </Suspense>
       </AuthProvider>

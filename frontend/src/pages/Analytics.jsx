@@ -100,8 +100,16 @@ export default function Analytics() {
             <StatCard icon={MapPin} label={t('analytics:trips')} value={data.trips} />
             <StatCard icon={BookOpen} label={t('analytics:entries')} value={data.diary_entries} />
             <StatCard icon={Image} label={t('analytics:photos')} value={data.photos} />
-            <StatCard icon={CalendarDays} label={t('analytics:travelDays')} value={data.travel_days} />
-            <StatCard icon={Wallet} label={t('analytics:totalSpend')} value={money(data.total_spend)} />
+            <StatCard
+              icon={CalendarDays}
+              label={t('analytics:travelDays')}
+              value={data.travel_days}
+            />
+            <StatCard
+              icon={Wallet}
+              label={t('analytics:totalSpend')}
+              value={money(data.total_spend)}
+            />
           </div>
 
           {/* Charts */}
@@ -114,7 +122,10 @@ export default function Analytics() {
             {Object.keys(data.spend_by_currency || {}).length > 1 && (
               <BarList
                 title={t('analytics:spendByCurrency')}
-                items={Object.entries(data.spend_by_currency).map(([cur, amt]) => ({ label: cur, value: amt }))}
+                items={Object.entries(data.spend_by_currency).map(([cur, amt]) => ({
+                  label: cur,
+                  value: amt,
+                }))}
                 format={(v) => v.toFixed(2)}
               />
             )}

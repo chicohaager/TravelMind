@@ -1,9 +1,18 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, MapPin, Star, Clock, Phone, Globe, ExternalLink,
-  Calendar, DollarSign, Info, Image as ImageIcon,
-  Plus
+  X,
+  MapPin,
+  Star,
+  Clock,
+  Phone,
+  Globe,
+  ExternalLink,
+  Calendar,
+  DollarSign,
+  Info,
+  Image as ImageIcon,
+  Plus,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
@@ -226,7 +235,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
-                                day: 'numeric'
+                                day: 'numeric',
                               })}
                             </div>
                           </div>
@@ -282,7 +291,9 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                             src={getThumbUrl(photo)}
                             onError={onThumbError(photo)}
                             loading="lazy"
-                            alt={t('places:photoAlt').replace('{name}', place.name).replace('{index}', index + 1)}
+                            alt={t('places:photoAlt')
+                              .replace('{name}', place.name)
+                              .replace('{index}', index + 1)}
                             className="w-full h-48 object-cover rounded-lg"
                           />
                         ))}

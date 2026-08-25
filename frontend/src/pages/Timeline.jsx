@@ -17,7 +17,11 @@ export default function Timeline() {
   const queryClient = useQueryClient()
   const [lightbox, setLightbox] = useState({ open: false, items: [], index: 0 })
 
-  const { data: media = [], isLoading, error } = useQuery({
+  const {
+    data: media = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['galleryMedia'],
     queryFn: async () => (await mediaService.getGallery()).data,
   })
@@ -83,36 +87,38 @@ export default function Timeline() {
       )}
 
       {/* Month groups along a vertical timeline */}
-      {!isLoading && !error && groups.map((group) => (
-        <motion.section
-          key={group.key}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative pl-6 border-l-2 border-primary-200 dark:border-primary-900"
-        >
-          <span className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-primary-500" />
-          <div className="flex items-baseline gap-2 mb-3">
-            <h2 className="text-lg font-semibold capitalize">{group.label}</h2>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              ({t('gallery:photoCount', { count: group.items.length })})
-            </span>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-            {group.items.map((m, i) => (
-              <img
-                key={m.id}
-                src={getThumbUrl(m.url)}
-                onError={onThumbError(m.url)}
-                loading="lazy"
-                alt={m.caption || `Photo ${i + 1}`}
-                title={m.caption || m.trip_title || undefined}
-                onClick={() => openLightbox(group.items, i)}
-                className="aspect-square w-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-              />
-            ))}
-          </div>
-        </motion.section>
-      ))}
+      {!isLoading &&
+        !error &&
+        groups.map((group) => (
+          <motion.section
+            key={group.key}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative pl-6 border-l-2 border-primary-200 dark:border-primary-900"
+          >
+            <span className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-primary-500" />
+            <div className="flex items-baseline gap-2 mb-3">
+              <h2 className="text-lg font-semibold capitalize">{group.label}</h2>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                ({t('gallery:photoCount', { count: group.items.length })})
+              </span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              {group.items.map((m, i) => (
+                <img
+                  key={m.id}
+                  src={getThumbUrl(m.url)}
+                  onError={onThumbError(m.url)}
+                  loading="lazy"
+                  alt={m.caption || `Photo ${i + 1}`}
+                  title={m.caption || m.trip_title || undefined}
+                  onClick={() => openLightbox(group.items, i)}
+                  className="aspect-square w-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                />
+              ))}
+            </div>
+          </motion.section>
+        ))}
 
       <Lightbox
         open={lightbox.open}

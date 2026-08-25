@@ -20,12 +20,17 @@ export default function Trips() {
   const queryClient = useQueryClient()
 
   // Fetch trips from API with offline support
-  const { data: trips = [], isLoading, isOffline, isCached } = useOfflineTrips({
+  const {
+    data: trips = [],
+    isLoading,
+    isOffline,
+    isCached,
+  } = useOfflineTrips({
     queryKey: ['trips'],
     queryFn: async () => {
       const response = await tripsService.getAll()
       return response.data
-    }
+    },
   })
 
   // Create trip mutation
@@ -42,7 +47,7 @@ export default function Trips() {
     onError: (error) => {
       toast.error(formatError(error, t('trips:createError')))
       console.error(error)
-    }
+    },
   })
 
   // Delete trip mutation
@@ -58,7 +63,7 @@ export default function Trips() {
     onError: (error) => {
       toast.error(formatError(error, t('trips:deleteError')))
       console.error(error)
-    }
+    },
   })
 
   // Update trip mutation
@@ -76,7 +81,7 @@ export default function Trips() {
     onError: (error) => {
       toast.error(formatError(error, t('trips:updateError')))
       console.error(error)
-    }
+    },
   })
 
   const handleCreateTrip = async (tripData) => {
@@ -114,9 +119,7 @@ export default function Trips() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-bold mb-2">{t('trips:title')}</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('trips:manageAdventures')}
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">{t('trips:manageAdventures')}</p>
           {isCached && (
             <div className="mt-2 flex items-center gap-2 text-sm">
               {isOffline ? (
@@ -133,10 +136,7 @@ export default function Trips() {
             </div>
           )}
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="btn btn-primary"
-        >
+        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
           <Plus className="w-5 h-5" />
           {t('trips:newTrip')}
         </button>
@@ -145,12 +145,8 @@ export default function Trips() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card">
-          <div className="text-3xl font-bold text-primary-500 mb-1">
-            {trips.length}
-          </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t('trips:planned')}
-          </div>
+          <div className="text-3xl font-bold text-primary-500 mb-1">{trips.length}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('trips:planned')}</div>
         </div>
         <div className="card">
           <div className="text-3xl font-bold text-secondary-500 mb-1">
@@ -162,17 +158,16 @@ export default function Trips() {
               return acc
             }, 0)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t('trips:totalDays')}
-          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('trips:totalDays')}</div>
         </div>
         <div className="card">
           <div className="text-3xl font-bold text-green-500 mb-1">
-            {formatCurrency(trips.reduce((acc, trip) => acc + (trip.budget || 0), 0), trips[0]?.currency || 'EUR')}
+            {formatCurrency(
+              trips.reduce((acc, trip) => acc + (trip.budget || 0), 0),
+              trips[0]?.currency || 'EUR'
+            )}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t('trips:totalBudget')}
-          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('trips:totalBudget')}</div>
         </div>
       </div>
 
@@ -186,125 +181,127 @@ export default function Trips() {
 
       {/* Trips Grid */}
       {!isLoading && trips.length > 0 && (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {trips.map((trip, index) => (
-          <motion.div
-            key={trip.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-            onClick={() => navigate(`/trips/${trip.id}`)}
-            className="card p-0 overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow"
-          >
-            {/* Image */}
-            <div className="relative h-48 overflow-hidden">
-              {trip.cover_image ? (
-                <img
-                  src={trip.cover_image}
-                  alt={trip.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">
-                  <MapPin className="w-16 h-16 text-white/50" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {trips.map((trip, index) => (
+            <motion.div
+              key={trip.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              onClick={() => navigate(`/trips/${trip.id}`)}
+              className="card p-0 overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow"
+            >
+              {/* Image */}
+              <div className="relative h-48 overflow-hidden">
+                {trip.cover_image ? (
+                  <img
+                    src={trip.cover_image}
+                    alt={trip.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">
+                    <MapPin className="w-16 h-16 text-white/50" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
 
-              {/* Action Buttons */}
-              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigate(`/trips/${trip.id}`)
-                  }}
-                  className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
-                  title={t('trips:showDetails')}
-                >
-                  <Eye className="w-4 h-4 text-gray-700" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    openEditModal(trip)
-                  }}
-                  className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
-                  title={t('common:edit')}
-                >
-                  <Edit2 className="w-4 h-4 text-gray-700" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setDeletingTrip(trip)
-                  }}
-                  className="p-2 bg-red-500/90 hover:bg-red-500 rounded-lg transition-colors"
-                  title={t('common:delete')}
-                >
-                  <Trash2 className="w-4 h-4 text-white" />
-                </button>
+                {/* Action Buttons */}
+                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/trips/${trip.id}`)
+                    }}
+                    className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
+                    title={t('trips:showDetails')}
+                  >
+                    <Eye className="w-4 h-4 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openEditModal(trip)
+                    }}
+                    className="p-2 bg-white/90 hover:bg-white rounded-lg transition-colors"
+                    title={t('common:edit')}
+                  >
+                    <Edit2 className="w-4 h-4 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeletingTrip(trip)
+                    }}
+                    className="p-2 bg-red-500/90 hover:bg-red-500 rounded-lg transition-colors"
+                    title={t('common:delete')}
+                  >
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+
+                <div className="absolute bottom-3 left-3 text-white">
+                  <h3 className="text-xl font-bold mb-1">{trip.title}</h3>
+                  <div className="flex items-center gap-1 text-sm">
+                    <MapPin className="w-4 h-4" />
+                    {trip.destination}
+                  </div>
+                </div>
               </div>
 
-              <div className="absolute bottom-3 left-3 text-white">
-                <h3 className="text-xl font-bold mb-1">{trip.title}</h3>
-                <div className="flex items-center gap-1 text-sm">
-                  <MapPin className="w-4 h-4" />
-                  {trip.destination}
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4 space-y-3">
-              {/* Dates */}
-              {trip.start_date && trip.end_date ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    {formatDate(trip.start_date, 'short').replace(/\/\d{4}/, '')}
-                    {' - '}
-                    {formatDate(trip.end_date, 'short')}
-                  </span>
-                  <span className="ml-auto badge badge-primary">
-                    {calculateDuration(trip.start_date, trip.end_date)}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>{t('trips:dateNotSet')}</span>
-                </div>
-              )}
-
-              {/* Interests */}
-              {trip.interests && trip.interests.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {trip.interests.map((interest) => (
-                    <span
-                      key={interest}
-                      className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full"
-                    >
-                      {t(`interests:${interest}`, interest)}
+              {/* Content */}
+              <div className="p-4 space-y-3">
+                {/* Dates */}
+                {trip.start_date && trip.end_date ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>
+                      {formatDate(trip.start_date, 'short').replace(/\/\d{4}/, '')}
+                      {' - '}
+                      {formatDate(trip.end_date, 'short')}
                     </span>
-                  ))}
-                </div>
-              )}
+                    <span className="ml-auto badge badge-primary">
+                      {calculateDuration(trip.start_date, trip.end_date)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>{t('trips:dateNotSet')}</span>
+                  </div>
+                )}
 
-              {/* Budget */}
-              <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('trips:budget')}
-                  </span>
-                  <span className="font-semibold text-green-600 dark:text-green-500">
-                    {trip.budget ? formatCurrency(trip.budget, trip.currency || 'EUR') : t('trips:notSet')}
-                  </span>
+                {/* Interests */}
+                {trip.interests && trip.interests.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {trip.interests.map((interest) => (
+                      <span
+                        key={interest}
+                        className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full"
+                      >
+                        {t(`interests:${interest}`, interest)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Budget */}
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {t('trips:budget')}
+                    </span>
+                    <span className="font-semibold text-green-600 dark:text-green-500">
+                      {trip.budget
+                        ? formatCurrency(trip.budget, trip.currency || 'EUR')
+                        : t('trips:notSet')}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
       )}
 
       {/* Empty State */}
@@ -316,13 +313,8 @@ export default function Trips() {
         >
           <MapPin className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h3 className="text-xl font-semibold mb-2">{t('trips:noTripsPlanned')}</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {t('trips:startFirstAdventure')}
-          </p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn btn-primary"
-          >
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{t('trips:startFirstAdventure')}</p>
+          <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
             <Plus className="w-5 h-5" />
             {t('trips:createFirstTrip')}
           </button>
@@ -349,20 +341,21 @@ export default function Trips() {
           >
             <h3 className="text-xl font-bold mb-4">{t('trips:deleteQuestion')}</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {t('trips:deleteWarning').split('{title}').map((part, i, arr) => (
-                i < arr.length - 1 ? (
-                  <span key={i}>
-                    {part}
-                    <strong>{deletingTrip.title}</strong>
-                  </span>
-                ) : part
-              ))}
+              {t('trips:deleteWarning')
+                .split('{title}')
+                .map((part, i, arr) =>
+                  i < arr.length - 1 ? (
+                    <span key={i}>
+                      {part}
+                      <strong>{deletingTrip.title}</strong>
+                    </span>
+                  ) : (
+                    part
+                  )
+                )}
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setDeletingTrip(null)}
-                className="btn btn-secondary flex-1"
-              >
+              <button onClick={() => setDeletingTrip(null)} className="btn btn-secondary flex-1">
                 {t('common:cancel')}
               </button>
               <button

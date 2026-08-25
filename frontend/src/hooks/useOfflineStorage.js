@@ -98,18 +98,18 @@ export const useOfflineTrips = (apiQuery) => {
         console.error('Error caching trips:', error)
       }
       return data
-    }
+    },
   })
 
   // Return cached data if offline or while loading
-  const data = isOnline ? (query.data || cachedTrips) : cachedTrips
+  const data = isOnline ? query.data || cachedTrips : cachedTrips
 
   return {
     ...query,
     data,
     isOffline: !isOnline,
     isCached: !isOnline || !query.data,
-    isLoading: isOnline ? query.isLoading : loading
+    isLoading: isOnline ? query.isLoading : loading,
   }
 }
 
@@ -148,17 +148,17 @@ export const useOfflineDiary = (tripId, apiQuery) => {
         console.error('Error caching diary entries:', error)
       }
       return data
-    }
+    },
   })
 
-  const data = isOnline ? (query.data || cachedEntries) : cachedEntries
+  const data = isOnline ? query.data || cachedEntries : cachedEntries
 
   return {
     ...query,
     data,
     isOffline: !isOnline,
     isCached: !isOnline || !query.data,
-    isLoading: isOnline ? query.isLoading : loading
+    isLoading: isOnline ? query.isLoading : loading,
   }
 }
 
@@ -197,17 +197,17 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
         console.error('Error caching places:', error)
       }
       return data
-    }
+    },
   })
 
-  const data = isOnline ? (query.data || cachedPlaces) : cachedPlaces
+  const data = isOnline ? query.data || cachedPlaces : cachedPlaces
 
   return {
     ...query,
     data,
     isOffline: !isOnline,
     isCached: !isOnline || !query.data,
-    isLoading: isOnline ? query.isLoading : loading
+    isLoading: isOnline ? query.isLoading : loading,
   }
 }
 
@@ -231,7 +231,7 @@ export const useOfflineMutation = (mutationFn, options = {}) => {
           endpoint: options.endpoint,
           data: variables,
           entityType: options.entityType,
-          metadata: options.metadata || {}
+          metadata: options.metadata || {},
         })
 
         toast.success(t('offline:changeWillSync'))
@@ -259,7 +259,7 @@ export const useOfflineMutation = (mutationFn, options = {}) => {
       }
 
       options.onSuccess?.(data, variables, context)
-    }
+    },
   })
 }
 
@@ -306,6 +306,6 @@ export const useClearOfflineData = () => {
     onError: (error) => {
       toast.error(t('offline:errorDeleting'))
       console.error(error)
-    }
+    },
   })
 }

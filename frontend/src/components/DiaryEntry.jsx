@@ -7,7 +7,7 @@ import { aktuelleLocale } from '@/utils/format'
 const moodIcons = {
   happy: { icon: Smile, color: 'text-green-500', label: 'Glücklich' },
   neutral: { icon: Meh, color: 'text-yellow-500', label: 'Neutral' },
-  sad: { icon: Frown, color: 'text-red-500', label: 'Traurig' }
+  sad: { icon: Frown, color: 'text-red-500', label: 'Traurig' },
 }
 
 export default function DiaryEntry({ entry, onEdit, onDelete }) {
@@ -34,7 +34,7 @@ export default function DiaryEntry({ entry, onEdit, onDelete }) {
                 {new Date(entry.entry_date).toLocaleDateString(aktuelleLocale(), {
                   day: '2-digit',
                   month: 'long',
-                  year: 'numeric'
+                  year: 'numeric',
                 })}
               </div>
             )}

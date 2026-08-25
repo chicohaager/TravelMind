@@ -151,7 +151,7 @@ export const namespaces = [
   'offline',
   'transcribe',
   'notFound',
-  'format'
+  'format',
 ]
 
 // Available languages
@@ -159,7 +159,7 @@ export const languages = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
   { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' }
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
 ]
 
 const resources = {
@@ -191,7 +191,7 @@ const resources = {
     offline: enOffline,
     transcribe: enTranscribe,
     notFound: enNotFound,
-    format: enFormat
+    format: enFormat,
   },
   de: {
     common: deCommon,
@@ -221,7 +221,7 @@ const resources = {
     offline: deOffline,
     transcribe: deTranscribe,
     notFound: deNotFound,
-    format: deFormat
+    format: deFormat,
   },
   fr: {
     common: frCommon,
@@ -251,7 +251,7 @@ const resources = {
     offline: frOffline,
     transcribe: frTranscribe,
     notFound: frNotFound,
-    format: frFormat
+    format: frFormat,
   },
   es: {
     common: esCommon,
@@ -281,8 +281,8 @@ const resources = {
     offline: esOffline,
     transcribe: esTranscribe,
     notFound: esNotFound,
-    format: esFormat
-  }
+    format: esFormat,
+  },
 }
 
 i18n
@@ -313,14 +313,14 @@ i18n
     ns: namespaces,
 
     interpolation: {
-      escapeValue: false
+      escapeValue: false,
     },
 
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       lookupLocalStorage: 'i18nextLng',
       caches: ['localStorage'],
-    }
+    },
   })
 
 /**

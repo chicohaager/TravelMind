@@ -14,14 +14,14 @@ vi.mock('axios', () => {
     patch: vi.fn(),
     interceptors: {
       request: { use: vi.fn() },
-      response: { use: vi.fn() }
-    }
+      response: { use: vi.fn() },
+    },
   }
 
   return {
     default: {
-      create: vi.fn(() => mockAxiosInstance)
-    }
+      create: vi.fn(() => mockAxiosInstance),
+    },
   }
 })
 

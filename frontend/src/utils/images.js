@@ -25,9 +25,7 @@ export function getPhotoUrl(photo) {
 export function getThumbUrl(photo) {
   if (!photo) return ''
   if (photo.startsWith('http')) return photo
-  const thumb = photo.endsWith('.webp')
-    ? photo.replace(/\.webp$/, '_thumb.webp')
-    : photo
+  const thumb = photo.endsWith('.webp') ? photo.replace(/\.webp$/, '_thumb.webp') : photo
   return `${API_ORIGIN}${thumb}`
 }
 

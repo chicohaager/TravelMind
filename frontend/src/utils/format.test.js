@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import i18n from '../i18n'
-import { aktuelleLocale, formatCurrency, formatDate, formatNumber, formatRelativeTime } from './format'
+import {
+  aktuelleLocale,
+  formatCurrency,
+  formatDate,
+  formatNumber,
+  formatRelativeTime,
+} from './format'
 
 /**
  * Diese Datei bewacht eine Fehlerklasse, die am 2026-08-25 in der laufenden

@@ -43,9 +43,7 @@ export default function ColorPicker({ value = '#6366F1', onChange, label = 'Colo
             style={{ backgroundColor: color }}
             title={color}
           >
-            {value === color && (
-              <Check className="w-5 h-5 text-white mx-auto drop-shadow" />
-            )}
+            {value === color && <Check className="w-5 h-5 text-white mx-auto drop-shadow" />}
           </button>
         ))}
       </div>

@@ -18,7 +18,11 @@ export default function Gallery() {
   const [collapsed, setCollapsed] = useState(() => new Set())
   const [lightbox, setLightbox] = useState({ open: false, items: [], index: 0 })
 
-  const { data: media = [], isLoading, error } = useQuery({
+  const {
+    data: media = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['galleryMedia'],
     queryFn: async () => {
       const response = await mediaService.getGallery()
@@ -86,61 +90,63 @@ export default function Gallery() {
       )}
 
       {/* Trip groups */}
-      {!isLoading && !error && groups.map((group) => {
-        const isCollapsed = collapsed.has(group.tripId)
-        return (
-          <motion.section
-            key={group.tripId}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <button
-                onClick={() => toggleTrip(group.tripId)}
-                className="flex items-center gap-2 text-left group"
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-                <h2 className="text-xl font-semibold group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                  {group.tripTitle}
-                </h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  ({t('gallery:photoCount', { count: group.items.length })})
-                </span>
-              </button>
-              <Link
-                to={`/trips/${group.tripId}`}
-                aria-label={group.tripTitle}
-                title={group.tripTitle}
-                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1 shrink-0"
-              >
-                <MapPin className="w-4 h-4" />
-              </Link>
-            </div>
-
-            {!isCollapsed && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                {group.items.map((m, i) => (
-                  <img
-                    key={m.id}
-                    src={getThumbUrl(m.url)}
-                    onError={onThumbError(m.url)}
-                    loading="lazy"
-                    alt={m.caption || `Photo ${i + 1}`}
-                    title={m.caption || undefined}
-                    onClick={() => openLightbox(group.items, i)}
-                    className="aspect-square w-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                  />
-                ))}
+      {!isLoading &&
+        !error &&
+        groups.map((group) => {
+          const isCollapsed = collapsed.has(group.tripId)
+          return (
+            <motion.section
+              key={group.tripId}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={() => toggleTrip(group.tripId)}
+                  className="flex items-center gap-2 text-left group"
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                  <h2 className="text-xl font-semibold group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                    {group.tripTitle}
+                  </h2>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    ({t('gallery:photoCount', { count: group.items.length })})
+                  </span>
+                </button>
+                <Link
+                  to={`/trips/${group.tripId}`}
+                  aria-label={group.tripTitle}
+                  title={group.tripTitle}
+                  className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1 shrink-0"
+                >
+                  <MapPin className="w-4 h-4" />
+                </Link>
               </div>
-            )}
-          </motion.section>
-        )
-      })}
+
+              {!isCollapsed && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                  {group.items.map((m, i) => (
+                    <img
+                      key={m.id}
+                      src={getThumbUrl(m.url)}
+                      onError={onThumbError(m.url)}
+                      loading="lazy"
+                      alt={m.caption || `Photo ${i + 1}`}
+                      title={m.caption || undefined}
+                      onClick={() => openLightbox(group.items, i)}
+                      className="aspect-square w-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                    />
+                  ))}
+                </div>
+              )}
+            </motion.section>
+          )
+        })}
 
       {/* Lightbox */}
       <Lightbox
