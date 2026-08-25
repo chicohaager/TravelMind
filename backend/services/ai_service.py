@@ -85,7 +85,21 @@ class ClaudeProvider(AIProvider):
     ) -> str:
         messages = [{"role": "user", "content": prompt}]
 
-        kwargs = {"model": self.model, "max_tokens": max_tokens, "messages": messages, "temperature": temperature}
+        # KEIN `temperature` hier.
+        #
+        # Der anthropic-SDK 1.0.0 nimmt es nicht mehr an — `Messages.create()`
+        # wirft `TypeError: got an unexpected keyword argument 'temperature'`.
+        # Am 2026-08-25 in der Produktion gemessen: JEDE Claude-Anfrage
+        # scheiterte damit, seit der SDK-Sprung passiert ist. Aufgefallen ist
+        # es erst, als der Fehlerpfad anfing zu protokollieren — vorher ging
+        # die Meldung als "AI service error" an den Nutzer und niemand sah,
+        # WAS fehlschlug.
+        #
+        # Der Parameter bleibt in der Signatur, weil die anderen drei Anbieter
+        # ihn annehmen; hier wird er bewusst verworfen. `test_ai_service.py`
+        # prueft, dass die uebergebenen Argumente zur INSTALLIERTEN Signatur
+        # passen — damit faellt der naechste solche Sprung im Test auf.
+        kwargs = {"model": self.model, "max_tokens": max_tokens, "messages": messages}
 
         if system_prompt:
             kwargs["system"] = system_prompt
