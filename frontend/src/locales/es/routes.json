@@ -29,5 +29,11 @@
   "routeUpdated": "¡Ruta actualizada!",
   "routeCreated": "¡Ruta creada!",
   "updateRoute": "Actualizar ruta",
-  "saveRoute": "Guardar ruta"
+  "saveRoute": "Guardar ruta",
+  "addPlaceToRoute": "Añadir a la ruta",
+  "removePlaceFromRoute": "Quitar de la ruta",
+  "tapOrDragPlacesHere": "Toca ➕ en un lugar — o arrástralo aquí.",
+  "whyCantISave": "Aún falta para guardar:",
+  "missingRouteName": "un nombre de ruta",
+  "missingTwoPlaces": "al menos dos lugares en la ruta"
 }

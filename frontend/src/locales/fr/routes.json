@@ -29,5 +29,11 @@
   "routeUpdated": "Itinéraire mis à jour !",
   "routeCreated": "Itinéraire créé !",
   "updateRoute": "Mettre à jour l'itinéraire",
-  "saveRoute": "Enregistrer l'itinéraire"
+  "saveRoute": "Enregistrer l'itinéraire",
+  "addPlaceToRoute": "Ajouter à l'itinéraire",
+  "removePlaceFromRoute": "Retirer de l'itinéraire",
+  "tapOrDragPlacesHere": "Touchez ➕ sur un lieu — ou glissez-le ici.",
+  "whyCantISave": "Il manque encore pour enregistrer :",
+  "missingRouteName": "un nom d'itinéraire",
+  "missingTwoPlaces": "au moins deux lieux dans l'itinéraire"
 }
