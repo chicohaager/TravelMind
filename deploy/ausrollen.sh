@@ -111,6 +111,10 @@ else
   fern "gunzip -c /tmp/travelmind-$SHA.tgz | docker load >/dev/null && rm -f /tmp/travelmind-$SHA.tgz"
 
   melde "Compose und Parameter aktualisieren"
+  # Erst wegraeumen, was dort liegt: legt ein `docker run -v` ein fehlendes
+  # Ziel an, entsteht ein VERZEICHNIS mit diesem Namen — und scp scheitert
+  # danach mit "Permission denied", was nach einem Rechteproblem aussieht.
+  fern "rm -rf /tmp/tm-compose.yml /tmp/tm-skripte.tgz"
   scp -q -o BatchMode=yes docker-compose.prod.yml "$HOST:/tmp/tm-compose.yml"
   tar czf "$ZWISCHEN/skripte.tgz" -C deploy backup waechter
   scp -q -o BatchMode=yes "$ZWISCHEN/skripte.tgz" "$HOST:/tmp/tm-skripte.tgz"
