@@ -210,6 +210,71 @@ Passwörter: mindestens 8 Zeichen, keine Komplexitäts- oder Leak-Prüfung, kein
 | 2.5 | CLAUDE.md | ✅ | Neu geschrieben mit den Fallen, die der Wiederaufbau aufgedeckt hat. |
 | 2.6 | pre-commit | ✅ | Die Konfiguration lag seit jeher da und **konnte nie laufen**: Hook nicht installiert, zwei referenzierte Dateien fehlten, black auf ein nicht vorhandenes Python gepinnt. Alle 17 Hooks grün, Sabotage-Gegenprobe rot. |
 
+### Phase 3 — Sicherheit (abgeschlossen)
+
+| Schritt | Zustand | Beleg |
+|---|---|---|
+| 3.1 Python-Updates | ✅ | **98 → 0** Findings. Gemessen an den **104 Paketen im gebauten Image**, nicht nur an der Anforderungsdatei: `No known vulnerabilities found`. Zwei Wellen; Pillow sprang über zwei Hauptversionen und wurde an zwölf echten Fotos geprüft (Validierung, EXIF mit Zeit und GPS, Verkleinerung, HEIC). |
+| 3.2 npm | ✅ | **7 → 0**. `npm audit`: `found 0 vulnerabilities`. Dafür vite 5→8, vitest 1→4 und react-router-dom 6→7. |
+| 3.3 Audits als CI-Tor | ✅ | Neuer Job „Bekannte Schwachstellen", beide Prüfungen hart. Erst **nachdem** sie grün sind — ein Tor, das bei 98 Findings eingebaut wird, ist nach dem dritten roten Lauf abgeschaltet. |
+| 3.4 Container-Härtung | ✅ | Beide Anwendungscontainer jetzt `read_only`, `cap_drop: ALL`, `no-new-privileges`, non-root. Am laufenden Container gemessen. |
+| 3.5 Rate-Limits | ✅ | **0 von 123** Endpunkten ohne Grenze (vorher 51). Dabei ein echter Fund, siehe unten. |
+| 3.6 Passwortregeln | ✅ | Länge plus Abgleich mit bekannten Leaks an **allen drei** Stellen, an denen ein Passwort gesetzt wird. In der Produktion belegt: `testpass123` wird mit der exakten Trefferzahl abgewiesen. |
+
+#### python-jose → PyJWT: kein Geschmacksurteil
+
+`python-jose` hält `pyasn1` unter 0.5 fest — sechs Findings — und zieht `ecdsa`
+mit, für das es **überhaupt keine** behebende Version gibt. Beide ließen sich
+nur durch den Wechsel schließen. Die benutzte Schnittstelle war identisch:
+sieben Aufrufe in zwei Dateien.
+
+Belegt statt angenommen: ein **echtes Token aus der laufenden Produktion**,
+signiert von python-jose, wird von PyJWT gelesen — bestehende Anmeldungen
+laufen weiter. Im Browser nachgeprüft: nach dem Ausrollen war die alte Sitzung
+noch gültig.
+
+#### Der Fund bei den Rate-Limits: die Grenzen zählten pro Worker
+
+Nach dem Anbringen wollte ich sie belegen. 140 Anfragen an einen Endpunkt mit
+Grenze 120/Minute gingen alle durch. Drei Messungen bis zur Ursache:
+
+1. **Über nginx:** 115 von 140 kamen als HTTP **503** — nginx' eigene Grenze
+   (10 r/s) greift *vor* der Anwendung. Ich hatte von der falschen Seite gemessen.
+2. **Direkt gegen den Container:** 140 × 200, kein einziger 429.
+3. **Im laufenden Prozess:** Konfiguration korrekt — aber **4 gunicorn-Worker
+   und `MemoryStorage`**. Jeder Worker zählt für sich.
+
+Die effektive Grenze war damit bis zu **viermal so hoch** wie die konfigurierte.
+`AUTH_LOGIN = 10/minute` erlaubte real bis zu 40 Versuche.
+
+Behoben ohne neue Infrastruktur zu erzwingen: `RATE_LIMIT_STORAGE_URI` macht
+einen gemeinsamen Speicher möglich; das Verhalten ohne ihn steht jetzt samt
+Messwert im Code. nginx bekam eine **eigene, strengere Zone für `/api/auth/`**
+(1 r/s statt 10) und antwortet auf Überschreitung mit **429 statt 503** — der
+Unterschied ist nicht kosmetisch, 503 liest sich in jeder Überwachung als
+„Dienst ausgefallen".
+
+Belegt nach dem Ausrollen: `/api/` 24×200 / 16×429, `/api/auth/` nur 6 von 15
+durchgelassen, einzelne Anfrage weiterhin 200.
+
+#### Passwortregeln nach NIST SP 800-63B
+
+Ausdrücklich **keine** Komplexitätsregeln — die erzeugen „Passwort1!". Wirksam
+sind Länge und der Abgleich mit bekannten Leaks über k-Anonymität: es verlassen
+fünf Zeichen des SHA-1-Hashes den Server, nie das Passwort. Ein eigener Test
+prüft genau das.
+
+Die interessante Frage war, was bei nicht erreichbarem Dienst passiert. Drei
+Betriebsarten (`best-effort` / `required` / `off`), und `leak_treffer` ist dabei
+`None`, nicht `0` — „nicht feststellbar" ist nicht „nachweislich nicht
+betroffen". Genau diese Verwechslung macht ein Fallback unsichtbar.
+
+Gegen den echten Dienst gemessen: die bisherigen Testpasswörter `securepass123`
+und `testpass123` stehen **547** bzw. **8.513** Mal in bekannten Leaks. Die
+Regel funktioniert — und deshalb brachen drei alte Tests.
+
+**Backend-Tests: 53 → 71.**
+
 ### Was der Wiederaufbau ans Licht gebracht hat
 
 Sieben Fehler, alle mit derselben Form: **ein Fallback zeigte etwas Plausibles
