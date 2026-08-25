@@ -145,9 +145,30 @@ docker compose -f docker-compose.prod.yml \
   --env-file .env --env-file deploy-params.conf up -d
 ```
 
-**Rollback** ist eine Zeile: `TRAVELMIND_TAG` in `deploy-params.conf` auf den
-vorherigen Commit-SHA setzen und `up -d` wiederholen. Die alten Images bleiben
-unter ihrem Tag liegen.
+Bequemer geht beides mit `deploy/ausrollen.sh` — es baut, überträgt (mit
+Prüfsummenvergleich), aktualisiert Compose und Skripte, wartet auf gesunde
+Container und prüft am Ende **von außen**, dass Oberfläche und API antworten:
+
+```bash
+./deploy/ausrollen.sh              # HEAD ausrollen
+./deploy/ausrollen.sh --staende    # was liegt auf dem Host?
+./deploy/ausrollen.sh --zurueck    # auf den vorigen Stand zurück
+```
+
+**Rollback** ist auch von Hand eine Zeile: `TRAVELMIND_TAG` in
+`deploy-params.conf` auf den vorherigen Commit-SHA setzen und `up -d`
+wiederholen. Die alten Images bleiben unter ihrem Tag liegen.
+
+### Sicherung und Überwachung
+
+Zwei weitere Container laufen im Verbund:
+
+| Container | Was er tut |
+|---|---|
+| `travelmind-backup` | Täglich 03:00 Datenbank **und** Fotos, danach eine **Restore-Probe**: der Stand wird in eine Wegwerf-Datenbank zurückgespielt und die Zeilen mit der laufenden verglichen. Eine Sicherung, die nie zurückgespielt wurde, ist eine Behauptung. |
+| `travelmind-waechter` | Fragt Oberfläche und API im Minutentakt und prüft den **Inhalt**, nicht den Statuscode. Alarm über Pushover nach drei Fehlversuchen, Entwarnung bei Rückkehr. |
+
+Einzelheiten: [`docs/BACKUP.md`](docs/BACKUP.md).
 
 Die Bind-Mounts `uploads/` und `backups/` müssen **uid/gid 1001** gehören — das
 ist die im Image festgenagelte Kennung, unter der die Container laufen:

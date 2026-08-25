@@ -275,6 +275,63 @@ Regel funktioniert — und deshalb brachen drei alte Tests.
 
 **Backend-Tests: 53 → 71.**
 
+### Phase 4 — Betrieb (abgeschlossen)
+
+| Schritt | Zustand | Beleg |
+|---|---|---|
+| 4.1 Tägliche Sicherung mit Restore-Probe | ✅ | Erste vollständige Sicherung inklusive der **104 MB Fotos**, danach in eine Wegwerf-Datenbank zurückgespielt: alle Zeilen stimmen, alle 45 Fotos entpackt. **PROBE BESTANDEN.** |
+| 4.2 Überwachung mit Alarm | ✅ | Backend absichtlich gestoppt → nach drei Fehlversuchen Alarm, Pushover-Meldung verschickt. Backend gestartet → Entwarnung verschickt. **Beide Richtungen belegt.** |
+| 4.3 Deploy-Skript mit Rückweg | ✅ | Vollständiges Ausrollen, dann `--zurueck` auf den vorigen Stand, dann wieder vor. Jedes Mal von außen geprüft. |
+
+#### Das vorhandene Backup-Skript konnte nie funktionieren
+
+`backend/scripts/backup_database.py` liegt seit jeher im Repository und war in
+`docs/BACKUP.md` dokumentiert. Es ruft `pg_dump` im Backend-Container auf —
+**dort gibt es keins**:
+
+```text
+docker exec travelmind-backend python /app/scripts/backup_database.py …
+ERROR - pg_dump not found. Please install PostgreSQL client tools.
+```
+
+Nachinstallieren wäre die naheliegende und die falsche Antwort: Debian
+bookworm liefert `pg_dump` 15, der Server läuft auf 16, und `pg_dump`
+verweigert den Dienst gegen eine neuere Serverversion.
+
+Die neue Lösung läuft in einem `postgres:16-alpine`-Container im Compose-Netz
+und benutzt damit den `pg_dump` **desselben Image-Stands** wie der Server — die
+Versionen können per Konstruktion nicht auseinanderlaufen. Ohne Docker-Socket
+(die erste Fassung brauchte ihn, und das ist faktisch Root auf dem Host) und
+ohne systemd.
+
+#### Die Probe hat sofort zwei echte Fehler gefunden
+
+Beide in busybox' `sha256sum`, beide hätten eine Sicherung stillschweigend als
+„geprüft" durchgehen lassen:
+
+1. `--quiet` kennt es nicht — die Prüfung brach mit einer Nutzungsmeldung ab.
+2. Es überspringt **Kommentarzeilen nicht**, sondern hält sie für Dateinamen:
+   zwei erfundene `FAILED` neben zwei echten `OK`, Exit 1.
+
+Genau dafür ist eine Probe da. Beide behoben, das Manifest ist jetzt rein
+maschinenlesbar.
+
+#### Ein Wächter, der den Inhalt prüft
+
+Sichern allein hätte den Fall vom Juni nicht verhindert. `travelmind-waechter`
+fragt Oberfläche **und** API im Minutentakt, durch dieselbe Kette wie ein
+Nutzer — und prüft den **Inhalt**, nicht den Statuscode. Das ist wesentlich:
+Der SPA-Rückfall beantwortet jeden Pfad mit 200, und die API kann 200 liefern,
+während die Datenbank weg ist. Alarm über Pushover mit Priorität 1, also an
+Ruhezeiten vorbei — ein Ausfall, der bis zum Morgen wartet, ist genau der Fall
+vom 26. Juni.
+
+#### Nebenbei repariert
+
+Beim Absichern von `.env` (0600 root) hatte ich mir selbst den Deploy-Weg
+verbaut — des Betreibers Konto konnte die Compose nicht mehr starten. Jetzt `640
+root:samba`: strenger als vorher (644), und der Betrieb läuft.
+
 ### Was der Wiederaufbau ans Licht gebracht hat
 
 Sieben Fehler, alle mit derselben Form: **ein Fallback zeigte etwas Plausibles
