@@ -4,7 +4,7 @@ Day-by-day schedule management for trips using Place visit_date
 """
 
 import math
-from datetime import date, datetime, time
+from datetime import date, datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,11 +12,10 @@ from models.database import get_db
 from models.place import Place
 from models.trip import Trip
 from models.user import User
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from routes.auth import get_current_active_user
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 

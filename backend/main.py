@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -61,7 +61,7 @@ from utils.error_handlers import (
 from utils.rate_limits import limiter
 
 # Import Sentry integration
-from utils.sentry import init_sentry, set_user_context
+from utils.sentry import init_sentry
 
 # Load environment variables
 load_dotenv()

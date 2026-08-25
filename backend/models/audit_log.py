@@ -5,7 +5,7 @@ Records security-relevant events for compliance and debugging.
 """
 
 from models.database import Base
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.sql import func
 
 

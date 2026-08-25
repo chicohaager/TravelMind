@@ -5,16 +5,16 @@ Track trip expenses with participant cost splitting using SQLite
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from models.database import get_db
 from models.expense import Expense
 from models.participant import Participant
 from models.trip import Trip
 from models.user import User
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from routes.auth import get_current_active_user
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

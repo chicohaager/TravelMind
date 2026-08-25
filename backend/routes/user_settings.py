@@ -181,7 +181,7 @@ async def validate_api_key(
         ai_service = create_ai_service(provider_lower, settings.api_key)
 
         # Make a simple test call
-        test_response = await ai_service.provider.chat(prompt="Say 'API key valid' in one word", max_tokens=10)
+        await ai_service.provider.chat(prompt="Say 'API key valid' in one word", max_tokens=10)
 
         return {"valid": True, "provider": provider_lower, "message": "API key is valid and working"}
 

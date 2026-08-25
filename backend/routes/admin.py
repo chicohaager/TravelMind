@@ -12,12 +12,11 @@ from models.database import get_db
 from models.diary import DiaryEntry
 from models.trip import Trip
 from models.user import User
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from routes.auth import UserRegister, get_current_active_user
 from services.audit_service import audit_service
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
 from utils.geocoding import geocode_if_missing
 from utils.rate_limits import RateLimits, get_rate_limit_status, limiter
 
@@ -312,7 +311,7 @@ async def get_system_stats(admin: User = Depends(require_admin), db: AsyncSessio
     total_users = await db.execute(select(func.count(User.id)))
     total_users = total_users.scalar()
 
-    active_users = await db.execute(select(func.count(User.id)).where(User.is_active == True))
+    active_users = await db.execute(select(func.count(User.id)).where(User.is_active.is_(True)))
     active_users = active_users.scalar()
 
     # Count trips
@@ -377,7 +376,6 @@ async def get_setting_by_key(key: str, db: AsyncSession = Depends(get_db), admin
     Admin only
     """
     from models.settings import Settings
-    from utils.settings_manager import get_setting
 
     result = await db.execute(select(Settings).where(Settings.key == key))
     setting = result.scalar_one_or_none()

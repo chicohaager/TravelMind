@@ -52,12 +52,12 @@ async def create_admin_user(username: str, email: str, password: str, full_name:
         await session.commit()
         await session.refresh(admin_user)
 
-        print(f"✅ Admin user created successfully!")
+        print("✅ Admin user created successfully!")
         print(f"   Username: {admin_user.username}")
         print(f"   Email: {admin_user.email}")
         print(f"   Full Name: {admin_user.full_name}")
         print(f"   Admin: {admin_user.is_superuser}")
-        print(f"\n🔑 You can now login with these credentials.")
+        print("\n🔑 You can now login with these credentials.")
 
 
 async def main():

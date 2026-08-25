@@ -15,20 +15,24 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from main import app
-from models.audit_log import AuditLog
-from models.database import Base, get_db
-from models.diary import DiaryEntry
-from models.expense import Expense
-from models.media import Media
-from models.notification import Notification
-from models.participant import Participant
-from models.place import Place
-from models.place_list import PlaceList
-from models.route import Route
-from models.settings import Settings
+# NEBENWIRKUNGS-IMPORTE: jedes Modul registriert seine Tabelle an Base.metadata.
+# Ohne sie legt create_all() in der Testdatenbank nicht alle Tabellen an — am
+# 2026-08-25 entfernte autoflake sie und test_register_success fiel mit
+# 'no such table: settings' auf 500. Das noqa haelt sie fest.
+from models.audit_log import AuditLog  # noqa: F401
+from models.database import Base, get_db  # noqa: F401
+from models.diary import DiaryEntry  # noqa: F401
+from models.expense import Expense  # noqa: F401
+from models.media import Media  # noqa: F401
+from models.notification import Notification  # noqa: F401
+from models.participant import Participant  # noqa: F401
+from models.place import Place  # noqa: F401
+from models.place_list import PlaceList  # noqa: F401
+from models.route import Route  # noqa: F401
+from models.settings import Settings  # noqa: F401
 
 # Import all models to register them with Base.metadata
-from models.trip import Trip
+from models.trip import Trip  # noqa: F401
 from models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from utils.rate_limits import limiter

@@ -18,7 +18,7 @@ from pydantic import BaseModel, EmailStr, Field
 from services.audit_service import audit_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.rate_limits import RateLimits, limiter
+from utils.rate_limits import limiter
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
@@ -121,7 +121,7 @@ async def send_reset_email(email: str, reset_token: str, username: str):
         # Development mode - log the reset link
         logger.info("password_reset_link_generated", email=email, username=username, reset_url=reset_url)
         print(f"\n{'='*60}")
-        print(f"PASSWORD RESET LINK (Development Mode)")
+        print("PASSWORD RESET LINK (Development Mode)")
         print(f"{'='*60}")
         print(f"User: {username} ({email})")
         print(f"Reset URL: {reset_url}")

@@ -6,7 +6,7 @@ diary entries, photos, travel days) and spending (by category / currency),
 aggregated over every trip the user can see.
 """
 
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Dict, List
 
 import structlog

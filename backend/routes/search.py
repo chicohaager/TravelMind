@@ -22,7 +22,7 @@ from models.trip import Trip
 from models.user import User
 from pydantic import BaseModel
 from routes.auth import get_current_active_user
-from sqlalchemy import func, literal, or_, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.rate_limits import limiter
 
@@ -38,8 +38,8 @@ SNIPPET_LEN = 160
 # can use them.
 PG_DOCS = {
     "trip": "to_tsvector('simple', coalesce(title,'')||' '||coalesce(destination,'')||' '||coalesce(description,''))",
-    "diary": "to_tsvector('simple', coalesce(title,'')||' '||coalesce(content,'')||' '||coalesce(location_name,'')||' '||coalesce(tags::text,''))",
-    "place": "to_tsvector('simple', coalesce(name,'')||' '||coalesce(description,'')||' '||coalesce(notes,'')||' '||coalesce(address,'')||' '||coalesce(category,'')||' '||coalesce(tags::text,''))",
+    "diary": "to_tsvector('simple', coalesce(title,'')||' '||coalesce(content,'')||' '||coalesce(location_name,'')||' '||coalesce(tags::text,''))",  # noqa: E501
+    "place": "to_tsvector('simple', coalesce(name,'')||' '||coalesce(description,'')||' '||coalesce(notes,'')||' '||coalesce(address,'')||' '||coalesce(category,'')||' '||coalesce(tags::text,''))",  # noqa: E501
     "media": "to_tsvector('simple', coalesce(caption,''))",
 }
 

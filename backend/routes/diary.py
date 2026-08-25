@@ -20,7 +20,7 @@ from models.trip import Trip
 from models.user import User
 from openai import OpenAI
 from pydantic import BaseModel, ConfigDict, Field, computed_field
-from routes.auth import get_current_active_user, get_optional_user
+from routes.auth import get_current_active_user
 from routes.media import MediaResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -499,7 +499,7 @@ async def export_diary_pdf(
                         # Validate filename (must not contain path separators)
                         if "/" in photo_filename or "\\" in photo_filename or ".." in photo_filename:
                             logger.warning("pdf_path_traversal_attempt", photo_url=photo_url)
-                            row_images.append(Paragraph(f"<i>Ungültiger Dateipfad</i>", meta_style))
+                            row_images.append(Paragraph("<i>Ungültiger Dateipfad</i>", meta_style))
                             continue
 
                         # Construct safe absolute path
@@ -515,7 +515,7 @@ async def export_diary_pdf(
                     except Exception as e:
                         # If image loading fails, add error message
                         logger.warning("pdf_image_error", photo_url=photo_url, error=str(e))
-                        row_images.append(Paragraph(f"<i>Fehler beim Laden</i>", meta_style))
+                        row_images.append(Paragraph("<i>Fehler beim Laden</i>", meta_style))
 
                 if row_images:
                     photo_rows.append(row_images)
@@ -740,7 +740,6 @@ async def transcribe_audio(
     """
     try:
         # Validate file type
-        allowed_types = ["audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/wav", "audio/webm", "audio/ogg"]
         allowed_extensions = [".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm", ".ogg"]
 
         file_ext = os.path.splitext(audio.filename)[1].lower()

@@ -33,7 +33,6 @@ class AIProvider(ABC):
         Returns:
             AI response text
         """
-        pass
 
 
 class ClaudeProvider(AIProvider):

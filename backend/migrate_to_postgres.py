@@ -5,10 +5,9 @@ Migration script to copy data from SQLite to PostgreSQL
 
 import asyncio
 import sqlite3
-import sys
 from datetime import datetime
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Database URLs

@@ -20,7 +20,7 @@ from models.place import Place
 from models.trip import Trip
 from models.user import User
 from pydantic import BaseModel, Field
-from routes.auth import get_current_active_user, get_current_user, get_optional_user
+from routes.auth import get_current_active_user, get_optional_user
 from services import notification_service
 from services.audit_service import audit_service
 from services.geocoding import geocoding_service
