@@ -17,7 +17,7 @@ from models.place_list import PlaceList
 from models.trip import Trip
 from models.user import User
 from pydantic import BaseModel, ConfigDict, Field, computed_field
-from routes.auth import get_current_active_user, get_optional_user
+from routes.auth import get_current_active_user
 from routes.media import MediaResponse
 from services.guide_parser import guide_parser_service
 from sqlalchemy import func, select
@@ -683,7 +683,7 @@ async def search_guides_auto(
 
     try:
         # Use AI to generate places for the destination
-        prompt = f"""Du bist ein Reiseexperte. Erstelle eine Liste der besten Orte und Attraktionen für {request.destination}.
+        prompt = f"""Du bist ein Reiseexperte. Erstelle eine Liste der besten Orte und Attraktionen für {request.destination}.  # noqa: E501
 
 Gib eine umfassende Liste mit verschiedenen Kategorien:
 - Top-Sehenswürdigkeiten (4-5)
@@ -935,8 +935,9 @@ async def upload_place_photo(
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
-    # Verify trip ownership
-    trip = await verify_trip_access(place.trip_id, current_user, db)
+    # Verify trip ownership — verify_trip_access wirft bei fehlendem Zugriff,
+    # die Rueckgabe wird hier nicht gebraucht.
+    await verify_trip_access(place.trip_id, current_user, db)
 
     # Read file content
     content = await file.read()
@@ -1013,8 +1014,9 @@ async def delete_place_photo(
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
-    # Verify trip ownership
-    trip = await verify_trip_access(place.trip_id, current_user, db)
+    # Verify trip ownership — verify_trip_access wirft bei fehlendem Zugriff,
+    # die Rueckgabe wird hier nicht gebraucht.
+    await verify_trip_access(place.trip_id, current_user, db)
 
     # Find the media row for this URL
     media_result = await db.execute(select(Media).where(Media.place_id == place_id, Media.url == photo_url))

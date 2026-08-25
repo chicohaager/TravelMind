@@ -20,7 +20,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -139,7 +139,8 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False, ti
         env["PGPASSWORD"] = config["password"]
 
     try:
-        result = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
+        # check=True wirft bei Fehlschlag; die Rueckgabe wird nicht gebraucht.
+        subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
         backup_path = backup_path.with_suffix(".dump")
         logger.info(f"PostgreSQL backup created: {backup_path}")
 
@@ -407,7 +408,7 @@ Examples:
         if removed > 0:
             logger.info(f"Removed {removed} old backup(s)")
 
-        print(f"\n✅ Backup successful!")
+        print("\n✅ Backup successful!")
         print(f"   Database: {backup_path} ({format_size(size)})")
         if uploads_path:
             print(f"   Uploads:  {uploads_path} ({format_size(uploads_path.stat().st_size)})")

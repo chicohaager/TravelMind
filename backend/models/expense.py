@@ -2,7 +2,6 @@
 Expense/Budget model
 """
 
-from datetime import datetime
 
 from models.database import Base
 from sqlalchemy import JSON, Column, Date, DateTime, Float, ForeignKey, Integer, String, Text

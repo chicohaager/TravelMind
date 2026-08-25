@@ -60,7 +60,7 @@ class Token(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",  # noqa: E501
                 "token_type": "bearer",
             }
         }

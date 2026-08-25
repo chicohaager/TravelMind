@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from models.database import get_db
 from models.media import Media
 from models.participant import InvitationStatus, Participant

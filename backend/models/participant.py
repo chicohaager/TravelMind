@@ -5,7 +5,7 @@ Participant model - Trip sharing and collaboration
 import enum
 
 from models.database import Base
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 

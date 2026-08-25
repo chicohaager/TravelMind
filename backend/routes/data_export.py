@@ -7,12 +7,11 @@ Allows users to download all their personal data.
 
 import io
 import json
-import os
 import zipfile
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from models.database import get_db
 from models.diary import DiaryEntry
@@ -26,8 +25,7 @@ from routes.auth import get_current_active_user
 from services.audit_service import audit_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from utils.rate_limits import RateLimits, limiter
+from utils.rate_limits import limiter
 
 router = APIRouter()
 
@@ -289,7 +287,7 @@ async def download_data_export(
             io.BytesIO(json_data.encode("utf-8")),
             media_type="application/json",
             headers={
-                "Content-Disposition": f"attachment; filename=travelmind_export_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.json"
+                "Content-Disposition": f"attachment; filename=travelmind_export_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.json"  # noqa: E501
             },
         )
     else:
@@ -299,7 +297,7 @@ async def download_data_export(
             zip_buffer,
             media_type="application/zip",
             headers={
-                "Content-Disposition": f"attachment; filename=travelmind_export_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.zip"
+                "Content-Disposition": f"attachment; filename=travelmind_export_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.zip"  # noqa: E501
             },
         )
 
@@ -338,7 +336,7 @@ async def request_data_deletion(
 
     return {
         "status": "pending",
-        "message": "Data deletion request received. Please delete your account via /api/users/account to complete the process.",
+        "message": "Data deletion request received. Please delete your account via /api/users/account to complete the process.",  # noqa: E501
         "export_available": True,
         "note": "We recommend downloading your data export before deleting your account.",
     }

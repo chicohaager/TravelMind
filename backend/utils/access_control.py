@@ -7,7 +7,7 @@ Prevents IDOR (Insecure Direct Object Reference) vulnerabilities.
 
 import structlog
 from fastapi import HTTPException, status
-from models.participant import InvitationStatus, Participant, PermissionLevel
+from models.participant import InvitationStatus, Participant
 from models.trip import Trip
 from models.user import User
 from sqlalchemy import select

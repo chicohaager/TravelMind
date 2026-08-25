@@ -3,7 +3,6 @@ Geocoding Service
 Convert location names to coordinates using Nominatim (OpenStreetMap)
 """
 
-import asyncio
 from typing import Any, Dict, Optional
 
 import httpx

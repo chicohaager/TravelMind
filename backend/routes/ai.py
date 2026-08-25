@@ -7,7 +7,7 @@ import asyncio
 import json
 import re
 import urllib.parse
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from models.user import User
@@ -330,7 +330,7 @@ async def get_personalized_recommendations(
         if recommendations_request.duration:
             duration_context = f"\n\nReisedauer: {recommendations_request.duration} Tage"
 
-        prompt = f"""Du bist ein Reiseexperte. Analysiere die Reise nach {recommendations_request.destination} und gebe personalisierte Empfehlungen für Orte, die der Reisende noch besuchen sollte.
+        prompt = f"""Du bist ein Reiseexperte. Analysiere die Reise nach {recommendations_request.destination} und gebe personalisierte Empfehlungen für Orte, die der Reisende noch besuchen sollte.  # noqa: E501
 {places_context}{interests_context}{budget_context}{duration_context}
 
 Gib Empfehlungen für Orte, die:

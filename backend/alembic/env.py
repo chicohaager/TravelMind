@@ -18,21 +18,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 # Load environment variables
 load_dotenv()
 
-from models.audit_log import AuditLog
 
 # Import all models for autogenerate to detect
 from models.database import Base
-from models.diary import DiaryEntry
-from models.expense import Expense
-from models.media import Media
-from models.notification import Notification
-from models.participant import Participant
-from models.place import Place
-from models.place_list import PlaceList
-from models.route import Route
-from models.settings import Settings
-from models.trip import Trip
-from models.user import User
 
 # This is the Alembic Config object
 config = context.config

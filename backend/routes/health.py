@@ -8,7 +8,7 @@ Includes checks for database, external services, and system resources.
 import asyncio
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import psutil
 from fastapi import APIRouter, Depends

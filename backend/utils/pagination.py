@@ -2,7 +2,7 @@
 Pagination utilities for API endpoints
 """
 
-from typing import Generic, List, Optional, TypeVar
+from typing import Generic, List, TypeVar
 
 from fastapi import Query
 from pydantic import BaseModel, Field

@@ -264,10 +264,24 @@ async def init_db():
             await conn.execute(text("SELECT pg_advisory_xact_lock(727274)"))
 
         # Import all models here to ensure they're registered
-        from models import audit_log  # Audit logging
-        from models import media  # Photo/video media
-        from models import notification  # In-app notifications
-        from models import diary, expense, participant, place, place_list, route, settings, trip, user
+        # NEBENWIRKUNGS-IMPORTE: diese Module registrieren ihre Tabellen an
+        # Base.metadata. Ohne sie legt create_all() sie nicht an — autoflake
+        # hat die Sammelzeile am 2026-08-25 entfernt, weil kein Kommentar den
+        # Zweck nannte, und die Registrierung schlug fehl.
+        from models import audit_log  # noqa: F401  Audit-Protokoll
+        from models import media  # noqa: F401  Fotos/Videos
+        from models import notification  # noqa: F401  Benachrichtigungen
+        from models import (  # noqa: F401
+            diary,
+            expense,
+            participant,
+            place,
+            place_list,
+            route,
+            settings,
+            trip,
+            user,
+        )
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
