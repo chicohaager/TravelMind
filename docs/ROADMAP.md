@@ -190,6 +190,57 @@ Passwörter: mindestens 8 Zeichen, keine Komplexitäts- oder Leak-Prüfung, kein
 
 ---
 
+## 1.3 Fortschritt (laufend aktualisiert)
+
+**Stand 2026-08-25, 14:30.** Phase 0 und Phase 1 sind abgeschlossen und belegt.
+
+| Phase | Schritt | Zustand | Beleg |
+|---|---|---|---|
+| 0.1 | 39 Commits pushen | ✅ | `git rev-list --count origin/feat/photo-media..HEAD` → 0 |
+| 0.2 | Daten sichern | ✅ | 1429 Dateien, **1429/1429 sha256 OK, 0 FAILED**, Archiv unter `~/backups/travelmind-20260825/` (116 MB) |
+| 0.3 | Ursache klären | ⚠️ teilweise | Abschaltung auf **2026-06-26 16:35** datiert (`pg_stat/pgstat.stat` geschrieben, sauberer Shutdown, kein `postmaster.pid`). Die Ursache ist **nicht mehr messbar**: alle Lebenszyklus-Logs beginnen später — `mod-management.log` ab 16.07., darin 103 Einträge für eine andere App als Positivkontrolle und 0 für travelmind. ZimaOS ging von v1.6.1 auf v1.7.1-beta1; der Zeitpunkt ist aus den erhaltenen Logs nicht datierbar. |
+| 1.1 | Compose reparieren | ✅ | Alle drei Container non-root, am **Host-Prozess** gemessen: db uid 70, backend 1001, frontend 1001. `cap_drop: ALL`, `no-new-privileges`, Frontend zusätzlich `read_only`. Getaggte Images statt `build:` — mehrere Versionen liegen auf dem Host, Rollback ist eine Zeile in `deploy-params.conf`. |
+| 1.2 | Stack hochfahren | ✅ | `/api/health` liefert 200 **mit Payload** (`database: healthy`), alle Container `healthy`. Echte Daten unversehrt: 2 Nutzer, 4 Reisen (Hamburg, La Palma, Toskana + Testreise), 16 Orte, 2 Tagebucheinträge, 7 Medien. Fotos laden wieder (1,4 MB PNG, 351 KB JPEG), Gegenkontrolle liefert 404. |
+| 1.3 | Browser-Durchgang in DE | ✅ | 7 Seiten auf Deutsch, 0 rohe i18n-Keys (Scanner mit bestandener Positivkontrolle), Reise über die Oberfläche angelegt, alle vier Sprachen geprüft, keine Konsolenfehler. |
+
+### Was der Wiederaufbau ans Licht gebracht hat
+
+Sieben Fehler, alle mit derselben Form: **ein Fallback zeigte etwas Plausibles
+an, statt laut zu scheitern.** Keiner war auf API-Ebene oder in den Tests
+sichtbar; jeder wurde erst durch einen Klick im echten Browser gefunden.
+
+1. **Das Frontend baute mit der Konfigurationsdatei des Entwicklerrechners.**
+   Es gab kein `.dockerignore`; `COPY . .` nahm sie mit, Vite backte
+   `http://localhost:8003` ins Bundle. Im Browser scheiterte **jeder** Login
+   mit 503 — derselbe Login per `curl` gegen `/api` lieferte 200. Behoben durch
+   `.dockerignore` plus relativen API-Pfad als Standard.
+2. **nginx konnte nicht non-root laufen** (Port 80 ist einem unprivilegierten
+   Prozess verwehrt). Deshalb hatte die alte Compose `user: "0:0"` gesetzt und
+   damit die Härtung des Images aufgehoben. Behoben an der Ursache: Port 8080.
+3. **Die uid des Backends war Zufall.** `useradd -r` ohne `-u` vergab 999; die
+   Bind-Mounts müssen ihr aber gehören. Auf 1001 festgenagelt.
+4. **`lng: 'en'` machte den LanguageDetector zu totem Code.** Jeder Nutzer sah
+   Englisch, auch mit deutschem Browser.
+5. **Namensräume mit Punkt statt Doppelpunkt** an sieben Stellen — im
+   Reise-Dialog stand `+ culture`, `+ cityTrip` mitten in der deutschen
+   Oberfläche, während die Übersetzung danebenlag und nur unerreichbar war.
+   Vier der sieben fand der neue Wächter, nicht mein grep.
+6. **Die Formatierung kannte nur `de` gegen alles andere.** `i18n.language`
+   trägt die Region ('de-DE'), der Vergleich schlug fehl: **€1,200.00** statt
+   **1.200,00 €**. Spanisch und Französisch bekamen ohnehin US-Formate.
+7. **`<html lang>` stand fest auf `de`** — auch bei spanischer Oberfläche.
+   Vorlesesoftware hätte spanischen Text deutsch ausgesprochen.
+
+**Wächter statt Vorsatz:** `i18n-integrity.test.js` (Namensraum-Schreibweise,
+deckungsgleiche Schlüsselmengen, `<html lang>`) und `format.test.js` (alle vier
+Sprachen **und** die Form mit Region — genau der Fall, an dem es zerbrochen
+ist). Beide Hälften des i18n-Wächters wurden durch Sabotage rot gesehen, bevor
+sie eingecheckt wurden.
+
+**Frontend-Tests: 11 → 43.** Sprachdateien: alle vier auf exakt 955 Schlüssel.
+
+---
+
 ## 2. Plan
 
 Sechs Phasen. Jede Zeile nennt die Prüfung, die sie abschließt — „gemacht" gilt erst mit ihr.
