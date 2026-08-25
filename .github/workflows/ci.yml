@@ -64,7 +64,7 @@ jobs:
         # 50 % ist der Stand vom 2026-08-25 (gemessen: 53 %) — eine Untergrenze,
         # die nicht zurueckfallen darf. Phase 5 der ROADMAP hebt sie auf 75 %.
         working-directory: backend
-        run: pytest tests -q --cov=. --cov-report=term-missing --cov-fail-under=50
+        run: pytest tests -q --cov=. --cov-report=term-missing --cov-fail-under=75
 
   frontend:
     name: Frontend — Lint, Tests, Build
