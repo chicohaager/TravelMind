@@ -5,34 +5,51 @@ import datetime as dt
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from models.trip import Trip
 from models.diary import DiaryEntry
 from models.expense import Expense
+from models.trip import Trip
 from models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest_asyncio.fixture
 async def seeded(db_session: AsyncSession, test_user: User):
     trip = Trip(
-        title="Lisbon", destination="Lisbon", owner_id=test_user.id,
-        start_date=dt.datetime(2025, 6, 1), end_date=dt.datetime(2025, 6, 5),  # 5 days inclusive
+        title="Lisbon",
+        destination="Lisbon",
+        owner_id=test_user.id,
+        start_date=dt.datetime(2025, 6, 1),
+        end_date=dt.datetime(2025, 6, 5),  # 5 days inclusive
     )
     db_session.add(trip)
     await db_session.commit()
     await db_session.refresh(trip)
 
-    db_session.add_all([
-        DiaryEntry(title="D1", content="x", trip_id=trip.id, author_id=test_user.id),
-        DiaryEntry(title="D2", content="y", trip_id=trip.id, author_id=test_user.id),
-        Expense(trip_id=trip.id, title="Dinner", amount=40.0, currency="EUR",
-                category="food", date=dt.date(2025, 6, 1)),
-        Expense(trip_id=trip.id, title="Taxi", amount=20.0, currency="EUR",
-                category="transport", date=dt.date(2025, 6, 2)),
-        Expense(trip_id=trip.id, title="Souvenir", amount=15.0, currency="USD",
-                category="other", date=dt.date(2025, 6, 3)),
-    ])
+    db_session.add_all(
+        [
+            DiaryEntry(title="D1", content="x", trip_id=trip.id, author_id=test_user.id),
+            DiaryEntry(title="D2", content="y", trip_id=trip.id, author_id=test_user.id),
+            Expense(
+                trip_id=trip.id, title="Dinner", amount=40.0, currency="EUR", category="food", date=dt.date(2025, 6, 1)
+            ),
+            Expense(
+                trip_id=trip.id,
+                title="Taxi",
+                amount=20.0,
+                currency="EUR",
+                category="transport",
+                date=dt.date(2025, 6, 2),
+            ),
+            Expense(
+                trip_id=trip.id,
+                title="Souvenir",
+                amount=15.0,
+                currency="USD",
+                category="other",
+                date=dt.date(2025, 6, 3),
+            ),
+        ]
+    )
     await db_session.commit()
     return trip
 
@@ -67,8 +84,9 @@ async def test_summary_empty_for_new_user(client: AsyncClient, auth_headers):
 @pytest.mark.asyncio
 async def test_summary_excludes_other_users_trips(client: AsyncClient, seeded, db_session):
     # A fresh, unrelated user sees nothing from the seeded owner's trip.
-    user = User(username="eve", email="eve@example.com",
-                hashed_password=User.hash_password("evepass12345"), is_active=True)
+    user = User(
+        username="eve", email="eve@example.com", hashed_password=User.hash_password("evepass12345"), is_active=True
+    )
     db_session.add(user)
     await db_session.commit()
     login = await client.post(

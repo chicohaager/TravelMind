@@ -2,10 +2,10 @@
 PlaceList model - Custom categorization lists for places
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from models.database import Base
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
 
 
 class PlaceList(Base):

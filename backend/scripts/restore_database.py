@@ -15,20 +15,20 @@ Usage:
     python restore_database.py --uploads ./backups/...tar.gz --uploads-dir ./uploads --yes
 """
 
-import os
-import sys
 import argparse
+import gzip
+import logging
+import os
 import shutil
 import subprocess
-import gzip
+import sys
 import tarfile
-import logging
 from pathlib import Path
 
 # backup_database lives in the same directory; Python adds the script dir to sys.path.
-from backup_database import parse_database_url, get_database_url
+from backup_database import get_database_url, parse_database_url
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -54,12 +54,16 @@ def restore_database(backup_file: Path, db_config: dict) -> None:
     else:
         cmd = [
             "pg_restore",
-            "-h", db_config["host"],
-            "-p", str(db_config["port"]),
-            "-U", db_config["username"],
-            "-d", db_config["database"],
-            "-c",            # drop objects before recreating
-            "--if-exists",   # avoid noisy errors when objects are absent
+            "-h",
+            db_config["host"],
+            "-p",
+            str(db_config["port"]),
+            "-U",
+            db_config["username"],
+            "-d",
+            db_config["database"],
+            "-c",  # drop objects before recreating
+            "--if-exists",  # avoid noisy errors when objects are absent
             str(backup_file),
         ]
         env = os.environ.copy()

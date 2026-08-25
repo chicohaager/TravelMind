@@ -9,47 +9,39 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
+from typing import AsyncGenerator
+
 import pytest
 import pytest_asyncio
-from typing import AsyncGenerator
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-
 from main import app
+from models.audit_log import AuditLog
 from models.database import Base, get_db
-from models.user import User
-from utils.rate_limits import limiter
+from models.diary import DiaryEntry
+from models.expense import Expense
+from models.media import Media
+from models.notification import Notification
+from models.participant import Participant
+from models.place import Place
+from models.place_list import PlaceList
+from models.route import Route
+from models.settings import Settings
 
 # Import all models to register them with Base.metadata
 from models.trip import Trip
-from models.diary import DiaryEntry
-from models.place import Place
-from models.expense import Expense
-from models.participant import Participant
-from models.settings import Settings
-from models.audit_log import AuditLog
-from models.route import Route
-from models.place_list import PlaceList
-from models.media import Media
-from models.notification import Notification
+from models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from utils.rate_limits import limiter
 
 # Test database URL (in-memory SQLite for speed)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 # Create test engine
-test_engine = create_async_engine(
-    TEST_DATABASE_URL,
-    echo=False,
-    connect_args={"check_same_thread": False}
-)
+test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 
 # Create test session factory
 TestSessionLocal = async_sessionmaker(
-    test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False
+    test_engine, class_=AsyncSession, expire_on_commit=False, autocommit=False, autoflush=False
 )
 
 
@@ -93,7 +85,7 @@ async def test_user(db_session: AsyncSession) -> User:
         email="test@example.com",
         hashed_password=User.hash_password("testpass123"),
         full_name="Test User",
-        is_active=True
+        is_active=True,
     )
     db_session.add(user)
     await db_session.commit()
@@ -107,7 +99,7 @@ async def auth_token(client: AsyncClient, test_user: User) -> str:
     response = await client.post(
         "/api/auth/login",
         data={"username": "testuser", "password": "testpass123"},
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     assert response.status_code == 200
     return response.json()["access_token"]

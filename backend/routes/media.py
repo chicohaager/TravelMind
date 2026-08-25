@@ -5,23 +5,23 @@ Manage individual media items (photos) that belong to diary entries or places.
 The media table is the source of truth for photos; see models/media.py.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
 from datetime import datetime
-import structlog
+from typing import List, Optional
 
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from models.database import get_db
 from models.media import Media
+from models.participant import InvitationStatus, Participant
 from models.trip import Trip
-from models.participant import Participant, InvitationStatus
 from models.user import User
+from pydantic import BaseModel, ConfigDict, Field
 from routes.auth import get_current_active_user
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from utils.access_control import verify_trip_access
 from utils.images import delete_upload_file
-from utils.rate_limits import limiter, RateLimits
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -46,6 +46,7 @@ class MediaResponse(BaseModel):
 
 class GalleryMediaResponse(MediaResponse):
     """A media item enriched with its trip, for the cross-trip gallery/timeline."""
+
     trip_id: int
     trip_title: str
     created_at: Optional[datetime] = None  # grouping fallback when taken_at is null

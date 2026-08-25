@@ -5,11 +5,10 @@ import io
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from PIL import Image
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from models.trip import Trip
 from models.user import User
+from PIL import Image
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def _jpeg() -> bytes:
@@ -37,9 +36,9 @@ async def trip(db_session: AsyncSession, test_user: User) -> Trip:
 
 
 async def _entry_with_three_photos(client, trip_id, headers):
-    entry_id = (await client.post(
-        f"/api/diary/{trip_id}", json={"title": "Day 1", "content": "x"}, headers=headers
-    )).json()["id"]
+    entry_id = (
+        await client.post(f"/api/diary/{trip_id}", json={"title": "Day 1", "content": "x"}, headers=headers)
+    ).json()["id"]
     ids = []
     for _ in range(3):
         r = await client.post(

@@ -5,12 +5,12 @@ Provides easy-to-use functions for logging security-relevant events.
 Designed for async FastAPI usage with proper error handling.
 """
 
-from typing import Optional, Any, Dict
-from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
-import structlog
+from typing import Any, Dict, Optional
 
+import structlog
+from fastapi import Request
 from models.audit_log import AuditLog
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger(__name__)
 

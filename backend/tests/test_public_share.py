@@ -8,11 +8,10 @@ no auth, and the payload excludes private data.
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from models.trip import Trip
 from models.diary import DiaryEntry
+from models.trip import Trip
 from models.user import User
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest_asyncio.fixture
@@ -67,9 +66,7 @@ async def test_disabling_share_revokes_link(client: AsyncClient, trip_with_entry
 
 
 @pytest.mark.asyncio
-async def test_token_is_stable_across_toggle_but_regenerate_revokes(
-    client: AsyncClient, trip_with_entry, auth_headers
-):
+async def test_token_is_stable_across_toggle_but_regenerate_revokes(client: AsyncClient, trip_with_entry, auth_headers):
     first = (await _publish(client, trip_with_entry.id, auth_headers))["share_token"]
     # Toggling off then on keeps the same token (stable public URL).
     await _publish(client, trip_with_entry.id, auth_headers, is_public=False)

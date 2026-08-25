@@ -3,9 +3,10 @@ Geocoding utility using OpenStreetMap Nominatim API
 Free geocoding service - no API key required
 """
 
-import httpx
 import asyncio
 from typing import Optional, Tuple
+
+import httpx
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -17,9 +18,7 @@ RATE_LIMIT_DELAY = 1.0  # Nominatim requires 1 request per second max
 
 
 async def geocode_location(
-    name: str,
-    address: Optional[str] = None,
-    destination: Optional[str] = None
+    name: str, address: Optional[str] = None, destination: Optional[str] = None
 ) -> Optional[Tuple[float, float]]:
     """
     Geocode a location using OpenStreetMap Nominatim API
@@ -40,16 +39,9 @@ async def geocode_location(
         if destination:
             query = f"{name}, {destination}"
 
-    params = {
-        "q": query,
-        "format": "json",
-        "limit": 1,
-        "addressdetails": 1
-    }
+    params = {"q": query, "format": "json", "limit": 1, "addressdetails": 1}
 
-    headers = {
-        "User-Agent": USER_AGENT
-    }
+    headers = {"User-Agent": USER_AGENT}
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -68,7 +60,7 @@ async def geocode_location(
                     query=query,
                     latitude=lat,
                     longitude=lon,
-                    display_name=result.get("display_name")
+                    display_name=result.get("display_name"),
                 )
 
                 # Respect rate limit
@@ -88,11 +80,7 @@ async def geocode_location(
 
 
 async def geocode_if_missing(
-    name: str,
-    latitude: float,
-    longitude: float,
-    address: Optional[str] = None,
-    destination: Optional[str] = None
+    name: str, latitude: float, longitude: float, address: Optional[str] = None, destination: Optional[str] = None
 ) -> Tuple[float, float]:
     """
     Geocode location if coordinates are missing (0.0, 0.0)
@@ -131,18 +119,18 @@ async def batch_geocode_places(places: list, destination: Optional[str] = None) 
     updated_places = []
 
     for place in places:
-        name = place.get('name', '')
-        lat = place.get('latitude', 0.0)
-        lon = place.get('longitude', 0.0)
-        address = place.get('address')
+        name = place.get("name", "")
+        lat = place.get("latitude", 0.0)
+        lon = place.get("longitude", 0.0)
+        address = place.get("address")
 
         # Geocode if needed
         new_lat, new_lon = await geocode_if_missing(name, lat, lon, address, destination)
 
         # Update place with new coordinates
         updated_place = place.copy()
-        updated_place['latitude'] = new_lat
-        updated_place['longitude'] = new_lon
+        updated_place["latitude"] = new_lat
+        updated_place["longitude"] = new_lon
 
         updated_places.append(updated_place)
 

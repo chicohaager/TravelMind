@@ -8,19 +8,19 @@ The payload is intentionally minimal (data-sparsam): trip header + diary entries
 with photos only. No owner/user data, budget, participants, places, or GPS.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
 from datetime import datetime
-import structlog
+from typing import List, Optional
 
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Request
 from models.database import get_db
-from models.trip import Trip
 from models.diary import DiaryEntry
-from utils.rate_limits import limiter, RateLimits
+from models.trip import Trip
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -68,9 +68,7 @@ async def get_public_diary(
     db: AsyncSession = Depends(get_db),
 ):
     """Return a publicly shared trip diary by its share token. No auth required."""
-    result = await db.execute(
-        select(Trip).where(Trip.share_token == token, Trip.is_public.is_(True))
-    )
+    result = await db.execute(select(Trip).where(Trip.share_token == token, Trip.is_public.is_(True)))
     trip = result.scalar_one_or_none()
     # A missing token and a disabled/non-existent share are indistinguishable on
     # purpose, so a revoked link reveals nothing.

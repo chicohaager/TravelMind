@@ -10,20 +10,20 @@ Alembic, and share the document expressions defined here). On SQLite (tests /
 dev) it falls back to a case-insensitive ILIKE match without ranking.
 """
 
-from fastapi import APIRouter, Depends, Request, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text, or_, func, literal
-from pydantic import BaseModel
 from typing import List, Optional
-import structlog
 
+import structlog
+from fastapi import APIRouter, Depends, Query, Request
 from models.database import get_db
-from models.user import User
-from models.trip import Trip
 from models.diary import DiaryEntry
-from models.place import Place
 from models.media import Media
+from models.place import Place
+from models.trip import Trip
+from models.user import User
+from pydantic import BaseModel
 from routes.auth import get_current_active_user
+from sqlalchemy import func, literal, or_, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 from utils.rate_limits import limiter
 
 logger = structlog.get_logger(__name__)
@@ -80,7 +80,7 @@ PG_QUERIES = {
 
 
 class SearchHit(BaseModel):
-    type: str            # trip | diary | place | media
+    type: str  # trip | diary | place | media
     id: int
     trip_id: Optional[int] = None
     title: Optional[str] = None
@@ -105,13 +105,15 @@ async def _search_pg(db: AsyncSession, uid: int, q: str) -> List[SearchHit]:
     for kind, sql in PG_QUERIES.items():
         result = await db.execute(text(sql), {"q": q, "uid": uid, "limit": LIMIT_PER_TYPE})
         for row in result.mappings().all():
-            hits.append(SearchHit(
-                type=kind,
-                id=row["id"],
-                trip_id=row["trip_id"],
-                title=row["title"],
-                snippet=_snippet(row["snippet"]),
-            ))
+            hits.append(
+                SearchHit(
+                    type=kind,
+                    id=row["id"],
+                    trip_id=row["trip_id"],
+                    title=row["title"],
+                    snippet=_snippet(row["snippet"]),
+                )
+            )
     return hits
 
 
@@ -124,32 +126,64 @@ async def _search_sqlite(db: AsyncSession, uid: int, q: str) -> List[SearchHit]:
 
     hits: List[SearchHit] = []
 
-    trips = (await db.execute(
-        select(Trip).where(Trip.owner_id == uid, cond(Trip.title, Trip.destination, Trip.description))
-        .limit(LIMIT_PER_TYPE)
-    )).scalars().all()
-    hits += [SearchHit(type="trip", id=t.id, trip_id=t.id, title=t.title, snippet=_snippet(t.description)) for t in trips]
+    trips = (
+        (
+            await db.execute(
+                select(Trip)
+                .where(Trip.owner_id == uid, cond(Trip.title, Trip.destination, Trip.description))
+                .limit(LIMIT_PER_TYPE)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    hits += [
+        SearchHit(type="trip", id=t.id, trip_id=t.id, title=t.title, snippet=_snippet(t.description)) for t in trips
+    ]
 
-    entries = (await db.execute(
-        select(DiaryEntry).where(
-            DiaryEntry.author_id == uid,
-            cond(DiaryEntry.title, DiaryEntry.content, DiaryEntry.location_name),
-        ).limit(LIMIT_PER_TYPE)
-    )).scalars().all()
-    hits += [SearchHit(type="diary", id=e.id, trip_id=e.trip_id, title=e.title, snippet=_snippet(e.content)) for e in entries]
+    entries = (
+        (
+            await db.execute(
+                select(DiaryEntry)
+                .where(
+                    DiaryEntry.author_id == uid,
+                    cond(DiaryEntry.title, DiaryEntry.content, DiaryEntry.location_name),
+                )
+                .limit(LIMIT_PER_TYPE)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    hits += [
+        SearchHit(type="diary", id=e.id, trip_id=e.trip_id, title=e.title, snippet=_snippet(e.content)) for e in entries
+    ]
 
     owned = select(Trip.id).where(Trip.owner_id == uid)
-    places = (await db.execute(
-        select(Place).where(
-            Place.trip_id.in_(owned),
-            cond(Place.name, Place.description, Place.notes, Place.address, Place.category),
-        ).limit(LIMIT_PER_TYPE)
-    )).scalars().all()
-    hits += [SearchHit(type="place", id=p.id, trip_id=p.trip_id, title=p.name, snippet=_snippet(p.description or p.notes)) for p in places]
+    places = (
+        (
+            await db.execute(
+                select(Place)
+                .where(
+                    Place.trip_id.in_(owned),
+                    cond(Place.name, Place.description, Place.notes, Place.address, Place.category),
+                )
+                .limit(LIMIT_PER_TYPE)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    hits += [
+        SearchHit(type="place", id=p.id, trip_id=p.trip_id, title=p.name, snippet=_snippet(p.description or p.notes))
+        for p in places
+    ]
 
-    media = (await db.execute(
-        select(Media).where(Media.owner_id == uid, cond(Media.caption)).limit(LIMIT_PER_TYPE)
-    )).scalars().all()
+    media = (
+        (await db.execute(select(Media).where(Media.owner_id == uid, cond(Media.caption)).limit(LIMIT_PER_TYPE)))
+        .scalars()
+        .all()
+    )
     hits += [SearchHit(type="media", id=m.id, trip_id=m.trip_id, title=m.caption, snippet=None) for m in media]
 
     return hits

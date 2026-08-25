@@ -3,41 +3,62 @@ TravelMind Backend - FastAPI Application
 A self-hosted travel planning app with Claude AI integration
 """
 
+import os
+from contextlib import asynccontextmanager
+
+import structlog
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.exceptions import RequestValidationError
-from contextlib import asynccontextmanager
-import os
-from dotenv import load_dotenv
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from utils.rate_limits import limiter
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-import structlog
+
+# Import metrics middleware
+from middleware.metrics import MetricsMiddleware, metrics_collector
+from middleware.request_id import RequestIDMiddleware
+
+# Import security middleware
+from middleware.security import RequestSizeLimitMiddleware, SecurityHeadersMiddleware
 
 # Import routes
-from routes import trips, diary, places, timeline, budget, ai, auth, users, participants, admin, user_settings, routes as route_routes, health, data_export, password_reset, media, search, public, notifications, analytics
+from routes import (
+    admin,
+    ai,
+    analytics,
+    auth,
+    budget,
+    data_export,
+    diary,
+    health,
+    media,
+    notifications,
+    participants,
+    password_reset,
+    places,
+    public,
+)
+from routes import routes as route_routes
+from routes import (
+    search,
+    timeline,
+    trips,
+    user_settings,
+    users,
+)
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 # Import error handlers
 from utils.error_handlers import (
     StandardError,
-    standard_error_handler,
-    validation_error_handler,
+    general_exception_handler,
     integrity_error_handler,
     sqlalchemy_error_handler,
-    general_exception_handler
+    standard_error_handler,
+    validation_error_handler,
 )
-
-# Import security middleware
-from middleware.security import (
-    SecurityHeadersMiddleware,
-    RequestSizeLimitMiddleware
-)
-from middleware.request_id import RequestIDMiddleware
-
-# Import metrics middleware
-from middleware.metrics import MetricsMiddleware, metrics_collector
+from utils.rate_limits import limiter
 
 # Import Sentry integration
 from utils.sentry import init_sentry, set_user_context
@@ -56,7 +77,7 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
+        structlog.processors.JSONRenderer(),
     ],
     wrapper_class=structlog.stdlib.BoundLogger,
     context_class=dict,
@@ -84,13 +105,13 @@ async def lifespan(app: FastAPI):
     if not jwt_secret or jwt_secret == "your-super-secret-jwt-key-change-this-in-production":
         print("❌ ERROR: JWT_SECRET not configured or using default value!")
         print("   Please set a secure JWT_SECRET in your .env file.")
-        print("   Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+        print('   Generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"')
         raise ValueError("JWT_SECRET must be configured with a secure value")
 
     if not secret_key or secret_key == "default-secret-key-change-this":
         print("❌ ERROR: SECRET_KEY not configured or using default value!")
         print("   Please set a secure SECRET_KEY in your .env file.")
-        print("   Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+        print('   Generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"')
         raise ValueError("SECRET_KEY must be configured with a secure value")
 
     print("✅ Security keys validated")
@@ -101,6 +122,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize database
     from models.database import init_db
+
     await init_db()
 
     print("✅ Backend ready!")
@@ -196,7 +218,7 @@ API endpoints are rate-limited to prevent abuse. Default limits:
     },
     openapi_tags=tags_metadata,
     lifespan=lifespan,
-    redirect_slashes=False  # Accept URLs with or without trailing slashes
+    redirect_slashes=False,  # Accept URLs with or without trailing slashes
 )
 
 # Add rate limiter to app
@@ -270,17 +292,14 @@ async def root():
         "version": "1.0.0",
         "message": "Deine nächste Reise wartet schon!",
         "docs": "/docs",
-        "status": "running"
+        "status": "running",
     }
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "travelmind-backend"
-    }
+    return {"status": "healthy", "service": "travelmind-backend"}
 
 
 @app.get("/metrics")
@@ -292,9 +311,9 @@ async def prometheus_metrics():
     Useful for monitoring with Prometheus/Grafana stack.
     """
     from fastapi.responses import PlainTextResponse
+
     return PlainTextResponse(
-        content=metrics_collector.get_prometheus_metrics(),
-        media_type="text/plain; version=0.0.4; charset=utf-8"
+        content=metrics_collector.get_prometheus_metrics(), media_type="text/plain; version=0.0.4; charset=utf-8"
     )
 
 
@@ -306,9 +325,9 @@ async def api_status():
         "features": {
             "ai_enabled": os.getenv("ENABLE_AI_FEATURES", "true").lower() == "true",
             "collaboration": os.getenv("ENABLE_COLLABORATION", "true").lower() == "true",
-            "offline_mode": os.getenv("ENABLE_OFFLINE_MODE", "true").lower() == "true"
+            "offline_mode": os.getenv("ENABLE_OFFLINE_MODE", "true").lower() == "true",
         },
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
@@ -319,10 +338,4 @@ if __name__ == "__main__":
     port = int(os.getenv("BACKEND_PORT", "8137"))
     reload = os.getenv("BACKEND_RELOAD", "true").lower() == "true"
 
-    uvicorn.run(
-        "main:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level=os.getenv("LOG_LEVEL", "info").lower()
-    )
+    uvicorn.run("main:app", host=host, port=port, reload=reload, log_level=os.getenv("LOG_LEVEL", "info").lower())

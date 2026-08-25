@@ -12,32 +12,26 @@ Usage:
     python backup_database.py --compress         # Compress with gzip
 """
 
-import os
-import sys
 import argparse
+import gzip
+import logging
+import os
 import shutil
 import subprocess
-import gzip
+import sys
 import tarfile
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
-import logging
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def get_database_url() -> str:
     """Get database URL from environment."""
-    return os.getenv(
-        "DATABASE_URL",
-        "sqlite:///./data/travelmind.db"
-    )
+    return os.getenv("DATABASE_URL", "sqlite:///./data/travelmind.db")
 
 
 def parse_database_url(url: str) -> dict:
@@ -45,10 +39,7 @@ def parse_database_url(url: str) -> dict:
     if url.startswith("sqlite"):
         # SQLite: sqlite:///./data/travelmind.db
         path = url.replace("sqlite:///", "").replace("sqlite://", "")
-        return {
-            "type": "sqlite",
-            "path": path
-        }
+        return {"type": "sqlite", "path": path}
     else:
         # PostgreSQL: postgresql://user:pass@host:port/dbname
         parsed = urlparse(url)
@@ -58,7 +49,7 @@ def parse_database_url(url: str) -> dict:
             "port": parsed.port or 5432,
             "database": parsed.path.lstrip("/"),
             "username": parsed.username,
-            "password": parsed.password
+            "password": parsed.password,
         }
 
 
@@ -103,8 +94,8 @@ def backup_sqlite(db_path: str, output_dir: Path, compress: bool = False, timest
     # Compress if requested
     if compress:
         compressed_path = backup_path.with_suffix(".db.gz")
-        with open(backup_path, 'rb') as f_in:
-            with gzip.open(compressed_path, 'wb') as f_out:
+        with open(backup_path, "rb") as f_in:
+            with gzip.open(compressed_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         backup_path.unlink()
         backup_path = compressed_path
@@ -128,12 +119,18 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False, ti
     # Build pg_dump command
     cmd = [
         "pg_dump",
-        "-h", config["host"],
-        "-p", str(config["port"]),
-        "-U", config["username"],
-        "-d", config["database"],
-        "-F", "c",  # Custom format (compressed)
-        "-f", str(backup_path.with_suffix(".dump"))
+        "-h",
+        config["host"],
+        "-p",
+        str(config["port"]),
+        "-U",
+        config["username"],
+        "-d",
+        config["database"],
+        "-F",
+        "c",  # Custom format (compressed)
+        "-f",
+        str(backup_path.with_suffix(".dump")),
     ]
 
     # Set password via environment
@@ -142,13 +139,7 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False, ti
         env["PGPASSWORD"] = config["password"]
 
     try:
-        result = subprocess.run(
-            cmd,
-            env=env,
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        result = subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
         backup_path = backup_path.with_suffix(".dump")
         logger.info(f"PostgreSQL backup created: {backup_path}")
 
@@ -162,8 +153,8 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False, ti
     # Additional compression for custom format backups
     if compress:
         compressed_path = backup_path.with_suffix(".dump.gz")
-        with open(backup_path, 'rb') as f_in:
-            with gzip.open(compressed_path, 'wb') as f_out:
+        with open(backup_path, "rb") as f_in:
+            with gzip.open(compressed_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         backup_path.unlink()
         backup_path = compressed_path
@@ -209,9 +200,14 @@ def cleanup_old_backups(output_dir: Path, keep: int = 7) -> int:
     # Database backups and uploads archives are pruned independently, so that
     # `--keep N` retains the N most recent of *each* (a DB dump always keeps its
     # matching uploads archive).
-    db_patterns = ["travelmind_backup_*.db", "travelmind_backup_*.db.gz",
-                   "travelmind_backup_*.dump", "travelmind_backup_*.dump.gz",
-                   "travelmind_backup_*.sql", "travelmind_backup_*.sql.gz"]
+    db_patterns = [
+        "travelmind_backup_*.db",
+        "travelmind_backup_*.db.gz",
+        "travelmind_backup_*.dump",
+        "travelmind_backup_*.dump.gz",
+        "travelmind_backup_*.sql",
+        "travelmind_backup_*.sql.gz",
+    ]
     uploads_patterns = ["travelmind_uploads_*.tar.gz"]
 
     removed = 0
@@ -230,10 +226,15 @@ def cleanup_old_backups(output_dir: Path, keep: int = 7) -> int:
 
 def get_backup_info(output_dir: Path) -> list:
     """Get information about existing backups."""
-    patterns = ["travelmind_backup_*.db", "travelmind_backup_*.db.gz",
-                "travelmind_backup_*.dump", "travelmind_backup_*.dump.gz",
-                "travelmind_backup_*.sql", "travelmind_backup_*.sql.gz",
-                "travelmind_uploads_*.tar.gz"]
+    patterns = [
+        "travelmind_backup_*.db",
+        "travelmind_backup_*.db.gz",
+        "travelmind_backup_*.dump",
+        "travelmind_backup_*.dump.gz",
+        "travelmind_backup_*.sql",
+        "travelmind_backup_*.sql.gz",
+        "travelmind_uploads_*.tar.gz",
+    ]
 
     backup_files = []
     for pattern in patterns:
@@ -242,20 +243,22 @@ def get_backup_info(output_dir: Path) -> list:
     backups = []
     for f in sorted(backup_files, key=lambda x: x.stat().st_mtime, reverse=True):
         stat = f.stat()
-        backups.append({
-            "name": f.name,
-            "size": stat.st_size,
-            "size_human": format_size(stat.st_size),
-            "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            "path": str(f)
-        })
+        backups.append(
+            {
+                "name": f.name,
+                "size": stat.st_size,
+                "size_human": format_size(stat.st_size),
+                "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                "path": str(f),
+            }
+        )
 
     return backups
 
 
 def format_size(size: int) -> str:
     """Format file size in human-readable format."""
-    for unit in ['B', 'KB', 'MB', 'GB']:
+    for unit in ["B", "KB", "MB", "GB"]:
         if size < 1024:
             return f"{size:.1f} {unit}"
         size /= 1024
@@ -282,59 +285,31 @@ Examples:
 
     # Restore from backup (SQLite)
     python backup_database.py --restore /path/to/backup.db
-        """
+        """,
     )
 
     parser.add_argument(
-        "--output", "-o",
-        type=str,
-        default="./backups",
-        help="Output directory for backups (default: ./backups)"
+        "--output", "-o", type=str, default="./backups", help="Output directory for backups (default: ./backups)"
     )
 
-    parser.add_argument(
-        "--keep", "-k",
-        type=int,
-        default=7,
-        help="Number of backups to keep (default: 7)"
-    )
+    parser.add_argument("--keep", "-k", type=int, default=7, help="Number of backups to keep (default: 7)")
 
-    parser.add_argument(
-        "--compress", "-c",
-        action="store_true",
-        help="Compress backup with gzip"
-    )
+    parser.add_argument("--compress", "-c", action="store_true", help="Compress backup with gzip")
 
-    parser.add_argument(
-        "--list", "-l",
-        action="store_true",
-        help="List existing backups"
-    )
+    parser.add_argument("--list", "-l", action="store_true", help="List existing backups")
 
-    parser.add_argument(
-        "--restore", "-r",
-        type=str,
-        help="Restore from backup file"
-    )
+    parser.add_argument("--restore", "-r", type=str, help="Restore from backup file")
 
-    parser.add_argument(
-        "--database-url",
-        type=str,
-        help="Override DATABASE_URL environment variable"
-    )
+    parser.add_argument("--database-url", type=str, help="Override DATABASE_URL environment variable")
 
     parser.add_argument(
         "--uploads-dir",
         type=str,
         default=os.getenv("UPLOAD_DIR", "./uploads"),
-        help="Uploads directory (photos) to include (default: $UPLOAD_DIR or ./uploads)"
+        help="Uploads directory (photos) to include (default: $UPLOAD_DIR or ./uploads)",
     )
 
-    parser.add_argument(
-        "--skip-uploads",
-        action="store_true",
-        help="Do not back up the uploads directory (photos)"
-    )
+    parser.add_argument("--skip-uploads", action="store_true", help="Do not back up the uploads directory (photos)")
 
     args = parser.parse_args()
 
@@ -373,8 +348,8 @@ Examples:
 
             # Handle compressed backups
             if restore_path.suffix == ".gz":
-                with gzip.open(restore_path, 'rb') as f_in:
-                    with open(db_path, 'wb') as f_out:
+                with gzip.open(restore_path, "rb") as f_in:
+                    with open(db_path, "wb") as f_out:
                         shutil.copyfileobj(f_in, f_out)
             else:
                 shutil.copy2(restore_path, db_path)
@@ -384,12 +359,16 @@ Examples:
             # For PostgreSQL, use pg_restore
             cmd = [
                 "pg_restore",
-                "-h", db_config["host"],
-                "-p", str(db_config["port"]),
-                "-U", db_config["username"],
-                "-d", db_config["database"],
+                "-h",
+                db_config["host"],
+                "-p",
+                str(db_config["port"]),
+                "-U",
+                db_config["username"],
+                "-d",
+                db_config["database"],
                 "-c",  # Clean (drop) database objects before recreating
-                str(restore_path)
+                str(restore_path),
             ]
 
             env = os.environ.copy()
@@ -411,13 +390,9 @@ Examples:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if db_config["type"] == "sqlite":
-            backup_path = backup_sqlite(
-                db_config["path"], output_dir, compress=args.compress, timestamp=timestamp
-            )
+            backup_path = backup_sqlite(db_config["path"], output_dir, compress=args.compress, timestamp=timestamp)
         else:
-            backup_path = backup_postgresql(
-                db_config, output_dir, compress=args.compress, timestamp=timestamp
-            )
+            backup_path = backup_postgresql(db_config, output_dir, compress=args.compress, timestamp=timestamp)
 
         size = backup_path.stat().st_size
         logger.info(f"Backup complete: {backup_path} ({format_size(size)})")

@@ -7,9 +7,9 @@ triggers them, e.g. a trip invitation).
 """
 
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.notification import Notification
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Known notification types.
 INVITE_RECEIVED = "invite_received"
