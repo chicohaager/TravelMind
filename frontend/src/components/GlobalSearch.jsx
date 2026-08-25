@@ -69,7 +69,7 @@ export default function GlobalSearch() {
           }}
           placeholder={t('common:searchPlaceholder', 'Reisen, Einträge, Orte…')}
           aria-label={t('common:search', 'Suchen')}
-          className="w-36 sm:w-52 md:w-64 pl-8 pr-7 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 border border-transparent focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none transition-colors"
+          className="w-24 sm:w-52 md:w-64 pl-8 pr-7 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 border border-transparent focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none transition-colors"
         />
         {q && (
           <button

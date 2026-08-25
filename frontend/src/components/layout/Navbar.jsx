@@ -43,9 +43,16 @@ export default function Navbar({ onMenuClick }) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-md">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        {/*
+          `min-w-0` an beiden Gruppen, damit sie schrumpfen duerfen.
+          Am 2026-08-25 bei 411 px gemessen: die rechte Gruppe reichte bis
+          x=577 und lag damit komplett ausserhalb des Bildschirms — Sprachwahl,
+          Dunkelmodus und das Benutzermenue (mit ABMELDEN) waren auf dem
+          Telefon nicht erreichbar, und die Seite scrollt nicht seitlich.
+        */}
+        <div className="flex justify-between items-center h-16 gap-2">
           {/* Logo & Menu */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <button
               onClick={onMenuClick}
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -57,12 +64,14 @@ export default function Navbar({ onMenuClick }) {
               <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">🌍</span>
               </div>
-              <span className="text-xl font-bold text-gradient">TravelMind</span>
+              {/* Der Schriftzug kostet 149 px — auf dem Telefon bleibt das
+                  Globus-Symbol, das reicht als Heimweg. */}
+              <span className="hidden sm:inline text-xl font-bold text-gradient">TravelMind</span>
             </Link>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Global Search (authenticated only) */}
             {isAuthenticated && <GlobalSearch />}
 
