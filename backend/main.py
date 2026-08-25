@@ -62,6 +62,7 @@ from utils.rate_limits import limiter
 
 # Import Sentry integration
 from utils.sentry import init_sentry
+from version import VERSION
 
 # Load environment variables
 load_dotenv()
@@ -217,7 +218,7 @@ API endpoints are rate-limited to prevent abuse. Default limits:
 - Write operations: 30 requests/minute
 - AI endpoints: 10-20 requests/minute
 """,
-    version="1.1.0",
+    version=VERSION,
     contact={
         "name": "TravelMind Support",
         "url": "https://github.com/your-repo/TravelMind",
@@ -299,7 +300,7 @@ async def root():
     """Root endpoint"""
     return {
         "app": "TravelMind",
-        "version": "1.0.0",
+        "version": VERSION,
         "message": "Deine nächste Reise wartet schon!",
         "docs": "/docs",
         "status": "running",
@@ -337,7 +338,7 @@ async def api_status():
             "collaboration": os.getenv("ENABLE_COLLABORATION", "true").lower() == "true",
             "offline_mode": os.getenv("ENABLE_OFFLINE_MODE", "true").lower() == "true",
         },
-        "version": "1.0.0",
+        "version": VERSION,
     }
 
 

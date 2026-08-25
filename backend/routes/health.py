@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.rate_limits import RateLimits, limiter
+from version import VERSION
 
 logger = structlog.get_logger(__name__)
 
@@ -208,7 +209,7 @@ async def detailed_health_check(request: Request, db: AsyncSession = Depends(get
 
     return HealthResponse(
         status=overall_status,
-        version=os.getenv("APP_VERSION", "1.0.0"),
+        version=VERSION,
         timestamp=datetime.now(timezone.utc),
         uptime_seconds=round(uptime, 2),
         components=components,

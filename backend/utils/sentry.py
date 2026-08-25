@@ -12,6 +12,7 @@ import structlog
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from version import VERSION
 
 logger = structlog.get_logger(__name__)
 
@@ -36,7 +37,7 @@ def init_sentry() -> bool:
         return False
 
     environment = os.getenv("SENTRY_ENVIRONMENT", "development")
-    release = os.getenv("SENTRY_RELEASE", "travelmind@1.0.0")
+    release = os.getenv("SENTRY_RELEASE") or f"travelmind@{VERSION}"
     traces_sample_rate = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
     profiles_sample_rate = float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1"))
 
