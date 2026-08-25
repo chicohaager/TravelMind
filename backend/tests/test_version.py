@@ -1,6 +1,13 @@
 """
 Wächter gegen eine Version, die an mehreren Stellen einzeln gepflegt wird.
 
+Dies ist der EINZIGE Versionswächter. Ein zweiter lag kurzzeitig im Frontend
+(`src/test/version.test.js`) und suchte `version=` wörtlich in `main.py` —
+nach dem Zentralisieren in `version.py` fand er dort nichts mehr und meldete
+rot, obwohl alles stimmte. Zwei Wächter für dieselbe Eigenschaft können
+einander widersprechen; dann glaubt man dem bequemeren. Also einer, und der
+prüft beide Seiten.
+
 Am 2026-08-25 stand sie im Backend an FÜNF Stellen im Quelltext. Nach dem
 Sprung auf 1.1.0 meldete `/api/health` weiter 1.0.0 — ausgerechnet der Wert,
 an dem die Überwachung hängt und den ein Nutzer in einem Fehlerbericht nennt.
