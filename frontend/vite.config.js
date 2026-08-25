@@ -177,6 +177,14 @@ export default defineConfig({
         // FUNKTION zulaessig — die Objektform bricht mit
         // "TypeError: manualChunks is not a function" ab.
         manualChunks(id) {
+          // Übersetzungen: EIN Chunk je Sprache statt einer Datei je
+          // Namensraum. Ohne das entstehen 4 Sprachen × 28 Namensräume = 112
+          // Dateien, und ein deutscher Erstbesuch holt 57 davon (28 × de plus
+          // 28 × en als Rückfallsprache) — gemessen am 2026-08-25 im Browser.
+          // Die Bytes wären dieselben, aber 57 Runden statt 2.
+          const locale = id.match(/[/\\]locales[/\\]([a-z]{2})[/\\][^/\\]+\.json$/)
+          if (locale) return `locale-${locale[1]}`
+
           if (!id.includes('node_modules')) return undefined
           const gruppen = {
             'react-vendor': ['/react/', '/react-dom/', '/react-router-dom/', '/react-router/'],
