@@ -181,7 +181,8 @@ async def get_optional_user(
 
 # Endpoints
 @router.get("/registration-status")
-async def get_registration_status(db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.USER_PROFILE_READ)
+async def get_registration_status(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Check if registration is currently allowed
     Public endpoint - no authentication required
@@ -305,7 +306,8 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
 
 
 @router.post("/logout")
-async def logout():
+@limiter.limit(RateLimits.AUTH_REFRESH)
+async def logout(request: Request):
     """
     Logout (invalidate token)
 
@@ -315,7 +317,8 @@ async def logout():
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
+@limiter.limit(RateLimits.USER_PROFILE_READ)
+async def get_current_user_info(request: Request, current_user: User = Depends(get_current_active_user)):
     """
     Get current user information
 

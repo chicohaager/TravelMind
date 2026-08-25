@@ -289,8 +289,12 @@ async def delete_diary_entry(
 
 
 @router.get("/{trip_id}/export/markdown")
+@limiter.limit(RateLimits.DIARY_READ)
 async def export_diary_markdown(
-    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Export diary entries as Markdown. Requires authentication and trip access."""
     # Verify trip exists and user has access
@@ -364,8 +368,12 @@ async def export_diary_markdown(
 
 
 @router.get("/{trip_id}/export/pdf")
+@limiter.limit(RateLimits.DIARY_READ)
 async def export_diary_pdf(
-    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Export diary entries as PDF. Requires authentication and trip access."""
     try:

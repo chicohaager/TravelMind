@@ -651,6 +651,7 @@ class BulkPlaceImport(BaseModel):
 
 # Guide Import Endpoints
 @router.post("/{trip_id}/search-guides", response_model=GuideSearchResponse)
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def search_guides_auto(
     trip_id: int,
     request: GuideSearchRequest,
@@ -814,6 +815,7 @@ Wichtig:
 
 
 @router.post("/{trip_id}/import-from-guide", response_model=GuideParseResponse)
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def parse_guide_url(
     trip_id: int,
     request: GuideUrlRequest,
@@ -845,7 +847,9 @@ async def parse_guide_url(
 
 
 @router.post("/{trip_id}/import-places-bulk", response_model=List[PlaceResponse])
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def import_places_bulk(
+    request: Request,
     trip_id: int,
     import_data: BulkPlaceImport,
     db: AsyncSession = Depends(get_db),

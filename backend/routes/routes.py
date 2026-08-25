@@ -5,7 +5,7 @@ API routes for Route management (itineraries on maps)
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from models.database import get_db
 from models.route import Route
 from models.trip import Trip
@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from routes.auth import get_current_active_user
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter(prefix="/api/routes", tags=["routes"])
 
@@ -67,8 +68,12 @@ class RouteResponse(BaseModel):
 
 # Routes
 @router.post("/", response_model=RouteResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def create_route(
-    route_data: RouteCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    route_data: RouteCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Create a new route for a trip
@@ -93,8 +98,12 @@ async def create_route(
 
 
 @router.get("/trip/{trip_id}", response_model=List[RouteResponse])
+@limiter.limit(RateLimits.PLACE_READ)
 async def get_trip_routes(
-    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Get all routes for a trip
@@ -117,8 +126,12 @@ async def get_trip_routes(
 
 
 @router.get("/{route_id}", response_model=RouteResponse)
+@limiter.limit(RateLimits.PLACE_READ)
 async def get_route(
-    route_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    route_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Get a specific route by ID
@@ -140,7 +153,9 @@ async def get_route(
 
 
 @router.put("/{route_id}", response_model=RouteResponse)
+@limiter.limit(RateLimits.PLACE_UPDATE)
 async def update_route(
+    request: Request,
     route_id: int,
     route_data: RouteUpdate,
     db: AsyncSession = Depends(get_db),
@@ -174,8 +189,12 @@ async def update_route(
 
 
 @router.delete("/{route_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(RateLimits.PLACE_DELETE)
 async def delete_route(
-    route_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    route_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Delete a route

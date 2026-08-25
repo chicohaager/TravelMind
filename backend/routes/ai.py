@@ -405,7 +405,8 @@ Wichtig:
 
 
 @router.get("/status")
-async def ai_status(current_user: User = Depends(get_current_active_user)):
+@limiter.limit(RateLimits.AI_CHAT)
+async def ai_status(request: Request, current_user: User = Depends(get_current_active_user)):
     """
     Check if AI features are configured for the current user
     """
