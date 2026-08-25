@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 
 const categories = [
-  { value: 'food', labelKey: 'budget.categories.food', icon: '🍽️' },
-  { value: 'transport', labelKey: 'budget.categories.transport', icon: '🚗' },
-  { value: 'accommodation', labelKey: 'budget.categories.accommodation', icon: '🏨' },
-  { value: 'activities', labelKey: 'budget.categories.activities', icon: '🎯' },
-  { value: 'shopping', labelKey: 'budget.categories.shopping', icon: '🛍️' },
-  { value: 'other', labelKey: 'budget.categories.other', icon: '📝' },
+  { value: 'food', labelKey: 'budget:categories.food', icon: '🍽️' },
+  { value: 'transport', labelKey: 'budget:categories.transport', icon: '🚗' },
+  { value: 'accommodation', labelKey: 'budget:categories.accommodation', icon: '🏨' },
+  { value: 'activities', labelKey: 'budget:categories.activities', icon: '🎯' },
+  { value: 'shopping', labelKey: 'budget:categories.shopping', icon: '🛍️' },
+  { value: 'other', labelKey: 'budget:categories.other', icon: '📝' },
 ]
 
 export default function ExpenseModal({

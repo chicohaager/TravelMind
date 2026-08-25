@@ -42,9 +42,9 @@ export default function DiaryModal({
     (heicSupported ? ',image/heic,image/heif,.heic,.heif' : '')
 
   const moodOptions = [
-    { value: 'happy', icon: Smile, labelKey: 'diary.moodHappy', color: 'text-green-500' },
-    { value: 'neutral', icon: Meh, labelKey: 'diary.moodNeutral', color: 'text-yellow-500' },
-    { value: 'sad', icon: Frown, labelKey: 'diary.moodSad', color: 'text-red-500' },
+    { value: 'happy', icon: Smile, labelKey: 'diary:moodHappy', color: 'text-green-500' },
+    { value: 'neutral', icon: Meh, labelKey: 'diary:moodNeutral', color: 'text-yellow-500' },
+    { value: 'sad', icon: Frown, labelKey: 'diary:moodSad', color: 'text-red-500' },
   ]
   const [formData, setFormData] = useState({
     title: '',

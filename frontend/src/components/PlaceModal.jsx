@@ -29,12 +29,12 @@ export default function PlaceModal({
   const { t } = useTranslation()
 
   const categories = [
-    { value: 'sight', labelKey: 'places.categories.sight', icon: '🏛️' },
-    { value: 'restaurant', labelKey: 'places.categories.restaurant', icon: '🍽️' },
-    { value: 'hotel', labelKey: 'places.categories.hotel', icon: '🏨' },
-    { value: 'activity', labelKey: 'places.categories.activity', icon: '🎯' },
-    { value: 'shopping', labelKey: 'places.categories.shopping', icon: '🛍️' },
-    { value: 'transport', labelKey: 'places.categories.transport', icon: '🚌' },
+    { value: 'sight', labelKey: 'places:categories.sight', icon: '🏛️' },
+    { value: 'restaurant', labelKey: 'places:categories.restaurant', icon: '🍽️' },
+    { value: 'hotel', labelKey: 'places:categories.hotel', icon: '🏨' },
+    { value: 'activity', labelKey: 'places:categories.activity', icon: '🎯' },
+    { value: 'shopping', labelKey: 'places:categories.shopping', icon: '🛍️' },
+    { value: 'transport', labelKey: 'places:categories.transport', icon: '🚌' },
   ]
   const [formData, setFormData] = useState({
     name: '',

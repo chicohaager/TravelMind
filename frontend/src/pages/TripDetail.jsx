@@ -82,7 +82,7 @@ export default function TripDetail() {
   ]
 
   // Namensraum mit DOPPELPUNKT. Mit einem Punkt lieferte t() den Schluessel
-  // selbst zurueck — die Liste enthielt woertlich 'tripDetail.culture' usw.
+  // selbst zurueck — die Liste enthielt woertlich 'tripDetail:culture' usw.
   // Die Uebersetzungen liegen wortgleich in beiden Namensraeumen; 'interests'
   // ist der dafuer vorgesehene.
   const AVAILABLE_INTERESTS = INTEREST_KEYS.map((key) => t(`interests:${key}`))
