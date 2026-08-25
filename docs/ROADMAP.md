@@ -571,7 +571,35 @@ Alle Prüfdaten anschließend wieder entfernt und die Entfernung gegengeprüft.
 * **Alle vier KI-Modell-IDs veraltet**, die von Groq gelöscht
 * **Die tägliche Sicherung war stillgelegt** — durch das Deploy-Skript selbst
 
+### Die KI läuft — mit echtem Schlüssel nachgewiesen
+
+Der Reiter „Empfehlungen" zeigte bei einer frischen Reise **„Fehler beim
+Laden"**. Dahinter lagen ZWEI Fehler, und der zweite wurde erst sichtbar,
+nachdem der erste weg war:
+
+1. **`temperature` — jede Claude-Anfrage scheiterte.** Der installierte
+   anthropic-SDK 1.0.0 nimmt den Parameter nicht mehr an
+   (`TypeError: unexpected keyword argument`). Die Zeile stammt laut
+   `git log -S` aus dem **Initial-Commit vom 2025-11-01**: der SDK ist
+   weitergezogen, der Code nicht. Unsichtbar war es, weil der Nutzer nur
+   „AI service error" bekam — erst das Protokollieren des Fehlerpfads
+   (heute, Commit `41ed3d6`) hat es ans Licht gebracht. Genau dafür war es
+   gedacht.
+2. **`content[0].text` gibt es bei den aktuellen Modellen nicht.** Sie denken
+   adaptiv; die Antwort beginnt mit einem `thinking`-Block, der Text steht
+   dahinter. Die Anfrage lief 20,9 s durch und scheiterte dann. Jetzt wird
+   der erste Block MIT Text gesucht, und schlägt das fehl, nennt die Meldung
+   die tatsächlichen Blockarten.
+
+**Beleg, gegen den echten Dienst:** `POST /api/ai/personalized-recommendations`
+für „Split, Kroatien" → HTTP 200 in 19,8 s, **8 Empfehlungen**:
+Diokletianpalast, Kathedrale des Heiligen Domnius, Konoba Marjan, Marjan Hill
+… — im Browser sichtbar, keine rohen Schlüssel.
+
+Wächter dagegen: `tests/test_ai_sdk_vertraege.py` prüft die übergebenen
+Argumente gegen die **installierte** SDK-Signatur (nicht gegen eine Liste im
+Kopf) und die Antwortform mit und ohne Denkblock.
+
 ### Noch offen
 
-* **KI mit echtem Schlüssel** — die IDs sind gegen die Herstellerdoku geprüft, nicht gegen den Dienst
 * **Pangolin durch den Tunnel** — die Auflösung der Client-IP ist konfiguriert, aber erst LAN-seitig gemessen
