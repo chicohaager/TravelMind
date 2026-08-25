@@ -107,3 +107,58 @@ def test_jeder_anbieter_hat_die_gemeinsame_schnittstelle():
     for klasse in (ClaudeProvider, OpenAIProvider, GeminiProvider, GroqProvider):
         sig = inspect.signature(klasse.chat)
         assert {"prompt", "system_prompt", "max_tokens", "temperature"} <= set(sig.parameters), klasse.__name__
+
+
+# ── Antwortform: Denkblöcke vor dem Text ────────────────────────────────────
+
+
+class _Block:
+    def __init__(self, art, text=None):
+        self.type = art
+        if text is not None:
+            self.text = text
+
+
+class _Antwort:
+    def __init__(self, bloecke):
+        self.content = bloecke
+
+
+@pytest.mark.asyncio
+async def test_claude_findet_den_text_hinter_einem_denkblock(monkeypatch):
+    """Die aktuellen Modelle denken adaptiv — die Antwort beginnt mit einem
+    `thinking`-Block, der Text steht dahinter. `content[0].text` gab es dann
+    nicht, und die Anfrage scheiterte nach 20,9 s Laufzeit."""
+    from services.ai_service import ClaudeProvider
+
+    anbieter = ClaudeProvider("x" * 20)
+    monkeypatch.setattr(
+        anbieter.client.messages,
+        "create",
+        lambda **kw: _Antwort([_Block("thinking"), _Block("text", "Die Antwort.")]),
+    )
+    assert await anbieter.chat("Frage") == "Die Antwort."
+
+
+@pytest.mark.asyncio
+async def test_claude_ohne_denkblock_funktioniert_weiterhin(monkeypatch):
+    """Gegenkontrolle: der einfache Fall darf nicht kaputtgehen."""
+    from services.ai_service import ClaudeProvider
+
+    anbieter = ClaudeProvider("x" * 20)
+    monkeypatch.setattr(anbieter.client.messages, "create", lambda **kw: _Antwort([_Block("text", "Direkt.")]))
+    assert await anbieter.chat("Frage") == "Direkt."
+
+
+@pytest.mark.asyncio
+async def test_claude_ohne_jeden_text_scheitert_LAUT_und_nennt_die_blockarten(monkeypatch):
+    """Ein leerer Rückgabewert sähe aus wie „nichts gefunden". Die Meldung
+    muss sagen, WAS stattdessen kam — sonst steht man beim nächsten Mal
+    wieder 20 Minuten davor."""
+    from services.ai_service import ClaudeProvider
+
+    anbieter = ClaudeProvider("x" * 20)
+    monkeypatch.setattr(anbieter.client.messages, "create", lambda **kw: _Antwort([_Block("thinking")]))
+    with pytest.raises(RuntimeError) as fehler:
+        await anbieter.chat("Frage")
+    assert "thinking" in str(fehler.value)
