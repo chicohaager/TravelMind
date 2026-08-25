@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Mic, Square, Upload, X, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';

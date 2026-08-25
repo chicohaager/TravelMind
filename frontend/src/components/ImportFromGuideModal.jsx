@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, Link as LinkIcon, Search, CheckCircle, Circle, Loader, AlertCircle,
+  X, Link as Search, CheckCircle, Circle, Loader, AlertCircle,
   MapPin, Globe, Info
 } from 'lucide-react'
 import { placesService } from '@/services/api'
@@ -24,7 +24,6 @@ const CATEGORY_ICONS = {
 export default function ImportFromGuideModal({ isOpen, onClose, tripId, destination, onImportComplete }) {
   const { t } = useTranslation()
   const [searchDestination, setSearchDestination] = useState(destination || '')
-  const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [extractedPlaces, setExtractedPlaces] = useState([])

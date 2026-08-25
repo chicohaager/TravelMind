@@ -182,19 +182,21 @@ class SyncQueueService {
   /**
    * Execute trip operations
    */
-  async executeTripOperation(operation, method, data, tempId) {
+  async executeTripOperation(operation, method, data, _tempId) {
     switch (operation) {
-      case 'create':
+      case 'create': {
         const tripResponse = await tripsService.create(data)
         // Update local cache with real ID
         await indexedDB.saveTrip(tripResponse.data)
         return tripResponse.data
 
-      case 'update':
+      }
+      case 'update': {
         const updateResponse = await tripsService.update(data.id, data)
         await indexedDB.saveTrip(updateResponse.data)
         return updateResponse.data
 
+      }
       case 'delete':
         await tripsService.delete(data.id)
         await indexedDB.deleteTrip(data.id)
@@ -208,27 +210,30 @@ class SyncQueueService {
   /**
    * Execute diary operations
    */
-  async executeDiaryOperation(operation, method, data, tempId) {
+  async executeDiaryOperation(operation, method, data, _tempId) {
     switch (operation) {
-      case 'create':
+      case 'create': {
         const diaryResponse = await diaryService.create(data.trip_id, data)
         await indexedDB.saveDiaryEntry(diaryResponse.data)
         return diaryResponse.data
 
-      case 'update':
+      }
+      case 'update': {
         const updateResponse = await diaryService.update(data.id, data)
         await indexedDB.saveDiaryEntry(updateResponse.data)
         return updateResponse.data
 
+      }
       case 'delete':
         await diaryService.delete(data.id)
         await indexedDB.deleteDiaryEntry(data.id)
         return { deleted: true }
 
-      case 'uploadPhoto':
+      case 'uploadPhoto': {
         const photoResponse = await diaryService.uploadPhoto(data.entryId, data.file)
         return photoResponse.data
 
+      }
       default:
         throw new Error(`Unknown diary operation: ${operation}`)
     }
@@ -237,27 +242,30 @@ class SyncQueueService {
   /**
    * Execute place operations
    */
-  async executePlaceOperation(operation, method, data, tempId) {
+  async executePlaceOperation(operation, method, data, _tempId) {
     switch (operation) {
-      case 'create':
+      case 'create': {
         const placeResponse = await placesService.create(data.trip_id, data)
         await indexedDB.savePlace(placeResponse.data)
         return placeResponse.data
 
-      case 'update':
+      }
+      case 'update': {
         const updateResponse = await placesService.update(data.id, data)
         await indexedDB.savePlace(updateResponse.data)
         return updateResponse.data
 
+      }
       case 'delete':
         await placesService.delete(data.id)
         await indexedDB.deletePlace(data.id)
         return { deleted: true }
 
-      case 'uploadPhoto':
+      case 'uploadPhoto': {
         const photoResponse = await placesService.uploadPhoto(data.placeId, data.file)
         return photoResponse.data
 
+      }
       default:
         throw new Error(`Unknown place operation: ${operation}`)
     }

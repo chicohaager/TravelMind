@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MapPin, Hotel, Coffee, UtensilsCrossed, Camera, Mountain, Ship, Plane } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getPhotoUrl } from '@/utils/images'
 
@@ -14,22 +13,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
-// Icon mapping
-const iconMap = {
-  location: MapPin,
-  hotel: Hotel,
-  coffee: Coffee,
-  restaurant: UtensilsCrossed,
-  camera: Camera,
-  mountain: Mountain,
-  ship: Ship,
-  plane: Plane,
-}
 
 // Create custom marker icon
-const createCustomIcon = (color = '#6366F1', iconType = 'location') => {
+// iconType wurde entgegengenommen und nie ausgewertet — der Marker unten baut
+// ein festes SVG. Der Parameter ist deshalb entfallen; wer ihn zurueckwill,
+// muss das SVG erst symbolabhaengig machen.
+const createCustomIcon = (color = '#6366F1') => {
   const size = 40
-  const IconComponent = iconMap[iconType] || MapPin
+  // Hinweis: iconType waehlt derzeit KEIN Symbol aus — der Marker unten baut
+  // ein festes SVG. Die frueher hier berechnete Komponente wurde nie benutzt.
 
   // Create SVG string
   const svg = `
@@ -121,13 +113,17 @@ export default function InteractiveMap({
   photos = [],
   onPlaceClick = null,
   onRouteClick = null,
+  // LUECKE: wird entgegengenommen und nirgends ausgewertet — die Karte ist
+  // nie bearbeitbar. Bewusst stehen gelassen, damit sich die Schnittstelle
+  // nicht aendert; siehe docs/ROADMAP.md.
+  // eslint-disable-next-line no-unused-vars
   editable = false,
   center = [51.505, -0.09],
   zoom = 13
 }) {
   const { t } = useTranslation(['map', 'places'])
-  const [selectedPlace, setSelectedPlace] = useState(null)
-  const [selectedRoute, setSelectedRoute] = useState(null)
+  const [, setSelectedPlace] = useState(null)
+  const [, setSelectedRoute] = useState(null)
 
   // Only render/center on places that have finite numeric coordinates.
   const validPlaces = useMemo(() => places.filter(hasValidCoords), [places])
@@ -218,7 +214,10 @@ export default function InteractiveMap({
           <Marker
             key={place.id}
             position={[Number(place.latitude), Number(place.longitude)]}
-            icon={createCustomIcon(place.color || '#6366F1', place.icon_type || 'location')}
+            /* LUECKE: place.icon_type wird gespeichert, aber nicht dargestellt.
+               Der Marker ist ein festes SVG; die frueher hier uebergebene
+               Symbolart wurde nie ausgewertet. Siehe docs/ROADMAP.md. */
+            icon={createCustomIcon(place.color || '#6366F1')}
             eventHandlers={{
               click: () => handlePlaceClick(place),
             }}

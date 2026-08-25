@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, CalendarDays } from 'lucide-react'
-import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { timelineService } from '@services/api'

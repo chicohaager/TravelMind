@@ -1,4 +1,4 @@
-import { Clock, MapPin, Trash2, GripVertical } from 'lucide-react'
+import { Clock, Trash2, GripVertical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 

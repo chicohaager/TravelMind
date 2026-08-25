@@ -34,27 +34,6 @@ const CATEGORY_COLORS = {
   other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300'
 }
 
-// Generate a placeholder image URL from Unsplash based on category
-const getPlaceholderImage = (category, name) => {
-  const categoryKeywords = {
-    restaurant: 'food,restaurant',
-    attraction: 'landmark,tourist',
-    beach: 'beach,ocean',
-    hotel: 'hotel,resort',
-    viewpoint: 'mountain,landscape',
-    museum: 'museum,art',
-    park: 'park,nature',
-    shopping: 'shopping,market',
-    nightlife: 'nightlife,city',
-    sight: 'landmark,monument',
-    activity: 'adventure,outdoor',
-    transport: 'transportation,travel',
-    other: 'travel,destination'
-  }
-  const keywords = categoryKeywords[category] || 'travel'
-  return `https://source.unsplash.com/400x300/?${keywords}`
-}
-
 export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, onClick }) {
   const { t } = useTranslation()
   const categoryClass = CATEGORY_COLORS[place.category] || CATEGORY_COLORS.other
