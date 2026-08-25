@@ -9,6 +9,7 @@ import re
 import urllib.parse
 from typing import Dict, List, Optional
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from models.user import User
 from pydantic import BaseModel, Field
@@ -17,6 +18,8 @@ from services.ai_service import create_ai_service
 from services.pexels_service import get_place_photo
 from utils.encryption import encryption_service
 from utils.rate_limits import RateLimits, limiter
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -46,6 +49,32 @@ def _parse_ai_json(response: str):
                 except json.JSONDecodeError:
                     continue
         raise
+
+
+def _ki_fehler(vorgang: str, fehler: Exception, user_id: int) -> HTTPException:
+    """Einen Anbieterfehler melden, OHNE seine Meldung in die Antwort zu geben.
+
+    Grund, gemessen am 2026-08-25: die Endpunkte haengten `str(e)` an das
+    `detail` an. Anbieter-Bibliotheken schreiben den API-Schluessel gern in
+    ihre Fehlermeldung ("invalid api key: gsk_…") — der stand damit in der
+    HTTP-Antwort, in den Entwicklerwerkzeugen des Browsers, im nginx-Log und
+    in jedem Fehlerbericht.
+
+    Die Einzelheiten sind nicht weg, sie gehen nur den anderen Weg: ins
+    Protokoll des Servers, wo sie hingehoeren. Die Antwort nennt den Vorgang,
+    damit die Meldung fuer den Nutzer noch brauchbar ist.
+    """
+    logger.error(
+        "ai_request_failed",
+        vorgang=vorgang,
+        user_id=user_id,
+        fehler_typ=type(fehler).__name__,
+        fehler=str(fehler),
+    )
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"Die KI-Anfrage ({vorgang}) ist fehlgeschlagen. Einzelheiten stehen im Server-Protokoll.",
+    )
 
 
 # Helper function to get user's AI service
@@ -84,8 +113,10 @@ def get_user_ai_service(user: User):
     try:
         return create_ai_service(user.ai_provider.value, api_key)
     except Exception as e:
+        logger.error("ai_service_init_failed", user_id=user.id, fehler_typ=type(e).__name__, fehler=str(e))
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to initialize AI service: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Der KI-Dienst liess sich nicht starten. Bitte den Anbieter in den Einstellungen pruefen.",
         )
 
 
@@ -156,7 +187,7 @@ async def suggest_destinations(
         )
         return suggestions
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        raise _ki_fehler("Anfrage", e, current_user.id)
 
 
 @router.post("/plan")
@@ -181,7 +212,7 @@ async def plan_trip(
         )
         return itinerary
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        raise _ki_fehler("Anfrage", e, current_user.id)
 
 
 @router.post("/describe")
@@ -203,7 +234,7 @@ async def describe_destination(
         description = await ai_service.describe_destination(destination=describe_request.destination)
         return {"destination": describe_request.destination, "description": description}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        raise _ki_fehler("Anfrage", e, current_user.id)
 
 
 @router.post("/chat")
@@ -221,7 +252,7 @@ async def chat(request: Request, chat_request: ChatRequest, current_user: User =
         response = await ai_service.chat(user_message=chat_request.message, context=chat_request.context)
         return {"question": chat_request.message, "answer": response}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        raise _ki_fehler("Anfrage", e, current_user.id)
 
 
 @router.post("/local-tips")
@@ -241,7 +272,7 @@ async def get_local_tips(
         tips = await ai_service.get_local_tips(destination=tips_request.destination, category=tips_request.category)
         return {"destination": tips_request.destination, "category": tips_request.category, "tips": tips}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        raise _ki_fehler("Anfrage", e, current_user.id)
 
 
 @router.post("/trip-suggestions")
@@ -287,9 +318,9 @@ async def get_trip_suggestions(
 
         return suggestions
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {str(e)}")
+        raise _ki_fehler("Antwort unlesbar", e, current_user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        raise _ki_fehler("Anfrage", e, current_user.id)
 
 
 @router.post("/personalized-recommendations")
@@ -399,9 +430,9 @@ Wichtig:
         }
 
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {str(e)}")
+        raise _ki_fehler("Antwort unlesbar", e, current_user.id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI service error: {str(e)}")
+        raise _ki_fehler("Anfrage", e, current_user.id)
 
 
 @router.get("/status")
