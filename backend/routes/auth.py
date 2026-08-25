@@ -28,6 +28,7 @@ from pydantic import BaseModel, EmailStr, Field
 from services.audit_service import audit_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.password_policy import MINDESTLAENGE, passwort_pruefen
 from utils.rate_limits import RateLimits, limiter
 
 load_dotenv()
@@ -45,7 +46,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, example="johndoe")
     email: EmailStr = Field(..., example="john@example.com")
-    password: str = Field(..., min_length=8, example="securepassword123")
+    password: str = Field(..., min_length=MINDESTLAENGE, example="securepassword123")
     full_name: Optional[str] = Field(None, example="John Doe")
 
     class Config:
@@ -213,6 +214,12 @@ async def register(request: Request, user_data: UserRegister, db: AsyncSession =
     can_register, reason = await can_register_new_user(db)
     if not can_register:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason)
+
+    # Passwortregeln: Laenge plus Abgleich mit bekannten Datenlecks.
+    # Bis 2026-08-25 stand hier nur Field(min_length=8) — kein Leak-Abgleich.
+    pruefung = await passwort_pruefen(user_data.password)
+    if not pruefung.gueltig:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=pruefung.grund)
 
     # Check if username exists
     result = await db.execute(select(User).where(User.username == user_data.username))

@@ -29,6 +29,7 @@ from pydantic import BaseModel, EmailStr, Field
 from services.audit_service import audit_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.password_policy import MINDESTLAENGE, passwort_pruefen
 from utils.rate_limits import limiter
 
 router = APIRouter()
@@ -46,7 +47,7 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetConfirm(BaseModel):
     token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-    new_password: str = Field(..., min_length=8, example="newSecurePassword123")
+    new_password: str = Field(..., min_length=MINDESTLAENGE, example="newSecurePassword123")
 
 
 class PasswordResetResponse(BaseModel):
@@ -232,6 +233,12 @@ async def confirm_password_reset(
 
     # Update password and set password_changed_at to invalidate all existing reset tokens
     now = datetime.now(timezone.utc)
+    # Dritter Weg, an dem ein Passwort gesetzt wird — dieselben Regeln.
+    # Ohne diese Zeile waere das Zuruecksetzen die offene Tuer gewesen.
+    pruefung = await passwort_pruefen(reset_confirm.new_password)
+    if not pruefung.gueltig:
+        raise HTTPException(status_code=400, detail=pruefung.grund)
+
     user.hashed_password = User.hash_password(reset_confirm.new_password)
     user.password_changed_at = now
     user.updated_at = now

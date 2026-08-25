@@ -2,8 +2,20 @@
 Pytest configuration and fixtures for TravelMind tests
 """
 
+import os as _os
 import sys
 from pathlib import Path
+
+# Der Leak-Abgleich der Passwortregeln (utils/password_policy.py) fragt bei
+# Have I Been Pwned nach. In der Testsuite ist er ABGESCHALTET — nicht aus
+# Bequemlichkeit, sondern weil ein Test, der vom Netz abhaengt, sporadisch rot
+# wird und irgendwann uebersprungen. Die Regel selbst wird in
+# test_password_policy.py vollstaendig geprueft, mit eingespeister Abfrage
+# und in allen drei Betriebsarten.
+#
+# Muss VOR dem Import von utils.password_policy stehen: der Modus wird beim
+# Importieren gelesen.
+_os.environ.setdefault("PASSWORD_BREACH_CHECK", "off")
 
 # Add parent directory to Python path so we can import from backend
 backend_dir = Path(__file__).parent.parent
