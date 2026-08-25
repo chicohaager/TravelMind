@@ -3,6 +3,7 @@
 Migration script to copy data from SQLite to PostgreSQL
 """
 
+import os
 import asyncio
 import sqlite3
 from datetime import datetime
@@ -11,8 +12,19 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Database URLs
-SQLITE_URL = "sqlite:///./data/travelmind.db"
-POSTGRES_URL = "postgresql+asyncpg://travelmind:travelmind@db:5432/travelmind"
+#
+# Bis 2026-08-25 stand die Postgres-Adresse hier fest verdrahtet, samt
+# Zugangsdaten (travelmind:travelmind) und ohne jede Moeglichkeit, sie zu
+# ueberschreiben. Ein Skript, das Daten schreibt, darf sein Ziel nicht raten:
+# es faellt jetzt laut aus, wenn DATABASE_URL fehlt.
+SQLITE_URL = os.getenv("SQLITE_URL", "sqlite:///./data/travelmind.db")
+POSTGRES_URL = os.getenv("DATABASE_URL")
+
+if not POSTGRES_URL:
+    raise SystemExit(
+        "DATABASE_URL ist nicht gesetzt.\n"
+        "Beispiel: DATABASE_URL='postgresql+asyncpg://<benutzer>:<passwort>@<host>:5432/<datenbank>'"
+    )
 
 
 async def migrate():
