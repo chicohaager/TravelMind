@@ -32,7 +32,7 @@ Haken auf.
 flake8 backend/                                        # muss 0 melden
 black --line-length=120 --check backend/
 isort --profile=black --line-length=120 --check-only backend/
-cd backend && pytest tests -q --cov=. --cov-fail-under=50
+cd backend && pytest tests -q --cov=. --cov-fail-under=75
 
 cd frontend && npx eslint .                            # muss 0 Fehler melden
 cd frontend && npx vitest run
