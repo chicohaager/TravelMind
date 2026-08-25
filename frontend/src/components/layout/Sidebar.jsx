@@ -165,7 +165,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Footer Info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            <p className="font-medium">TravelMind v1.0</p>
+            <p className="font-medium">TravelMind v1.1.0</p>
           </div>
         </div>
       </aside>

@@ -217,7 +217,7 @@ API endpoints are rate-limited to prevent abuse. Default limits:
 - Write operations: 30 requests/minute
 - AI endpoints: 10-20 requests/minute
 """,
-    version="1.0.0",
+    version="1.1.0",
     contact={
         "name": "TravelMind Support",
         "url": "https://github.com/your-repo/TravelMind",
