@@ -203,6 +203,13 @@ Passwörter: mindestens 8 Zeichen, keine Komplexitäts- oder Leak-Prüfung, kein
 | 1.2 | Stack hochfahren | ✅ | `/api/health` liefert 200 **mit Payload** (`database: healthy`), alle Container `healthy`. Echte Daten unversehrt: 2 Nutzer, 4 Reisen (Hamburg, La Palma, Toskana + Testreise), 16 Orte, 2 Tagebucheinträge, 7 Medien. Fotos laden wieder (1,4 MB PNG, 351 KB JPEG), Gegenkontrolle liefert 404. |
 | 1.3 | Browser-Durchgang in DE | ✅ | 7 Seiten auf Deutsch, 0 rohe i18n-Keys (Scanner mit bestandener Positivkontrolle), Reise über die Oberfläche angelegt, alle vier Sprachen geprüft, keine Konsolenfehler. |
 
+| 2.1 | README neu | ✅ | Jeder Befehl darin ausgeführt. Zwei Behauptungen dabei widerlegt und korrigiert: `/docs` ist hinter dem Produktions-nginx **nicht** erreichbar (der SPA-Fallback liefert 200 für jeden Pfad), und `ENABLE_DEMO_MODE` steuert Demo-Reisen, nicht ein Standardkonto. |
+| 2.2 | CI zurück | ✅ | Neu geschrieben statt zurückgeholt: die alte Fassung trug `continue-on-error: true` auf **neun** Schritten — Lint, Frontend-Tests, Trivy, Safety und E2E konnten gar nicht rot werden. Der neue Workflow hat davon 0 in 142 Inhaltszeilen. Alle Befehle vorher lokal gefahren. |
+| 2.3 | LICENSE | ✅ | MIT — war in `backend/package.json` und im alten README bereits deklariert, die Datei fehlte nur. |
+| 2.4 | Lint-Gate | ✅ | eslint **440 → 0** Fehler; flake8 **169 → 0**; bandit 0. `ErrorBoundary.jsx` konnte eslint gar nicht parsen und wurde stillschweigend übersprungen (ecmaVersion 2020 kennt keine Klassenfelder). Sabotage-Gegenprobe auf beiden Seiten rot. |
+| 2.5 | CLAUDE.md | ✅ | Neu geschrieben mit den Fallen, die der Wiederaufbau aufgedeckt hat. |
+| 2.6 | pre-commit | ✅ | Die Konfiguration lag seit jeher da und **konnte nie laufen**: Hook nicht installiert, zwei referenzierte Dateien fehlten, black auf ein nicht vorhandenes Python gepinnt. Alle 17 Hooks grün, Sabotage-Gegenprobe rot. |
+
 ### Was der Wiederaufbau ans Licht gebracht hat
 
 Sieben Fehler, alle mit derselben Form: **ein Fallback zeigte etwas Plausibles
