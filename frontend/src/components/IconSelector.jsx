@@ -8,7 +8,12 @@ import {
   Ship,
   Plane,
   ShoppingBag,
-  Museum,
+  // `Museum` gibt es in lucide-react 0.309 NICHT. Bis 2026-08-25 stand es
+  // hier trotzdem: der Import ergab `undefined`, React warf beim Rendern
+  // "Element type is invalid" — die Komponente war nicht darstellbar.
+  // Aufgefallen ist es erst, als die Barrierefreiheits-Suite sie mountete;
+  // benutzt wird sie (noch) nirgends. `Landmark` ist das Säulenportal.
+  Landmark,
   TreePine,
   Waves,
 } from 'lucide-react'
@@ -27,7 +32,7 @@ const ICON_OPTIONS = [
   { type: 'ship', icon: Ship },
   { type: 'plane', icon: Plane },
   { type: 'shopping', icon: ShoppingBag },
-  { type: 'museum', icon: Museum },
+  { type: 'museum', icon: Landmark },
   { type: 'nature', icon: TreePine },
 ]
 
