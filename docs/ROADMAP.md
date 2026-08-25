@@ -543,3 +543,35 @@ Sabotage in beide Richtungen belegt.
 Korrigiert wurde außerdem eine **falsche Behauptung in `CLAUDE.md`**: ein Datum
 ohne Uhrzeit werde abgewiesen. An allen fünf Modellen mit Datumsfeld gemessen
 — es wird angenommen, Pydantic ergänzt Mitternacht.
+
+---
+
+## Kern-Flows vor der Kroatien-Reise — durchgeklickt, nicht behauptet
+
+Am 2026-08-25 gegen die laufende Produktion, angemeldet als echter Nutzer.
+Alle Prüfdaten anschließend wieder entfernt und die Entfernung gegengeprüft.
+
+| Flow | Beleg |
+|---|---|
+| **Foto hochladen** | echtes JPEG, 4,18 MB (Signatur `ff d8 ff e0`) → HTTP 200 in 2,1 s, nach WebP gewandelt; Datei mit gültiger RIFF/WEBP-Signatur auf der Platte. **Vorher unmöglich** — nginx wies alles über 1 MB mit 413 ab |
+| **Route bauen** | Name + zwei Orte per ➕ → gespeichert, „Routen (1)", **eine Polylinie auf der Karte** in der gewählten Farbe |
+| **Tagebucheintrag** | angelegt (201) mit Stimmung und Bewertung, in der Liste, **auf dem Bildschirm sichtbar** samt Ort |
+| **Ausgabe erfassen** | 47,80 € angelegt (201), schlägt in der Zusammenfassung durch (`by_category.food = 47.8`), im Bildschirm sichtbar |
+| **Tagesplan füllen** | zwei Orte aufgenommen (201), als Tag gelesen, Optimierung meldet „2 Einträge optimiert" |
+| **Sprachwechsel** | alle vier Sprachen, `<html lang>` folgt, kein roher Schlüssel |
+| **Offline** | Server unerreichbar (`fetch` wirft) → **die App rendert vollständig auf Deutsch** aus dem Precache |
+| **Handy (411 px)** | nichts abgeschnitten, Benutzermenü erreichbar (Profil · Einstellungen · **Abmelden**) |
+
+### Was diese Runde an Fehlern gefunden hat
+
+* **Kein Foto über 1 MB hochladbar** — `client_max_body_size` fehlte
+* **Sprachwahl, Dunkelmodus und Abmelden lagen bei 411 px außerhalb des Bildschirms**
+* **„Route speichern" wirkte tot** — Orte kamen nur per Ziehen hinein
+* **18 rohe i18n-Schlüssel**, die der Wächter nicht sah
+* **Alle vier KI-Modell-IDs veraltet**, die von Groq gelöscht
+* **Die tägliche Sicherung war stillgelegt** — durch das Deploy-Skript selbst
+
+### Noch offen
+
+* **KI mit echtem Schlüssel** — die IDs sind gegen die Herstellerdoku geprüft, nicht gegen den Dienst
+* **Pangolin durch den Tunnel** — die Auflösung der Client-IP ist konfiguriert, aber erst LAN-seitig gemessen
