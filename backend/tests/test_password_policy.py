@@ -190,7 +190,11 @@ class TestEndpunkteWendenDieRegelAn:
 
         antwort = await client.post(
             "/api/auth/register",
-            json={"username": "leakuser", "email": "leak@example.com", "password": "einlangesgutespasswort"},
+            json={
+                "username": "leakuser",
+                "email": "leak@example.com",
+                "password": "einlangesgutespasswort",  # pragma: allowlist secret
+            },
         )
         assert antwort.status_code == 400
         assert "Datenlecks" in antwort.json()["detail"]
@@ -207,7 +211,11 @@ class TestEndpunkteWendenDieRegelAn:
 
         antwort = await client.post(
             "/api/auth/register",
-            json={"username": "gutuser", "email": "gut@example.com", "password": "einlangesgutespasswort"},
+            json={
+                "username": "gutuser",
+                "email": "gut@example.com",
+                "password": "einlangesgutespasswort",  # pragma: allowlist secret
+            },
         )
         assert antwort.status_code == 201
 
