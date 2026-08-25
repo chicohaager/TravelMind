@@ -143,7 +143,7 @@ export default function Trips() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
         <div className="card">
           <div className="text-3xl font-bold text-primary-500 mb-1">{trips.length}</div>
           <div className="text-sm text-gray-600 dark:text-gray-400">{t('trips:planned')}</div>
@@ -181,7 +181,7 @@ export default function Trips() {
 
       {/* Trips Grid */}
       {!isLoading && trips.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
           {trips.map((trip, index) => (
             <motion.div
               key={trip.id}
