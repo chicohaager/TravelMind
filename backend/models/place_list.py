@@ -26,7 +26,17 @@ class PlaceList(Base):
 
     # Relationships
     trip = relationship("Trip", back_populates="place_lists")
-    places = relationship("Place", back_populates="place_list", cascade="all, delete-orphan")
+    # KEINE delete-orphan-Kaskade.
+    #
+    # Die Spalte `places.list_id` traegt `ON DELETE SET NULL`, und der
+    # Loeschendpunkt verliess sich darauf. Die ORM-Kaskade kommt der Datenbank
+    # aber ZUVOR: `db.delete(liste)` laedt die Kinder und setzt ein
+    # `DELETE FROM places` ab — die Fremdschluesselregel kam nie zum Zug.
+    # Folge bis 2026-08-25: das Loeschen einer Liste loeschte alle Orte darin,
+    # waehrend der Bestaetigungsdialog woertlich versprach "Orte werden nicht
+    # geloescht". `passive_deletes=True` haelt die ORM davon ab, die Kinder
+    # ueberhaupt anzufassen.
+    places = relationship("Place", back_populates="place_list", passive_deletes=True)
 
     def __repr__(self):
         return f"<PlaceList {self.title}>"
