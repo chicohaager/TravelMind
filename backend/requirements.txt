@@ -1,39 +1,39 @@
 # Core Framework
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
 gunicorn==23.0.0
 
 # Database
-sqlalchemy==2.0.25
-alembic==1.13.1
+sqlalchemy==2.0.52
+alembic==1.19.1
 psycopg2-binary==2.9.9  # PostgreSQL (sync)
-asyncpg==0.29.0          # PostgreSQL (async)
+asyncpg==0.31.0          # PostgreSQL (async)
 # Authentication & Security
-python-jose[cryptography]==3.4.0
+PyJWT[crypto]==2.13.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.31
 bcrypt==4.0.1           # 4.0.1 compatible with passlib 1.7.4
 slowapi==0.1.9  # Rate limiting
 
 # AI APIs
-groq==0.4.2             # Groq (FREE, fast Llama models) - DEFAULT
-anthropic==0.18.1       # Claude
-openai==1.12.0          # OpenAI (GPT-4, GPT-3.5)
-google-generativeai==0.3.2  # Google Gemini
+groq==1.6.0             # Groq (FREE, fast Llama models) - DEFAULT
+anthropic==1.0.0       # Claude
+openai==3.3.1          # OpenAI (GPT-4, GPT-3.5)
+google-generativeai==0.8.6  # Google Gemini
 
 # Validation & Serialization
-pydantic==2.5.3
-pydantic-settings==2.1.0
-email-validator==2.1.0
+pydantic==2.13.4
+pydantic-settings==2.14.2
+email-validator==2.3.0
 
 # HTTP & WebSocket
-websockets==12.0
-httpx==0.26.0
+websockets==17.0.1
+httpx==0.28.1
 requests==2.33.0
 aiohttp==3.14.3
 
 # Web Scraping
-beautifulsoup4==4.12.3
+beautifulsoup4==4.14.2
 
 # File Handling
 python-magic==0.4.27
@@ -53,15 +53,20 @@ psutil==5.9.8
 # Utilities
 python-dotenv==1.2.2
 pyyaml==6.0.1
-typing-extensions==4.9.0
+typing-extensions==4.16.0
 
 # Testing
-pytest==7.4.4
-pytest-asyncio==0.23.3
-pytest-cov==4.1.0
+pytest==9.0.3
+pytest-asyncio==1.3.0
+pytest-cov==7.1.0
 aiosqlite==0.19.0      # For in-memory test database
-httpx==0.26.0          # For async test client
+httpx==0.28.1          # For async test client
 
 # Logging & Monitoring
-structlog==24.1.0
-sentry-sdk[fastapi]==1.40.0
+structlog==25.5.0
+sentry-sdk[fastapi]==2.68.1
+
+# Transitive Abhaengigkeiten, die der Aufloeser sonst auf verwundbaren
+# Fassungen laesst. Am 2026-08-25 mit pip-audit gemessen.
+urllib3==2.7.0
+soupsieve==2.8.4

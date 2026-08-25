@@ -167,13 +167,26 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild',
+    // Vite 8 liefert esbuild nicht mehr mit; der Bundler ist Rolldown und
+    // bringt oxc als Minifier mit. 'esbuild' hier fuehrt zu
+    // "Failed to load transformWithEsbuild".
+    minify: 'oxc',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'map-vendor': ['leaflet', 'react-leaflet'],
-          'ui-vendor': ['framer-motion', 'lucide-react']
+        // Vite 8 baut mit Rolldown; dort ist `manualChunks` nur noch als
+        // FUNKTION zulaessig — die Objektform bricht mit
+        // "TypeError: manualChunks is not a function" ab.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          const gruppen = {
+            'react-vendor': ['/react/', '/react-dom/', '/react-router-dom/', '/react-router/'],
+            'map-vendor': ['/leaflet/', '/react-leaflet/'],
+            'ui-vendor': ['/framer-motion/', '/lucide-react/'],
+          }
+          for (const [name, muster] of Object.entries(gruppen)) {
+            if (muster.some((m) => id.includes(m))) return name
+          }
+          return undefined
         }
       }
     }

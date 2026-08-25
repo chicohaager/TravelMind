@@ -13,7 +13,7 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from main import app
 
 # NEBENWIRKUNGS-IMPORTE: jedes Modul registriert seine Tabelle an Base.metadata.
@@ -75,7 +75,9 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     # Disable rate limiting for tests
     limiter.enabled = False
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    # httpx 0.28 hat die Abkuerzung `AsyncClient(app=...)` entfernt; der
+    # ASGI-Transport muss seither ausdruecklich uebergeben werden.
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()

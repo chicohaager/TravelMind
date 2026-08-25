@@ -127,7 +127,9 @@ def capture_message(message: str, level: str = "info", **extra):
 
     Useful for tracking non-exception events.
     """
-    with sentry_sdk.push_scope() as scope:
+    # new_scope() statt push_scope(): letzteres ist seit sentry-sdk 2.0
+    # veraltet und faellt in der naechsten Hauptversion weg.
+    with sentry_sdk.new_scope() as scope:
         for key, value in extra.items():
             scope.set_extra(key, value)
         sentry_sdk.capture_message(message, level=level)
@@ -137,7 +139,8 @@ def capture_exception(exception: Exception, **extra):
     """
     Capture an exception to Sentry with extra context.
     """
-    with sentry_sdk.push_scope() as scope:
+    # siehe capture_message oben
+    with sentry_sdk.new_scope() as scope:
         for key, value in extra.items():
             scope.set_extra(key, value)
         sentry_sdk.capture_exception(exception)

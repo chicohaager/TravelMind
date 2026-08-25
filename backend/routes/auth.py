@@ -7,10 +7,21 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+# PyJWT statt python-jose.
+#
+# python-jose 3.4.0 haelt pyasn1 unter 0.5 fest — dort stehen sechs bekannte
+# Schwachstellen — und zieht ecdsa mit, fuer das es UEBERHAUPT KEINE
+# behebende Version gibt. Beide waren am 2026-08-25 die letzten offenen
+# Findings von pip-audit und liessen sich nur durch den Wechsel schliessen.
+#
+# Die benutzte Schnittstelle ist identisch: encode(payload, key, algorithm=),
+# decode(token, key, algorithms=[]). PyJWT prueft "exp" ebenfalls von sich
+# aus und wirft dabei ExpiredSignatureError, eine Unterklasse von PyJWTError.
+import jwt
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from jwt import PyJWTError as JWTError
 from models.database import get_db
 from models.user import User
 from pydantic import BaseModel, EmailStr, Field
