@@ -20,7 +20,7 @@ export default function RouteBuilder({
   const [newRoute, setNewRoute] = useState({
     name: '',
     description: '',
-    color: '#6366F1',
+    color: '#1F7A7D',
     line_style: 'solid',
     line_width: 3,
     place_ids: [],
@@ -169,7 +169,7 @@ export default function RouteBuilder({
     setNewRoute({
       name: '',
       description: '',
-      color: '#6366F1',
+      color: '#1F7A7D',
       line_style: 'solid',
       line_width: 3,
       place_ids: [],
@@ -216,7 +216,7 @@ export default function RouteBuilder({
                 <div className="flex gap-2">
                   <button
                     onClick={() => editRoute(route)}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
                     {t('routes:editRoute')}
                   </button>
@@ -318,7 +318,7 @@ export default function RouteBuilder({
                               {...provided.dragHandleProps}
                               className={`
                                 flex items-center gap-2 p-2 bg-white border rounded-lg cursor-move
-                                ${snapshot.isDragging ? 'shadow-lg border-indigo-500' : 'border-gray-200'}
+                                ${snapshot.isDragging ? 'shadow-lg border-primary-500' : 'border-gray-200'}
                               `}
                             >
                               <GripVertical className="w-4 h-4 text-gray-400" />
@@ -333,7 +333,7 @@ export default function RouteBuilder({
                                 onClick={() => addPlace(place.id)}
                                 title={t('routes:addPlaceToRoute')}
                                 aria-label={`${t('routes:addPlaceToRoute')}: ${place.name}`}
-                                className="shrink-0 p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded"
+                                className="shrink-0 p-1 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
@@ -362,7 +362,7 @@ export default function RouteBuilder({
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="space-y-2 min-h-[200px] max-h-[400px] overflow-y-auto p-3 bg-indigo-50 rounded-lg border-2 border-dashed border-indigo-300"
+                      className="space-y-2 min-h-[200px] max-h-[400px] overflow-y-auto p-3 bg-primary-50 rounded-lg border-2 border-dashed border-primary-300"
                     >
                       {newRoute.place_ids.map((placeId, index) => {
                         const place = getPlaceById(placeId)
@@ -381,10 +381,10 @@ export default function RouteBuilder({
                                 {...provided.dragHandleProps}
                                 className={`
                                   flex items-center gap-2 p-2 bg-white border rounded-lg
-                                  ${snapshot.isDragging ? 'shadow-lg border-indigo-500' : 'border-gray-200'}
+                                  ${snapshot.isDragging ? 'shadow-lg border-primary-500' : 'border-gray-200'}
                                 `}
                               >
-                                <span className="flex items-center justify-center w-6 h-6 bg-indigo-500 text-white text-xs font-bold rounded-full">
+                                <span className="flex items-center justify-center w-6 h-6 bg-primary-500 text-white text-xs font-bold rounded-full">
                                   {index + 1}
                                 </span>
                                 <GripVertical className="w-4 h-4 text-gray-400" />

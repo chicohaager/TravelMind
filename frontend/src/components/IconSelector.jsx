@@ -56,7 +56,7 @@ export default function IconSelector({ value = 'location', onChange, label }) {
               flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all
               ${
                 value === type
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
                   : 'border-gray-200 hover:border-gray-400 text-gray-600 hover:bg-gray-50'
               }
             `}

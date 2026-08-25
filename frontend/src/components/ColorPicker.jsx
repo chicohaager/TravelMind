@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check } from 'lucide-react'
 
 const PRESET_COLORS = [
-  '#6366F1', // Indigo (default)
+  '#1F7A7D', // Indigo (default)
   '#EF4444', // Red
   '#F59E0B', // Amber
   '#10B981', // Green
@@ -16,7 +16,7 @@ const PRESET_COLORS = [
   '#A855F7', // Violet
 ]
 
-export default function ColorPicker({ value = '#6366F1', onChange, label = 'Color' }) {
+export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Color' }) {
   const [showCustom, setShowCustom] = useState(false)
 
   const handleColorChange = (color) => {
@@ -53,7 +53,7 @@ export default function ColorPicker({ value = '#6366F1', onChange, label = 'Colo
         <button
           type="button"
           onClick={() => setShowCustom(!showCustom)}
-          className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
           {showCustom ? 'Hide' : 'Choose'} custom color
         </button>
@@ -71,7 +71,7 @@ export default function ColorPicker({ value = '#6366F1', onChange, label = 'Colo
             type="text"
             value={value}
             onChange={(e) => handleColorChange(e.target.value)}
-            placeholder="#6366F1"
+            placeholder="#1F7A7D"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
             maxLength={7}
           />

@@ -72,7 +72,7 @@ export default function TripMap() {
   if (tripLoading || placesLoading || routesLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     )
   }
@@ -108,7 +108,7 @@ export default function TripMap() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <Map className="w-6 h-6 text-indigo-600" />
+                  <Map className="w-6 h-6 text-primary-600" />
                   {trip.title} - {t('common:interactiveMap')}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
@@ -133,7 +133,7 @@ export default function TripMap() {
                   onChange={(e) => setShowPhotos(e.target.checked)}
                   className="rounded"
                 />
-                <ImageIcon className="w-4 h-4 text-indigo-600" />
+                <ImageIcon className="w-4 h-4 text-primary-600" />
                 {t('map:showPhotos', 'Fotos auf der Karte anzeigen')} ({geoPhotos.length})
               </label>
             )}
@@ -213,9 +213,9 @@ export default function TripMap() {
               )}
 
               {/* Help Section */}
-              <div className="card mt-4 bg-indigo-50 border-indigo-200">
-                <h3 className="font-semibold text-indigo-900 mb-2">💡 {t('map:tip')}</h3>
-                <p className="text-sm text-indigo-700">{t('map:dragPlacesToCreateRoutes')}</p>
+              <div className="card mt-4 bg-primary-50 border-primary-200">
+                <h3 className="font-semibold text-primary-900 mb-2">💡 {t('map:tip')}</h3>
+                <p className="text-sm text-primary-700">{t('map:dragPlacesToCreateRoutes')}</p>
               </div>
             </div>
           </div>
