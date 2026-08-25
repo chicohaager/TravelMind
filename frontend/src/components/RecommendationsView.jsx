@@ -307,7 +307,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                     {rec.category && (
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[rec.category] || CATEGORY_COLORS.other}`}>
                         <span>{CATEGORY_ICONS[rec.category] || '📍'}</span>
-                        {t(`places.categories.${rec.category}`, rec.category)}
+                        {t(`places:categories.${rec.category}`, rec.category)}
                       </span>
                     )}
                     {rec.best_time && (

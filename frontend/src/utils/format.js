@@ -1,6 +1,35 @@
 import i18n from '../i18n'
 
 /**
+ * Locale-Auflösung für ALLE unterstützten Sprachen.
+ *
+ * Vorher stand in jeder Funktion `lang === 'de' ? 'de-DE' : 'en-US'`. Das war
+ * gleich doppelt falsch:
+ *
+ *   1. `i18n.language` trägt die Region mit — nach der Spracherkennung steht
+ *      dort 'de-DE', nicht 'de'. Der Vergleich schlug also fehl und ein
+ *      deutscher Nutzer sah am 2026-08-25 in der Produktion "€1,200.00"
+ *      statt "1.200,00 €".
+ *   2. Spanisch und Französisch fielen auf 'en-US' — Datum als M/D/YYYY,
+ *      Zahlen mit Komma als Tausendertrenner.
+ *
+ * `resolvedLanguage` ist der Wert, auf den i18next tatsächlich aufgelöst hat;
+ * der Split auf den Sprachteil macht die Zuordnung unabhängig von der Region.
+ */
+const LOCALE_JE_SPRACHE = {
+  en: 'en-US',
+  de: 'de-DE',
+  es: 'es-ES',
+  fr: 'fr-FR',
+}
+
+export const aktuelleLocale = () => {
+  const roh = i18n.resolvedLanguage || i18n.language || 'en'
+  const sprache = String(roh).split('-')[0].toLowerCase()
+  return LOCALE_JE_SPRACHE[sprache] || LOCALE_JE_SPRACHE.en
+}
+
+/**
  * Format a date according to the current language
  * @param {Date|string} date - The date to format
  * @param {string} format - 'short', 'long', or 'withTime'
@@ -10,27 +39,24 @@ export const formatDate = (date, format = 'short') => {
   if (!date) return ''
 
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  const lang = i18n.language || 'en'
 
-  const options = {
-    short: {
-      en: { month: 'numeric', day: 'numeric', year: 'numeric' },
-      de: { day: '2-digit', month: '2-digit', year: 'numeric' }
-    },
-    long: {
-      en: { month: 'long', day: 'numeric', year: 'numeric' },
-      de: { day: 'numeric', month: 'long', year: 'numeric' }
-    },
+  // Eine Optionsmenge fuer alle Sprachen: die Reihenfolge der Bestandteile
+  // waehlt Intl anhand der Locale selbst (en-US -> 08/25/2026, de-DE ->
+  // 25.08.2026). Eine Tabelle je Sprache waere genau die Stelle, an der die
+  // naechste Sprache wieder vergessen wird.
+  const optionen = {
+    short: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    long: { day: 'numeric', month: 'long', year: 'numeric' },
     withTime: {
-      en: { month: 'numeric', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' },
-      de: { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
-    }
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    },
   }
 
-  const locale = lang === 'de' ? 'de-DE' : 'en-US'
-  const formatOptions = options[format]?.[lang] || options.short.en
-
-  return dateObj.toLocaleDateString(locale, formatOptions)
+  return dateObj.toLocaleDateString(aktuelleLocale(), optionen[format] || optionen.short)
 }
 
 /**
@@ -42,20 +68,9 @@ export const formatDate = (date, format = 'short') => {
 export const formatCurrency = (amount, currency = 'EUR') => {
   if (amount === null || amount === undefined) return ''
 
-  const lang = i18n.language || 'en'
-  const locale = lang === 'de' ? 'de-DE' : 'en-US'
-
-  // Map currency to appropriate locale default if not specified
-  const currencyMap = {
-    de: 'EUR',
-    en: 'USD'
-  }
-
-  const finalCurrency = currency || currencyMap[lang]
-
-  return new Intl.NumberFormat(locale, {
+  return new Intl.NumberFormat(aktuelleLocale(), {
     style: 'currency',
-    currency: finalCurrency
+    currency: currency || 'EUR',
   }).format(amount)
 }
 
@@ -68,10 +83,7 @@ export const formatCurrency = (amount, currency = 'EUR') => {
 export const formatNumber = (number, decimals = 0) => {
   if (number === null || number === undefined) return ''
 
-  const lang = i18n.language || 'en'
-  const locale = lang === 'de' ? 'de-DE' : 'en-US'
-
-  return new Intl.NumberFormat(locale, {
+  return new Intl.NumberFormat(aktuelleLocale(), {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   }).format(number)
@@ -86,39 +98,34 @@ export const formatRelativeTime = (date) => {
   if (!date) return ''
 
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  const now = new Date()
-  const diffMs = now - dateObj
-  const diffSecs = Math.floor(diffMs / 1000)
-  const diffMins = Math.floor(diffSecs / 60)
-  const diffHours = Math.floor(diffMins / 60)
-  const diffDays = Math.floor(diffHours / 24)
+  const jetzt = new Date()
+  const sekunden = Math.floor((jetzt - dateObj) / 1000)
 
-  const lang = i18n.language || 'en'
+  // Intl.RelativeTimeFormat statt fest verdrahteter Textbausteine.
+  //
+  // Vorher lag hier eine Tabelle mit englischen und deutschen Strings, ausgewaehlt
+  // ueber `i18n.language`. Die traf Spanisch und Franzoesisch gar nicht — und seit
+  // die Spracherkennung 'de-DE' liefert, auch Deutsch nicht mehr: `timeStrings['de-DE']`
+  // ist undefiniert, also fiel selbst die deutsche Oberflaeche auf Englisch zurueck.
+  // Intl kennt die Formen aller vier Sprachen einschliesslich Plural.
+  const formatierer = new Intl.RelativeTimeFormat(aktuelleLocale(), { numeric: 'auto' })
 
-  const timeStrings = {
-    en: {
-      justNow: 'just now',
-      minutesAgo: (n) => `${n} minute${n > 1 ? 's' : ''} ago`,
-      hoursAgo: (n) => `${n} hour${n > 1 ? 's' : ''} ago`,
-      daysAgo: (n) => `${n} day${n > 1 ? 's' : ''} ago`,
-      weeksAgo: (n) => `${n} week${n > 1 ? 's' : ''} ago`
-    },
-    de: {
-      justNow: 'gerade eben',
-      minutesAgo: (n) => `vor ${n} Minute${n > 1 ? 'n' : ''}`,
-      hoursAgo: (n) => `vor ${n} Stunde${n > 1 ? 'n' : ''}`,
-      daysAgo: (n) => `vor ${n} Tag${n > 1 ? 'en' : ''}`,
-      weeksAgo: (n) => `vor ${n} Woche${n > 1 ? 'n' : ''}`
+  const stufen = [
+    ['second', 60],
+    ['minute', 60],
+    ['hour', 24],
+    ['day', 7],
+    ['week', 4.34524],
+    ['month', 12],
+    ['year', Infinity],
+  ]
+
+  let wert = sekunden
+  for (const [einheit, teiler] of stufen) {
+    if (Math.abs(wert) < teiler) {
+      return formatierer.format(-Math.round(wert), einheit)
     }
+    wert = wert / teiler
   }
-
-  const strings = timeStrings[lang] || timeStrings.en
-
-  if (diffSecs < 60) return strings.justNow
-  if (diffMins < 60) return strings.minutesAgo(diffMins)
-  if (diffHours < 24) return strings.hoursAgo(diffHours)
-  if (diffDays < 7) return strings.daysAgo(diffDays)
-
-  const diffWeeks = Math.floor(diffDays / 7)
-  return strings.weeksAgo(diffWeeks)
+  return formatierer.format(-Math.round(wert), 'year')
 }

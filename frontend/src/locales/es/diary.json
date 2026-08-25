@@ -57,5 +57,8 @@
   "deleteError": "Error al eliminar la entrada",
   "confirmDelete": "¿Estás seguro de que quieres eliminar esta entrada?",
   "photosDeleted": "{count} foto(s) eliminada(s)",
-  "heicUnsupported": "HEIC/HEIF no es compatible con este servidor."
+  "heicUnsupported": "HEIC/HEIF no es compatible con este servidor.",
+  "caption": "Pie de foto",
+  "captionPlaceholder": "Añade un pie de foto…",
+  "captionSaved": "Pie de foto guardado"
 }

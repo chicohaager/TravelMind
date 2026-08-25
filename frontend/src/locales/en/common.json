@@ -69,5 +69,7 @@
       "loading": "Loading diary…",
       "empty": "This trip has no diary entries yet."
     }
-  }
+  },
+  "changeLanguage": "Change language",
+  "toggleDarkMode": "Toggle dark mode"
 }

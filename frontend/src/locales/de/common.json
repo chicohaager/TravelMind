@@ -69,5 +69,7 @@
       "loading": "Tagebuch wird geladen…",
       "empty": "Für diese Reise gibt es noch keine Tagebucheinträge."
     }
-  }
+  },
+  "changeLanguage": "Sprache wechseln",
+  "toggleDarkMode": "Dunkelmodus umschalten"
 }

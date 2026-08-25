@@ -322,7 +322,7 @@ export default function Trips() {
                       key={interest}
                       className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full"
                     >
-                      {t(`interests.${interest}`, interest)}
+                      {t(`interests:${interest}`, interest)}
                     </span>
                   ))}
                 </div>

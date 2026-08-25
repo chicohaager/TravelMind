@@ -484,7 +484,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
                           key={interest}
                           className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded-full text-sm"
                         >
-                          {t(`interests.${interest}`, interest)}
+                          {t(`interests:${interest}`, interest)}
                           <button
                             type="button"
                             onClick={() => removeInterest(interest)}
@@ -508,7 +508,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
                           onClick={() => addInterest(interest)}
                           className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full text-sm transition-colors"
                         >
-                          + {t(`interests.${interest}`, interest)}
+                          + {t(`interests:${interest}`, interest)}
                         </button>
                       ))}
                   </div>

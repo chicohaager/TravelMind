@@ -33,7 +33,12 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
 
   const categoryClass = categoryColors[expense.category] || categoryColors.other
   const categoryIcon = categoryIcons[expense.category] || categoryIcons.other
-  const categoryLabel = t(`budget.categories.${expense.category}`) || t('budget:categories.other')
+  // Namensraum mit DOPPELPUNKT. Mit einem Punkt sucht i18next im
+  // Standard-Namensraum 'common', findet nichts und gibt den Key zurueck —
+  // und weil t() dabei einen Wahrheitswert liefert, griff das ||-Fallback nie.
+  const categoryLabel = t(`budget:categories.${expense.category}`, {
+    defaultValue: t('budget:categories.other'),
+  })
 
   return (
     <motion.div

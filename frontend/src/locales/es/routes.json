@@ -1,5 +1,4 @@
 {
-  "title": "Rutas",
   "pleaseEnterRouteName": "Por favor introduce un nombre de ruta",
   "routeNeedsTwoPlaces": "Una ruta necesita al menos 2 lugares",
   "errorSavingRoute": "Error al guardar la ruta",
@@ -13,7 +12,6 @@
   "stops": "paradas",
   "editRoute": "Editar",
   "deleteRoute": "Eliminar",
-  "createRoute": "Crear ruta",
   "createNewRoute": "Crear nueva ruta",
   "editRouteTitle": "Editar ruta",
   "routeName": "Nombre de la ruta *",
