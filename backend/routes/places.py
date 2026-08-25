@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from routes.auth import get_current_active_user
 from routes.media import MediaResponse
 from services.guide_parser import guide_parser_service
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from utils.geocoding import geocode_if_missing
@@ -565,7 +565,11 @@ async def delete_place_list(
     # Verify ownership via trip
     await verify_trip_access(existing_list.trip_id, current_user, db)
 
-    # Set list_id to NULL for all places in this list (handled by foreign key ON DELETE SET NULL)
+    # Die Orte werden AUSDRUECKLICH von der Liste geloest, nicht der
+    # Fremdschluesselregel ueberlassen: SQLite erzwingt `ON DELETE SET NULL`
+    # nur mit eingeschaltetem `PRAGMA foreign_keys`, und eine Zusicherung, die
+    # von einer Datenbankeinstellung abhaengt, ist keine.
+    await db.execute(update(Place).where(Place.list_id == list_id).values(list_id=None))
     await db.delete(existing_list)
     await db.commit()
 
