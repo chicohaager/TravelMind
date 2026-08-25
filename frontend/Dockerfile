@@ -6,7 +6,9 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+# .npmrc gehoert mit dazu: sie setzt legacy-peer-deps, ohne das `npm ci`
+# den Baum nicht aufloest (Begruendung steht in der Datei).
+COPY package*.json .npmrc ./
 
 # Install dependencies
 RUN npm install
