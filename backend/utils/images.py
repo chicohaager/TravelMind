@@ -168,8 +168,12 @@ def _extract_exif(img: Image.Image):
         dt_raw = None
         try:
             dt_raw = exif.get_ifd(_IFD_EXIF).get(_TAG_DATETIME_ORIGINAL)
-        except Exception:
-            pass
+        except Exception as fehler:
+            # Ein fehlender Exif-Unterblock ist der Normalfall — aber nicht
+            # jede Ausnahme hier ist harmlos. Statt sie spurlos zu schlucken,
+            # landet sie im Protokoll; der Rueckfall auf _TAG_DATETIME laeuft
+            # unveraendert weiter.
+            logger.debug("Exif-Unterblock nicht lesbar: %s", fehler)
         dt_raw = dt_raw or exif.get(_TAG_DATETIME)
         if dt_raw:
             try:

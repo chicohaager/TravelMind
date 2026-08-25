@@ -72,10 +72,13 @@ RUN mkdir -p /app/data /app/uploads /app/backups /app/logs && \
     chown -R travelmind:travelmind /app
 
 # Remove unnecessary files
-RUN rm -rf tests/ __pycache__/ *.md .git/ .gitignore Dockerfile* .env.example
+# ./-Praefix, damit ein Dateiname mit Bindestrich nicht als Option gelesen wird.
+RUN rm -rf ./tests ./__pycache__ ./*.md ./.git ./.gitignore ./Dockerfile* ./.env.example
 
-# Switch to non-root user
-USER travelmind
+# Switch to non-root user.
+# Numerisch statt als Name: so ist die Kennung auch ohne /etc/passwd
+# aufloesbar, und sie ist derselbe Vertrag wie bei den Bind-Mounts.
+USER 1001:1001
 
 # Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -86,9 +89,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Expose port
 EXPOSE 8137
 
-# Health check using the detailed health endpoint
+# Health check using the detailed health endpoint.
+# 127.0.0.1 statt localhost: gunicorn bindet 0.0.0.0 (nur IPv4), waehrend
+# "localhost" in schlanken Images auf ::1 aufloesen kann — dann meldet der
+# Container faelschlich "unhealthy". Dieselbe Falle wie im Frontend-Image.
+# Shell-Form ist noetig: "|| exit 1" gibt es in JSON-Notation nicht.
+# hadolint ignore=DL3025
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8137/api/health/live || exit 1
+    CMD curl -f http://127.0.0.1:8137/api/health/live || exit 1
 
 # Run with gunicorn for production
 # Workers = 2 * CPU cores + 1 (adjust based on your server)

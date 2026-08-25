@@ -54,13 +54,17 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 
 # Switch to non-root user. nginx.conf hoert deshalb auf 8080 (Ports < 1024 sind
 # einem unprivilegierten Prozess verwehrt) und schreibt seine PID nach /tmp.
-USER travelmind
+# Numerisch, nicht als Name — siehe backend/Dockerfile.prod.
+USER 1001:1001
 
 # Expose port
 EXPOSE 8080
 
+# Shell-Form ist hier noetig: der HEALTHCHECK verkettet mit "||" bzw. nutzt
+# eine Shell-Auswertung. In JSON-Notation gaebe es keine Verkettung.
 # Health check — use 127.0.0.1 (nginx listens IPv4-only; "localhost" resolves to
 # IPv6 ::1 in this image and would false-fail) with busybox-compatible wget flags.
+# hadolint ignore=DL3025
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
 

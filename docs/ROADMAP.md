@@ -10,7 +10,7 @@
 ### 1.1 Was steht
 
 | Bereich | Messwert | Kommando |
-|---|---|---|
+| --- | --- | --- |
 | Backend | 15.404 Zeilen Python, 77 Dateien | `find backend -name '*.py' … \| wc -l` |
 | API | 127 Endpunkte in 21 Route-Modulen, 136 Routen registriert | `grep -rhE '^@router\.(get\|post\|put\|patch\|delete)' backend/routes/*.py \| wc -l` |
 | Frontend | 16.419 Zeilen, 58 JSX-Komponenten, 18 Seiten | `find frontend/src -type f … \| wc -l` |
@@ -31,7 +31,7 @@ und `HEALTHCHECK`.
 
 Auf `<host>` existiert **kein einziger** TravelMind-Container. Nicht gestoppt — nicht vorhanden.
 
-```
+```text
 docker ps -a --format '{{.Names}}' | wc -l   → 36 Container
 docker ps -a | grep -i travel                → (leer)
 docker ps -a --filter status=exited          → nur zimaos-mcp-deployer
@@ -42,7 +42,7 @@ Ports 22 und 80                              → offen
 
 Es ist mehr als „Container gestoppt". Die App ist vollständig deinstalliert:
 
-```
+```text
 ls /var/lib/casaos/apps/travelmind/     → No such file or directory  (CasaOS-Eintrag weg)
 docker images | grep -i travel          → (leer)                     (Images weg)
 ls -d /DATA/zfw                         → existiert, rules.json darin nicht mehr
@@ -66,7 +66,7 @@ Gemerkt hat es niemand: Es gibt keine Überwachung, die einen Ausfall meldet.
 Commit `f82d006` *„chore: remove obsolete docs, CI/CD configs, Docker and helper scripts"*
 entfernt **38 Dateien** gegenüber `origin/main`:
 
-```
+```text
 git diff --name-status origin/main HEAD | grep '^D' | wc -l   → 38
 ```
 
@@ -82,7 +82,7 @@ Das Aufräumen war richtig; README und CI sind mit rausgefallen.
 
 #### 🔴 P0 — 39 Commits liegen nur auf dieser Platte
 
-```
+```text
 git branch -vv   → feat/photo-media [origin/feat/photo-media: 39 voraus]
 git rev-list --left-right --count origin/main...HEAD   → 1  45
 ```
@@ -92,12 +92,12 @@ nirgends gespiegelt.
 
 #### 🔴 P1 — 98 bekannte Schwachstellen in den Abhängigkeiten
 
-```
+```text
 pip-audit -r backend/requirements.txt   → 96 Pakete geprüft, 14 betroffen, 98 Findings
 ```
 
 | Paket | Version | Findings |
-|---|---|---|
+| --- | --- | --- |
 | aiohttp | 3.9.1 | 41 |
 | pillow | 10.2.0 | 22 |
 | starlette | 0.35.1 | 9 |
@@ -112,7 +112,7 @@ Die Versionen sind sauber gepinnt — das ist richtig. Sie wurden nur seit Janua
 
 #### 🟠 P1 — Ein einziges Backup, zwei Monate alt
 
-```
+```text
 ls -la /DATA/AppData/travelmind/backups/
 → prod_pre_import_20260624.sql   43.506 Bytes   24. Juni
 ```
@@ -130,7 +130,7 @@ damit gibt es **keinen Rückweg**: kein Image-Tag, kein Rollback, kein reproduzi
 
 #### 🟠 P2 — Das Lint-Gate ist unbrauchbar
 
-```
+```text
 npx eslint .   → 460 Probleme (440 Fehler)
 ```
 
@@ -143,7 +143,7 @@ danach schützt es auch dort nicht mehr, wo es recht hätte.
 
 #### 🟠 P2 — Die vier Sprachen sind auseinandergelaufen
 
-```
+```text
 de: 955 Keys   en: 955 Keys (deckungsgleich)
 es: 963 Keys   → 7 fehlen, 15 zusätzlich
 fr: 963 Keys   → 7 fehlen, 15 zusätzlich
@@ -160,7 +160,7 @@ Alle vier Sprachen werden in `src/i18n.js` statisch importiert und landen im `in
 Belegt mit einer Positivkontrolle je Sprache — `Speichern`, `Save`, `Guardar`, `Enregistrer`
 stehen alle vier im gebauten Chunk:
 
-```
+```text
 144,1 KiB kompaktes Locale-JSON von 362,9 KiB index-Chunk = 40 %
 ```
 
@@ -195,7 +195,7 @@ Passwörter: mindestens 8 Zeichen, keine Komplexitäts- oder Leak-Prüfung, kein
 **Stand 2026-08-25, 14:30.** Phase 0 und Phase 1 sind abgeschlossen und belegt.
 
 | Phase | Schritt | Zustand | Beleg |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 0.1 | 39 Commits pushen | ✅ | `git rev-list --count origin/feat/photo-media..HEAD` → 0 |
 | 0.2 | Daten sichern | ✅ | 1429 Dateien, **1429/1429 sha256 OK, 0 FAILED**, Archiv unter `~/backups/travelmind-20260825/` (116 MB) |
 | 0.3 | Ursache klären | ⚠️ teilweise | Abschaltung auf **2026-06-26 16:35** datiert (`pg_stat/pgstat.stat` geschrieben, sauberer Shutdown, kein `postmaster.pid`). Die Ursache ist **nicht mehr messbar**: alle Lebenszyklus-Logs beginnen später — `mod-management.log` ab 16.07., darin 103 Einträge für eine andere App als Positivkontrolle und 0 für travelmind. ZimaOS ging von v1.6.1 auf v1.7.1-beta1; der Zeitpunkt ist aus den erhaltenen Logs nicht datierbar. |
@@ -248,7 +248,7 @@ Sechs Phasen. Jede Zeile nennt die Prüfung, die sie abschließt — „gemacht"
 ### Phase 0 — Sichern · ~1 Stunde · vor allem anderen
 
 | # | Schritt | Prüfung |
-|---|---|---|
+| --- | --- | --- |
 | 0.1 | 39 Commits nach `origin/feat/photo-media` pushen | `git rev-list --count origin/feat/photo-media..HEAD` → 0 |
 | 0.2 | Postgres-Volume und 104 MB Uploads von `.143` herunterziehen | `sha256sum` beidseitig gleich, Dateizahl gleich |
 | 0.3 | Klären, wodurch die Container verschwanden (Docker-Events, ZimaOS-Update) | Ursache benannt, nicht vermutet |
@@ -256,7 +256,7 @@ Sechs Phasen. Jede Zeile nennt die Prüfung, die sie abschließt — „gemacht"
 ### Phase 1 — Wieder online · ~1 Tag
 
 | # | Schritt | Prüfung |
-|---|---|---|
+| --- | --- | --- |
 | 1.1 | Compose reparieren: `user: "0:0"` raus, `build:` durch getaggtes Image ersetzen (Tag = Commit-SHA) | `docker inspect` zeigt non-root; Tag ist ein SHA |
 | 1.2 | Stack hochfahren | `/api/health` liefert 200 mit Payload, alle Container `healthy` |
 | 1.3 | Im Browser in **DE** durchklicken: Login, Trip anlegen, Diary mit Foto, Budget, Karte | Screenshot je Flow, Konsole leer, keine rohen i18n-Keys |
@@ -264,7 +264,7 @@ Sechs Phasen. Jede Zeile nennt die Prüfung, die sie abschließt — „gemacht"
 ### Phase 2 — Fundament zurückholen · 2–3 Tage
 
 | # | Schritt | Prüfung |
-|---|---|---|
+| --- | --- | --- |
 | 2.1 | `README.md` neu — Basis aus `origin/main`, aber auf den heutigen Stand korrigiert | Jeder Befehl darin einmal ausgeführt |
 | 2.2 | CI zurück: `ci.yml` + `pr-checks.yml` aus `origin/main` holen und an den heutigen Baum anpassen | Ein PR läuft grün durch; ein absichtlich kaputter wird rot |
 | 2.3 | `LICENSE` wählen und setzen | Datei liegt, SPDX-Kennung im README |
@@ -277,7 +277,7 @@ wieder von Hand gemessen und damit vom Zufall abhängig.
 ### Phase 3 — Sicherheit · 2–3 Tage
 
 | # | Schritt | Prüfung |
-|---|---|---|
+| --- | --- | --- |
 | 3.1 | Python-Updates in zwei Wellen: erst `pillow aiohttp starlette fastapi python-multipart python-jose requests gunicorn`, dann der Rest | `pytest` nach **jeder** Welle grün; `pip-audit` → 0 |
 | 3.2 | `npm audit fix`, danach Build und E2E | `npm audit` → 0 hoch/kritisch |
 | 3.3 | `pip-audit` und `npm audit` als CI-Gate, das den Build **bricht** | Ein absichtlich verwundbares Pin macht CI rot |
@@ -288,7 +288,7 @@ wieder von Hand gemessen und damit vom Zufall abhängig.
 ### Phase 4 — Betrieb · ~2 Tage
 
 | # | Schritt | Prüfung |
-|---|---|---|
+| --- | --- | --- |
 | 4.1 | Tägliches Backup: `pg_dump` **plus Uploads**, Retention 14/8/6 | **Restore-Probe** auf einen leeren Stack — ein Backup ist erst nach erfolgreichem Restore eines |
 | 4.2 | Überwachung: `/api/health` und `/metrics` an ein Dashboard, Alarm bei Ausfall | Container absichtlich stoppen → Alarm kommt an |
 | 4.3 | Deploy-Skript mit Image-Tag und Rollback-Pfad | Rollback auf die Vorversion einmal durchgeführt |
@@ -299,7 +299,7 @@ wieder von Hand gemessen und damit vom Zufall abhängig.
 ### Phase 5 — Qualität · 1–2 Wochen, parallel möglich
 
 | # | Schritt | Prüfung |
-|---|---|---|
+| --- | --- | --- |
 | 5.1 | Backend-Coverage 53 % → 75 %, zuerst `diary`, `timeline`, `admin`, `ai_service`, `guide_parser` | `pytest --cov` ≥ 75 %, CI bricht darunter |
 | 5.2 | Frontend: die acht wichtigsten Flows als Component-Tests, E2E in **DE-Locale** gegen Postgres | Suite grün; ein eingebauter Fehler wird rot |
 | 5.3 | i18n-Gate: Skript vergleicht die Key-Sets aller Sprachen, die 7 fehlenden es/fr-Keys ergänzen | Skript → Exit 0; ein entfernter Key macht CI rot |
@@ -309,7 +309,7 @@ wieder von Hand gemessen und damit vom Zufall abhängig.
 ### Phase 6 — Produktreife · danach
 
 | # | Schritt |
-|---|---|
+| --- | --- |
 | 6.1 | Modell-IDs gegen die Provider-Dokumentation prüfen und aktualisieren (nie aus dem Gedächtnis) |
 | 6.2 | Onboarding, leere Zustände, Fehlermeldungen in der Nutzersprache |
 | 6.3 | Semantische Versionierung, `CHANGELOG.md` wieder pflegen, Release-Tags |

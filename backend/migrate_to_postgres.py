@@ -3,8 +3,8 @@
 Migration script to copy data from SQLite to PostgreSQL
 """
 
-import os
 import asyncio
+import os
 import sqlite3
 from datetime import datetime
 
