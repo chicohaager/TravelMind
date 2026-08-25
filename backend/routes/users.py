@@ -17,6 +17,7 @@ from services.audit_service import audit_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.images import process_and_save, validate_image
+from utils.password_policy import MINDESTLAENGE, passwort_pruefen
 from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
@@ -64,7 +65,7 @@ class UserUpdate(BaseModel):
 
 class PasswordChange(BaseModel):
     current_password: str
-    new_password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=MINDESTLAENGE)
 
 
 @router.get("/profile", response_model=UserProfile)
@@ -148,6 +149,12 @@ async def change_password(
             details={"reason": "invalid_current_password"},
         )
         raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Dieselben Regeln wie bei der Registrierung — sonst haette man ein
+    # geleaktes Passwort zwar nicht anlegen, aber nachtraeglich setzen koennen.
+    pruefung = await passwort_pruefen(passwords.new_password)
+    if not pruefung.gueltig:
+        raise HTTPException(status_code=400, detail=pruefung.grund)
 
     # Update password
     current_user.hashed_password = User.hash_password(passwords.new_password)
