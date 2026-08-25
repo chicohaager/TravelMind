@@ -137,6 +137,77 @@ services:
     cap_drop: [ALL]
     networks: [travelmind]
 
+  # ── Sicherung ────────────────────────────────────────────────────────────
+  # Laeuft im selben Netz und benutzt den pg_dump DESSELBEN Image-Stands wie
+  # der Server — damit koennen die Versionen nicht auseinanderlaufen.
+  #
+  # Bewusst KEIN Docker-Socket und kein systemd: beides braucht Root auf dem
+  # Host. Der Takt-Container ist stattdessen Teil des Verbunds, faehrt mit ihm
+  # hoch und runter und ist in `docker ps` sichtbar. Ein ausgefallener
+  # Zeitgeber faellt damit auf, statt still zu verschwinden — genau der Fall,
+  # der am 2026-08-25 zwei Monate lang niemandem aufgefallen ist.
+  backup:
+    <<: *hardening
+    image: postgres:16-alpine
+    container_name: travelmind-backup
+    entrypoint: ["/bin/sh", "/skripte/takt.sh"]
+    environment:
+      PGHOST: db
+      PGDATABASE: travelmind
+      PGUSER: travelmind
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+      BACKUP_DIR: /backups
+      UPLOADS_DIR: /uploads
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_UHRZEIT: ${BACKUP_UHRZEIT:-03:00}
+      BACKUP_BEIM_START: ${BACKUP_BEIM_START:-nein}
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/deploy/backup:/skripte:ro
+      # Die Fotos nur LESEND — eine Sicherung darf nie schreiben koennen,
+      # was sie sichert.
+      - ${TRAVELMIND_DATA:-.}/uploads:/uploads:ro
+      - ${TRAVELMIND_DATA:-.}/backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    networks: [travelmind]
+
+  # ── Waechter ─────────────────────────────────────────────────────────────
+  # Der Grund steht im Befund vom 2026-08-25: die Produktion war zwei Monate
+  # abgeschaltet, und es ist niemandem aufgefallen — weil nichts hingesehen hat.
+  #
+  # Prueft Oberflaeche UND API durch dieselbe Kette wie ein Nutzer, und zwar
+  # den INHALT, nicht nur den Statuscode: der SPA-Rueckfall beantwortet jeden
+  # Pfad mit 200, und die API kann 200 liefern, waehrend die Datenbank weg ist.
+  waechter:
+    <<: *hardening
+    image: curlimages/curl:latest
+    container_name: travelmind-waechter
+    entrypoint: ["/bin/sh", "/skripte/waechter.sh"]
+    environment:
+      WATCH_UI: http://frontend:8080/
+      WATCH_API: http://backend:8137/api/health
+      WATCH_INTERVAL: ${WATCH_INTERVAL:-60}
+      WATCH_FAILURES: ${WATCH_FAILURES:-3}
+      # Ohne diese beiden meldet der Waechter nur ins Protokoll.
+      PUSHOVER_TOKEN: ${PUSHOVER_TOKEN:-}
+      PUSHOVER_USER: ${PUSHOVER_USER:-}
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/deploy/waechter:/skripte:ro
+      # Dem curl-Image fehlt tzdata; ohne die Zonendaten ignoriert es TZ und
+      # protokolliert in UTC. Bei einem Alarm ist der Zeitstempel aber genau
+      # das, was man spaeter lesen will.
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    networks: [travelmind]
+
 networks:
   travelmind:
     driver: bridge
