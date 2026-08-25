@@ -1,8 +1,5 @@
 {
   "title": "Carte",
-  "showPlaces": "Afficher les lieux",
-  "showRoute": "Afficher l'itinéraire",
-  "yourLocation": "Votre position",
   "noPlacesYet": "Pas encore de lieux",
   "addPlacesToSeeOnMap": "Ajoutez des lieux à votre voyage pour les voir sur la carte",
   "addPlaces": "Ajouter des lieux",
@@ -18,5 +15,6 @@
   "legend": "Légende",
   "places": "Lieux",
   "routes": "Itinéraires",
-  "moreRoutes": "+{{count}} autres"
+  "moreRoutes": "+{{count}} autres",
+  "showPhotos": "Afficher les photos sur la carte"
 }

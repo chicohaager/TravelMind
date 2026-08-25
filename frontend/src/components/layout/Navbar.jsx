@@ -78,7 +78,7 @@ export default function Navbar({ onMenuClick }) {
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Toggle dark mode"
+              aria-label={t('common:toggleDarkMode')}
             >
               {darkMode ? (
                 <Sun className="w-5 h-5 text-yellow-500" />

@@ -63,7 +63,11 @@ export default function TripDetail() {
     { id: 'participants', name: t('tripDetail:participants'), icon: Users },
   ]
 
-  const AVAILABLE_INTERESTS = INTEREST_KEYS.map(key => t(`tripDetail.${key}`))
+  // Namensraum mit DOPPELPUNKT. Mit einem Punkt lieferte t() den Schluessel
+  // selbst zurueck — die Liste enthielt woertlich 'tripDetail.culture' usw.
+  // Die Uebersetzungen liegen wortgleich in beiden Namensraeumen; 'interests'
+  // ist der dafuer vorgesehene.
+  const AVAILABLE_INTERESTS = INTEREST_KEYS.map((key) => t(`interests:${key}`))
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -614,7 +618,7 @@ export default function TripDetail() {
                             )}
                           >
                             {isSelected && <Check className="w-4 h-4" />}
-                            {t(`interests.${interest}`, interest)}
+                            {t(`interests:${interest}`, interest)}
                           </button>
                         )
                       })}
@@ -646,7 +650,7 @@ export default function TripDetail() {
                           key={interest}
                           className="badge badge-primary"
                         >
-                          {t(`interests.${interest}`, interest)}
+                          {t(`interests:${interest}`, interest)}
                         </span>
                       ))
                     ) : (

@@ -57,5 +57,8 @@
   "deleteError": "Erreur lors de la suppression de l'entrée",
   "confirmDelete": "Voulez-vous vraiment supprimer cette entrée ?",
   "photosDeleted": "{count} photo(s) supprimée(s)",
-  "heicUnsupported": "Le format HEIC/HEIF n'est pas pris en charge sur ce serveur."
+  "heicUnsupported": "Le format HEIC/HEIF n'est pas pris en charge sur ce serveur.",
+  "caption": "Légende",
+  "captionPlaceholder": "Ajouter une légende…",
+  "captionSaved": "Légende enregistrée"
 }

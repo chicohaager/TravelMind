@@ -66,5 +66,10 @@
       "loading": "Cargando diario…",
       "empty": "Este viaje aún no tiene entradas de diario."
     }
-  }
+  },
+  "clear": "Limpiar",
+  "noResults": "Sin resultados",
+  "searchPlaceholder": "Viajes, entradas, lugares…",
+  "changeLanguage": "Cambiar idioma",
+  "toggleDarkMode": "Alternar modo oscuro"
 }

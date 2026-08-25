@@ -66,5 +66,10 @@
       "loading": "Chargement du journal…",
       "empty": "Ce voyage n'a pas encore d'entrées de journal."
     }
-  }
+  },
+  "noResults": "Aucun résultat",
+  "searchPlaceholder": "Voyages, entrées, lieux…",
+  "clear": "Effacer",
+  "changeLanguage": "Changer de langue",
+  "toggleDarkMode": "Basculer le mode sombre"
 }
