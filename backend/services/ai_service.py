@@ -106,9 +106,20 @@ class ClaudeProvider(AIProvider):
 
         # Run synchronous API call in thread pool to avoid blocking event loop
         response = await asyncio.to_thread(self.client.messages.create, **kwargs)
-        if not response.content or not getattr(response.content[0], "text", None):
-            raise RuntimeError("Claude returned an empty or non-text response")
-        return response.content[0].text
+
+        # Den ERSTEN Textblock suchen, nicht `content[0]` annehmen.
+        #
+        # Die aktuellen Claude-Modelle denken adaptiv: die Antwort beginnt
+        # dann mit einem `thinking`-Block, und der Text steht dahinter.
+        # `content[0].text` gibt es in dem Fall nicht — am 2026-08-25 in der
+        # Produktion gemessen, nachdem der Modellwechsel auf claude-sonnet-5
+        # den vorigen Fehler (`temperature`) freigelegt hatte: die Anfrage
+        # lief 20,9 s durch und scheiterte dann an dieser Zeile.
+        text = next((getattr(b, "text", None) for b in (response.content or []) if getattr(b, "text", None)), None)
+        if not text:
+            arten = [getattr(b, "type", type(b).__name__) for b in (response.content or [])]
+            raise RuntimeError(f"Claude lieferte keinen Textblock (Blockarten: {arten or 'keine'})")
+        return text
 
 
 class OpenAIProvider(AIProvider):
