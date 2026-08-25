@@ -68,7 +68,7 @@ etwas Plausibles, statt laut zu scheitern.**
 |---|---|
 | **Nebenwirkungs-Importe** | `models/database.py` und `tests/conftest.py` importieren Modelle, die nirgends benutzt werden — sie registrieren Tabellen an `Base.metadata`. Ohne sie legt `create_all()` sie nicht an. Sie tragen `# noqa: F401` **und** eine Begründung. Nicht entfernen, auch nicht durch autoflake. |
 | **`login` erwartet Formulardaten** | `OAuth2PasswordRequestForm`, nicht JSON. `curl -d 'username=…&password=…'`, kein `-H 'Content-Type: application/json'`. |
-| **Datumsfelder brauchen volle Zeitangabe** | `2026-09-01` wird abgewiesen, `2026-09-01T00:00:00` nicht. |
+| **Datumsfelder nehmen auch ein Datum ohne Uhrzeit** | Korrigiert am 2026-08-25: die Zeile behauptete hier das Gegenteil. An allen fünf Modellen mit Datumsfeld gemessen (Reise, Tagebuch, Ort, Zeitplanung, Ausgabe) — Pydantic v2 nimmt `2026-09-01` an und ergänzt Mitternacht. Festgehalten in `tests/test_trips_crud.py`. |
 | **`/health` gibt es zweimal** | Einmal ohne Präfix und einmal als `/api/health*`. Beide antworten. |
 
 ### Betrieb

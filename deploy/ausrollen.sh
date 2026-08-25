@@ -118,14 +118,33 @@ else
   scp -q -o BatchMode=yes docker-compose.prod.yml "$HOST:/tmp/tm-compose.yml"
   tar czf "$ZWISCHEN/skripte.tgz" -C deploy backup waechter
   scp -q -o BatchMode=yes "$ZWISCHEN/skripte.tgz" "$HOST:/tmp/tm-skripte.tgz"
+  # WICHTIG: die beiden Skriptverzeichnisse werden GELEERT, nicht geloescht.
+  #
+  # `rm -rf /d/deploy/backup` entfernt das Verzeichnis, auf das die
+  # Bind-Mounts der laufenden Container zeigen. Ein Bind-Mount haengt am
+  # INODE: das neu angelegte Verzeichnis ist ein anderes, und der laufende
+  # Container sieht danach ein LEERES /skripte. Am 2026-08-25 gemessen — die
+  # taegliche Sicherung war seit dem ersten Ausrollen stillgelegt und haette
+  # um 03:00 mit "no such file or directory" abgebrochen. Aufgefallen ist es
+  # nur zufaellig, weil ein `docker exec` von Hand scheiterte.
   fern "docker run --rm -v $FERN:/d -v /tmp/tm-compose.yml:/in1:ro -v /tmp/tm-skripte.tgz:/in2:ro alpine:latest sh -c '
       set -e
       cp /in1 /d/docker-compose.prod.yml && chmod 644 /d/docker-compose.prod.yml
-      rm -rf /d/deploy/backup /d/deploy/waechter
-      mkdir -p /d/deploy && tar xzf /in2 -C /d/deploy && chmod 755 /d/deploy/*/*.sh
+      mkdir -p /d/deploy/backup /d/deploy/waechter
+      find /d/deploy/backup /d/deploy/waechter -mindepth 1 -delete
+      tar xzf /in2 -C /d/deploy && chmod 755 /d/deploy/*/*.sh
   '"
   tag_setzen "$SHA"
   compose_auf "$NUR"
+
+  # Sicherung und Waechter lesen ihre Skripte beim START. `compose up -d`
+  # laesst sie unberuehrt, weil sich ihr Image nicht geaendert hat — sie
+  # liefen also mit dem Stand von vorhin weiter. Deshalb ausdruecklich neu
+  # starten, wenn die Skripte mitgegangen sind.
+  if [[ -z "$NUR" ]]; then
+    melde "Sicherung und Waechter neu starten (sie lesen ihre Skripte beim Start)"
+    fern "docker restart travelmind-backup travelmind-waechter >/dev/null" || true
+  fi
 fi
 
 # ── Prüfung ───────────────────────────────────────────────────────────────
