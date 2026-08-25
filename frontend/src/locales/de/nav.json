@@ -10,5 +10,7 @@
   "logout": "Abmelden",
   "login": "Anmelden",
   "register": "Registrieren",
-  "transcribe": "Transkription"
+  "transcribe": "Transkription",
+  "openMenu": "Menü öffnen",
+  "userMenu": "Benutzermenü"
 }

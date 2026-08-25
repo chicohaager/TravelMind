@@ -55,6 +55,8 @@ export default function Navbar({ onMenuClick }) {
           <div className="flex items-center gap-4 min-w-0">
             <button
               onClick={onMenuClick}
+              aria-label={t('nav:openMenu')}
+              title={t('nav:openMenu')}
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <Menu className="w-6 h-6" />
@@ -99,6 +101,8 @@ export default function Navbar({ onMenuClick }) {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
+                  aria-label={t('nav:userMenu')}
+                  title={t('nav:userMenu')}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <User className="w-5 h-5" />
