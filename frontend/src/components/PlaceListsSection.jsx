@@ -29,7 +29,7 @@ const EMOJI_PRESETS = [
 ]
 
 const COLOR_PRESETS = [
-  '#6366F1', // Indigo
+  '#1F7A7D', // Indigo
   '#F59E0B', // Orange
   '#10B981', // Green
   '#3B82F6', // Blue
@@ -55,7 +55,7 @@ export default function PlaceListsSection({
   const [editingListId, setEditingListId] = useState(null)
   const [newListTitle, setNewListTitle] = useState('')
   const [newListIcon, setNewListIcon] = useState('📍')
-  const [newListColor, setNewListColor] = useState('#6366F1')
+  const [newListColor, setNewListColor] = useState('#1F7A7D')
   const [collapsedLists, setCollapsedLists] = useState(new Set())
 
   // Fetch custom lists
@@ -79,7 +79,7 @@ export default function PlaceListsSection({
       setIsCreatingList(false)
       setNewListTitle('')
       setNewListIcon('📍')
-      setNewListColor('#6366F1')
+      setNewListColor('#1F7A7D')
       toast.success(t('placeLists:listCreated'))
     },
     onError: () => {
@@ -358,7 +358,7 @@ export default function PlaceListsSection({
                   setIsCreatingList(false)
                   setNewListTitle('')
                   setNewListIcon('📍')
-                  setNewListColor('#6366F1')
+                  setNewListColor('#1F7A7D')
                 }}
                 disabled={createListMutation.isPending}
                 className="btn-outline flex items-center gap-2"

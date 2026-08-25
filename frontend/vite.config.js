@@ -81,7 +81,7 @@ export default defineConfig({
         name: 'TravelMind - Reiseplanung mit KI',
         short_name: 'TravelMind',
         description: 'Deine KI-gestützte Reiseplanung mit Offline-Support',
-        theme_color: '#6366F1',
+        theme_color: '#146264',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

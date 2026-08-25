@@ -8,37 +8,62 @@ export default {
   theme: {
     extend: {
       colors: {
+        // ── Palette „Adria", 2026-08-25 ───────────────────────────────
+        //
+        // Vorher: Indigo #6366F1 + Amber #F59E0B — die Vorgabefarben, die
+        // jede zweite Anwendung traegt. Sie sind hier zusaetzlich falsch:
+        // der eigentliche Inhalt dieser App sind FOTOS und KARTEN, und ein
+        // lautes Indigo kaempft mit beidem — mit jedem Bild und mit den
+        // beige-gruenen OSM-Kacheln.
+        //
+        // primary: Tiefsee-Teal. Tritt neben Fotos und Kartenkacheln zurueck,
+        // statt mit ihnen zu konkurrieren.
         primary: {
-          50: '#EEF2FF',
-          100: '#E0E7FF',
-          200: '#C7D2FE',
-          300: '#A5B4FC',
-          400: '#818CF8',
-          500: '#6366F1',
-          600: '#4F46E5',
-          700: '#4338CA',
-          800: '#3730A3',
-          900: '#312E81',
-          950: '#1E1B4B',
+          50: '#ECF6F6',
+          100: '#D2E9E9',
+          200: '#A6D3D4',
+          300: '#71B6B8',
+          400: '#429799',
+          500: '#1F7A7D',
+          600: '#146264',
+          700: '#124F51',
+          800: '#123F41',
+          900: '#123436',
+          950: '#071F20',
         },
+        // secondary: Signalorange — die Farbe, die auf einer Karte eine
+        // ROUTE hat. Sparsam einsetzen; sie ist der einzige laute Ton.
+        //
+        // 🔴 Gemessen (WCAG): weisse Schrift auf secondary-500 ergibt nur
+        // 3,82:1 — das reicht nur fuer grosse Schrift. Wo Weiss darauf
+        // steht, gehoert 600 (#B34C22, 5,28:1) hin, nicht 500.
         secondary: {
-          50: '#FFFBEB',
-          100: '#FEF3C7',
-          200: '#FDE68A',
-          300: '#FCD34D',
-          400: '#FBBF24',
-          500: '#F59E0B',
-          600: '#D97706',
-          700: '#B45309',
-          800: '#92400E',
-          900: '#78350F',
-          950: '#451A03',
+          50: '#FDF3EE',
+          100: '#FAE3D7',
+          200: '#F4C4AC',
+          300: '#EC9E78',
+          400: '#E27B4B',
+          500: '#D2612F',
+          600: '#B34C22',
+          700: '#8F3C1D',
+          800: '#71321C',
+          900: '#5C2B1A',
+          950: '#31140B',
         }
       },
+      // Schriften werden SELBST AUSGELIEFERT (siehe styles/index.css).
+      // Vorher kamen Inter und Poppins von fonts.googleapis.com — in einer
+      // App, die offline funktionieren soll, ist das die falsche Abhaengigkeit:
+      // beim ersten Aufruf ohne Netz gibt es keine Schrift.
+      //
+      // Public Sans: neutrale Grotesk fuer die Oberflaeche, mit
+      //   Tabellenziffern fuer das Budget. Bewusst NICHT Inter.
+      // Newsreader: redaktionelle Serifenschrift mit optischen Groessen —
+      //   ein Reisetagebuch ist ein Lesetext, keine Systemsteuerung.
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Poppins', 'Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
+        sans: ['"Public Sans Variable"', 'system-ui', 'sans-serif'],
+        display: ['"Newsreader Variable"', 'Georgia', 'serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
@@ -64,10 +89,13 @@ export default {
         'soft': '0 2px 15px rgba(0, 0, 0, 0.05)',
         'soft-lg': '0 4px 25px rgba(0, 0, 0, 0.08)',
       },
+      // Engere Radien: eine Reise-App ist ein Werkzeug, kein Spielzeug.
+      // 1rem an einer Karte laesst sie wie eine Kachel aussehen; 0,625rem
+      // laesst das Foto darin die Form bestimmen.
       borderRadius: {
-        'xl': '1rem',
-        '2xl': '1.5rem',
-        '3xl': '2rem',
+        'xl': '0.625rem',
+        '2xl': '0.875rem',
+        '3xl': '1.25rem',
       },
     },
   },

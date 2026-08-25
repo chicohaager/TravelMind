@@ -35,7 +35,7 @@ const CATEGORY_COLORS = {
   restaurant: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300',
   attraction: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300',
   beach: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300',
-  hotel: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300',
+  hotel: 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300',
   viewpoint: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
   museum: 'bg-slate-100 text-slate-700 dark:bg-slate-900/20 dark:text-slate-300',
   park: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',

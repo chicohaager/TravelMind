@@ -92,7 +92,7 @@ const NativeCamera = ({ onPhotoTaken, disabled = false, className = '' }) => {
         type="button"
         onClick={handleCameraClick}
         disabled={disabled}
-        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
+        className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
       >
         <Camera size={20} />
         <span>{t('common:camera.takePhoto')}</span>

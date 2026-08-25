@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 // iconType wurde entgegengenommen und nie ausgewertet — der Marker unten baut
 // ein festes SVG. Der Parameter ist deshalb entfallen; wer ihn zurueckwill,
 // muss das SVG erst symbolabhaengig machen.
-const createCustomIcon = (color = '#6366F1') => {
+const createCustomIcon = (color = '#1F7A7D') => {
   const size = 40
   // Hinweis: iconType waehlt derzeit KEIN Symbol aus — der Marker unten baut
   // ein festes SVG. Die frueher hier berechnete Komponente wurde nie benutzt.
@@ -95,7 +95,7 @@ const categoryColors = {
   park: '#22c55e',
   beach: '#06b6d4',
   shopping: '#ec4899',
-  viewpoint: '#6366f1',
+  viewpoint: '#1F7A7D',
   nightlife: '#a855f7',
   other: '#6b7280',
   sight: '#8b5cf6',
@@ -183,7 +183,7 @@ export default function InteractiveMap({
               key={route.id}
               positions={coordinates}
               pathOptions={{
-                color: route.color || '#6366F1',
+                color: route.color || '#1F7A7D',
                 weight: route.line_width || 3,
                 opacity: 0.7,
                 dashArray:
@@ -220,7 +220,7 @@ export default function InteractiveMap({
             /* LUECKE: place.icon_type wird gespeichert, aber nicht dargestellt.
                Der Marker ist ein festes SVG; die frueher hier uebergebene
                Symbolart wurde nie ausgewertet. Siehe docs/ROADMAP.md. */
-            icon={createCustomIcon(place.color || '#6366F1')}
+            icon={createCustomIcon(place.color || '#1F7A7D')}
             eventHandlers={{
               click: () => handlePlaceClick(place),
             }}
@@ -313,7 +313,7 @@ export default function InteractiveMap({
                   <div key={route.id} className="flex items-center gap-2 text-xs">
                     <div
                       className="w-5 h-1 rounded-full"
-                      style={{ backgroundColor: route.color || '#6366F1' }}
+                      style={{ backgroundColor: route.color || '#1F7A7D' }}
                     />
                     <span className="truncate text-gray-700 font-medium">{route.name}</span>
                   </div>

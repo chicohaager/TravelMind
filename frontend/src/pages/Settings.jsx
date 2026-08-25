@@ -202,8 +202,8 @@ export default function Settings() {
           <div className="card">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                  <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="p-2 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                  <Brain className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">{t('ai:aiConfiguration')}</h3>

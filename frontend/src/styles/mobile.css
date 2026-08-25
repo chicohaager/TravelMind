@@ -117,7 +117,8 @@
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 2px solid #6366f1;
+  /* Tastaturfokus in der Akzentfarbe der Palette Adria (primary-500). */
+  outline: 2px solid #1F7A7D;
   outline-offset: 2px;
 }
 

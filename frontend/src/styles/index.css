@@ -1,3 +1,15 @@
+/*
+ * TravelMind — Gestaltung „Adria", 2026-08-25.
+ *
+ * Schriften werden SELBST AUSGELIEFERT. Vorher lud index.html sie von
+ * fonts.googleapis.com; in einer App, die offline funktionieren soll, ist das
+ * die falsche Abhaengigkeit — beim ersten Aufruf ohne Netz gaebe es keine
+ * Schrift. Als npm-Paket landen sie im Buendel und damit im Precache des
+ * Service Workers.
+ */
+@import '@fontsource-variable/public-sans/index.css';
+@import '@fontsource-variable/newsreader/index.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,8 +20,12 @@
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    /* Der Grund ist nicht neutralgrau, sondern minimal ins Teal gezogen —
+       ein gewaehlter Neutralton statt eines geerbten. */
+    @apply bg-primary-50 text-gray-900 antialiased;
+    font-family: theme('fontFamily.sans');
+    /* Tabellenziffern: im Budget sollen Betraege untereinander fluchten. */
+    font-variant-numeric: tabular-nums;
   }
 
   h1,
@@ -18,8 +34,11 @@
   h4,
   h5,
   h6 {
-    font-family: 'Poppins', 'Inter', sans-serif;
-    @apply font-bold;
+    font-family: theme('fontFamily.display');
+    /* Newsreader traegt Gewicht besser als Poppins — 600 statt 700, dafuer
+       etwas enger gesetzt. Ueberschriften brechen ausgewogen. */
+    @apply font-semibold tracking-tight;
+    text-wrap: balance;
   }
 
   /* Scrollbar styling */
@@ -68,19 +87,19 @@
   }
 
   .btn {
-    @apply px-5 py-2.5 rounded-full font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
+    @apply px-5 py-2.5 rounded-lg font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
   }
 
   .btn-primary {
-    @apply px-5 py-2.5 rounded-full font-medium transition-all duration-200 bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700 shadow-md hover:shadow-lg;
+    @apply px-5 py-2.5 rounded-lg font-medium transition-all duration-200 bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700 shadow-md hover:shadow-lg;
   }
 
   .btn-secondary {
-    @apply px-5 py-2.5 rounded-full font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 border border-gray-200;
+    @apply px-5 py-2.5 rounded-lg font-medium transition-all duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 border border-gray-200;
   }
 
   .btn-outline {
-    @apply px-5 py-2.5 rounded-full font-medium transition-all duration-200 border border-primary-300 bg-primary-50 text-primary-600 hover:bg-primary-100 active:bg-primary-200;
+    @apply px-5 py-2.5 rounded-lg font-medium transition-all duration-200 border border-primary-300 bg-primary-50 text-primary-600 hover:bg-primary-100 active:bg-primary-200;
   }
 
   .btn-sm {
@@ -127,7 +146,10 @@
 @layer utilities {
   /* Text gradients */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent;
+    /* Kein Regenbogen quer durch die Palette: der Verlauf bleibt INNERHALB
+       des Teals. Ein Verlauf von der einen Akzentfarbe in die andere ist
+       genau der Vorgabe-Look, den diese Gestaltung ersetzt. */
+    @apply bg-gradient-to-br from-primary-600 to-primary-400 bg-clip-text text-transparent;
   }
 
   /* Animations */
