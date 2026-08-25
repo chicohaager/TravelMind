@@ -82,14 +82,30 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8190}
       ENABLE_DEMO_MODE: "false"
       TZ: ${TZ:-Europe/Berlin}
-    volumes:
-      - ${TRAVELMIND_DATA:-.}/uploads:/app/uploads
-      - ${TRAVELMIND_DATA:-.}/backups:/app/backups
     depends_on:
       db:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+    # Schreibgeschuetztes Wurzeldateisystem — belegt am 2026-08-25: der
+    # Container startet, /api/health/live antwortet mit 200, die Bind-Mounts
+    # bleiben beschreibbar, und `touch /app/probe` scheitert.
+    #
+    # Drei Verzeichnisse braucht der Prozess trotzdem: /tmp, /app/data (das
+    # Lifespan legt es beim Start an, auch mit PostgreSQL) und /app/logs.
+    read_only: true
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/uploads:/app/uploads
+      - ${TRAVELMIND_DATA:-.}/backups:/app/backups
+      - type: tmpfs
+        target: /tmp
+        tmpfs: { mode: 01777 }
+      - type: tmpfs
+        target: /app/data
+        tmpfs: { mode: 01777 }
+      - type: tmpfs
+        target: /app/logs
+        tmpfs: { mode: 01777 }
     cap_drop: [ALL]
     networks: [travelmind]
 
