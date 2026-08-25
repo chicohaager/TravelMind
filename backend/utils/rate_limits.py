@@ -24,8 +24,32 @@ def get_client_ip(request):
     return get_remote_address(request)
 
 
+# ==================== SPEICHER ====================
+#
+# WICHTIG, gemessen am 2026-08-25 auf der laufenden Produktion:
+#
+# Ohne RATE_LIMIT_STORAGE_URI zaehlt slowapi im ARBEITSSPEICHER — und zwar je
+# Prozess. Das Backend laeuft unter gunicorn mit vier Workern, jeder haelt
+# seine eigenen Zaehler. Die effektive Grenze ist dadurch bis zu VIERMAL so
+# hoch wie die konfigurierte, und welcher Worker eine Anfrage bekommt, ist
+# nicht vorhersagbar.
+#
+# Belegt: 140 Anfragen an /api/health/live (Grenze 120/Minute) direkt gegen
+# den Container gingen alle durch — rund 35 je Worker.
+#
+# Wer eine harte, prozessuebergreifende Grenze braucht, setzt
+# RATE_LIMIT_STORAGE_URI, z.B. "redis://redis:6379/0" oder
+# "memcached://memcached:11211". Ohne das bleibt die WIRKSAME Grenze die von
+# nginx (siehe frontend/nginx.conf): sie laeuft in einem Prozess und gilt
+# global — 10 r/s fuer /api/, 1 r/s fuer /api/auth/.
+SPEICHER_URI = os.getenv("RATE_LIMIT_STORAGE_URI", "memory://")
+
 # Initialize limiter with proxy-aware key function
-limiter = Limiter(key_func=get_client_ip, default_limits=["200 per day", "50 per hour"])
+limiter = Limiter(
+    key_func=get_client_ip,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=SPEICHER_URI,
+)
 
 
 # ==================== RATE LIMIT DEFINITIONS ====================
