@@ -9,5 +9,6 @@
   "settings": "Paramètres",
   "logout": "Déconnexion",
   "login": "Connexion",
-  "register": "S'inscrire"
+  "register": "S'inscrire",
+  "transcribe": "Transcription"
 }

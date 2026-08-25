@@ -192,3 +192,77 @@ describe('i18n: keine fest verdrahteten Locales im Quelltext', () => {
     expect(localeMuster.test('const x = aktuelleLocale()')).toBe(false)
   })
 })
+
+/**
+ * Vierter Wächter, ergänzt am 2026-08-25.
+ *
+ * Die drei Prüfungen oben decken FALSCH ANGESPROCHENE und FEHLENDE
+ * Übersetzungen ab. Sie sehen die dritte Fehlerklasse nicht: einen Text, der
+ * gar nicht erst durch `t()` läuft.
+ *
+ * Gefunden wurde sie an einem Eintrag in der Seitenleiste — `name:
+ * 'Transcription'` stand fest im Quelltext und war deshalb in JEDER Sprache
+ * englisch, während `transcribe:title` in allen vier Sprachen danebenlag. Der
+ * anschließende Scan über alle Komponenten fand 25 weitere Stellen derselben
+ * Art, darunter drei fest DEUTSCHE (`label: 'Glücklich'`) — ein englischer
+ * Nutzer hätte dort deutsche Wörter gesehen.
+ *
+ * Grep allein hätte das nicht gefunden: gesucht werden muss die Form
+ * `eigenschaft: 'Grossbuchstabe…'`, nicht ein bestimmtes Wort.
+ */
+describe('i18n: keine fest verdrahteten Beschriftungen in Komponenten', () => {
+  // Eigennamen. Marken werden nicht übersetzt — diese Ausnahme nennt WERTE,
+  // nicht Dateien, und ist damit enger als die Regel: ein neues englisches
+  // Wort in derselben Datei schlägt weiterhin an.
+  const EIGENNAMEN = new Set(['WhatsApp', 'Telegram', 'X / Twitter', 'Facebook'])
+
+  // pages/Home.jsx enthält Beispieldaten und ist NICHT erreichbar: die Route
+  // "/" leitet auf /trips um. Die Ausnahme hängt an genau dieser Tatsache —
+  // der Test darunter wird rot, sobald sie nicht mehr gilt.
+  const UNERREICHBAR = 'pages/Home.jsx'
+
+  const beschriftung = /\b(name|label|title)\s*:\s*'([A-Z][^']{2,40})'/g
+
+  function verstoesse(dateien) {
+    const raus = []
+    for (const datei of dateien) {
+      const rel = relative(srcVerzeichnis, datei)
+      if (rel.startsWith('test/')) continue // Testfixtures sieht kein Nutzer
+      if (rel === UNERREICHBAR) continue
+      const zeilen = readFileSync(datei, 'utf8').split('\n')
+      zeilen.forEach((zeile, i) => {
+        for (const treffer of zeile.matchAll(beschriftung)) {
+          if (EIGENNAMEN.has(treffer[2])) continue
+          raus.push(`${rel}:${i + 1}  ${treffer[1]}: '${treffer[2]}'`)
+        }
+      })
+    }
+    return raus
+  }
+
+  const jsxDateien = dateienRekursiv(srcVerzeichnis, ['.jsx'])
+
+  it('findet überhaupt Quelldateien', () => {
+    expect(jsxDateien.length).toBeGreaterThan(20)
+  })
+
+  it('keine Komponente trägt eine feste Beschriftung im Quelltext', () => {
+    expect(verstoesse(jsxDateien)).toEqual([])
+  })
+
+  it('Positivkontrolle: der Scanner erkennt einen künstlichen Verstoß', () => {
+    const kuenstlich = "  { name: 'Transcription', href: '/transcribe' },"
+    expect([...kuenstlich.matchAll(beschriftung)].length).toBe(1)
+  })
+
+  it('Gegenkontrolle: ein t()-Aufruf löst NICHT aus', () => {
+    const sauber = "  { name: t('nav:transcribe'), href: '/transcribe' },"
+    expect([...sauber.matchAll(beschriftung)].length).toBe(0)
+  })
+
+  it('die Ausnahme für Home.jsx gilt nur, solange die Seite unerreichbar ist', () => {
+    const app = readFileSync(join(srcVerzeichnis, 'App.jsx'), 'utf8')
+    // Wird Home je angeschlossen, muss die Ausnahme oben verschwinden.
+    expect(app).toMatch(/<Route index element=\{<Navigate to="\/trips" replace \/>\} \/>/)
+  })
+})

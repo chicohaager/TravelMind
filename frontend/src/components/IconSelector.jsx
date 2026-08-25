@@ -12,23 +12,28 @@ import {
   TreePine,
   Waves,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
+// Nur Typ und Symbol; die Beschriftung kommt aus `places:iconTypes.<typ>`.
+// Bis 2026-08-25 standen hier feste englische Woerter.
 const ICON_OPTIONS = [
-  { type: 'location', icon: MapPin, label: 'Location' },
-  { type: 'hotel', icon: Hotel, label: 'Hotel' },
-  { type: 'restaurant', icon: UtensilsCrossed, label: 'Restaurant' },
-  { type: 'coffee', icon: Coffee, label: 'Café' },
-  { type: 'camera', icon: Camera, label: 'Photo Spot' },
-  { type: 'mountain', icon: Mountain, label: 'Mountain' },
-  { type: 'beach', icon: Waves, label: 'Beach' },
-  { type: 'ship', icon: Ship, label: 'Harbor' },
-  { type: 'plane', icon: Plane, label: 'Airport' },
-  { type: 'shopping', icon: ShoppingBag, label: 'Shopping' },
-  { type: 'museum', icon: Museum, label: 'Museum' },
-  { type: 'nature', icon: TreePine, label: 'Nature' },
+  { type: 'location', icon: MapPin },
+  { type: 'hotel', icon: Hotel },
+  { type: 'restaurant', icon: UtensilsCrossed },
+  { type: 'coffee', icon: Coffee },
+  { type: 'camera', icon: Camera },
+  { type: 'mountain', icon: Mountain },
+  { type: 'beach', icon: Waves },
+  { type: 'ship', icon: Ship },
+  { type: 'plane', icon: Plane },
+  { type: 'shopping', icon: ShoppingBag },
+  { type: 'museum', icon: Museum },
+  { type: 'nature', icon: TreePine },
 ]
 
-export default function IconSelector({ value = 'location', onChange, label = 'Icon Type' }) {
+export default function IconSelector({ value = 'location', onChange, label }) {
+  const { t } = useTranslation()
+  const beschriftung = label ?? t('places:iconType')
   const handleIconChange = (iconType) => {
     if (onChange) {
       onChange(iconType)
@@ -37,10 +42,12 @@ export default function IconSelector({ value = 'location', onChange, label = 'Ic
 
   return (
     <div className="space-y-2">
-      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
+      {beschriftung && (
+        <label className="block text-sm font-medium text-gray-700">{beschriftung}</label>
+      )}
 
       <div className="grid grid-cols-4 gap-2">
-        {ICON_OPTIONS.map(({ type, icon: Icon, label: iconLabel }) => (
+        {ICON_OPTIONS.map(({ type, icon: Icon }) => (
           <button
             key={type}
             type="button"
@@ -53,10 +60,10 @@ export default function IconSelector({ value = 'location', onChange, label = 'Ic
                   : 'border-gray-200 hover:border-gray-400 text-gray-600 hover:bg-gray-50'
               }
             `}
-            title={iconLabel}
+            title={t(`places:iconTypes.${type}`)}
           >
             <Icon className="w-6 h-6" />
-            <span className="text-xs font-medium">{iconLabel}</span>
+            <span className="text-xs font-medium">{t(`places:iconTypes.${type}`)}</span>
           </button>
         ))}
       </div>

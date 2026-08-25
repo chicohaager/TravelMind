@@ -29,7 +29,8 @@
     "other": "Other",
     "sight": "Attraction",
     "activity": "Activity",
-    "transport": "Transport"
+    "transport": "Transport",
+    "cafe": "Café"
   },
   "coordinatesFound": "📍 Coordinates found",
   "coordinatesNotFound": "Coordinates not found",
@@ -118,5 +119,20 @@
   "selectAtLeastOne": "Please select at least one place",
   "placesImported": "{count} places imported!",
   "errorImporting": "Error importing",
-  "openWebsite": "Open website"
+  "openWebsite": "Open website",
+  "iconTypes": {
+    "location": "Location",
+    "hotel": "Hotel",
+    "restaurant": "Restaurant",
+    "coffee": "Café",
+    "camera": "Photo spot",
+    "mountain": "Mountain",
+    "beach": "Beach",
+    "ship": "Harbor",
+    "plane": "Airport",
+    "shopping": "Shopping",
+    "museum": "Museum",
+    "nature": "Nature"
+  },
+  "iconType": "Icon type"
 }

@@ -9,5 +9,6 @@
   "settings": "Ajustes",
   "logout": "Cerrar sesión",
   "login": "Iniciar sesión",
-  "register": "Registrarse"
+  "register": "Registrarse",
+  "transcribe": "Transcripción"
 }

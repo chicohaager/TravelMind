@@ -37,7 +37,7 @@ export default function Sidebar({ open, onClose }) {
     { name: t('nav:gallery'), href: '/gallery', icon: GalleryThumbnails },
     { name: t('nav:timeline'), href: '/timeline', icon: CalendarClock },
     { name: t('nav:analytics'), href: '/analytics', icon: BarChart3 },
-    { name: 'Transcription', href: '/transcribe', icon: Mic },
+    { name: t('nav:transcribe'), href: '/transcribe', icon: Mic },
   ]
 
   const toggleMenu = (itemName) => {
