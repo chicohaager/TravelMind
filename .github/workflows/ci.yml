@@ -1,0 +1,168 @@
+name: CI
+
+# Wiederhergestellt am 2026-08-25. Commit f82d006 hatte die Workflows entfernt.
+#
+# NICHT die alte Fassung zurueckgeholt: die trug `continue-on-error: true` auf
+# NEUN Schritten — Linting (Python und JS), Frontend-Tests, Trivy, Safety und
+# die E2E-Tests konnten alle nicht rot werden. Nur pytest und der Docker-Build
+# hielten das Ergebnis auf. So laufen 169 flake8-Verstoesse, 63 echte
+# eslint-Fehler und 98 bekannte CVEs unter einem gruenen Haken auf.
+#
+# REGEL FUER DIESE DATEI: Es gibt kein `continue-on-error` und kein `|| true`.
+# Jede Zeile hier kann den Lauf rot machen. Wo eine Ausnahme unvermeidlich ist,
+# steht sie mit Begruendung und einem Datum, an dem sie ueberprueft wird.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+# Ein laufender Lauf pro Branch reicht; aeltere werden abgebrochen.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend — Lint, Format, Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          # 3.11 wie im Produktions-Image (backend/Dockerfile.prod).
+          python-version: '3.11'
+          cache: pip
+
+      - name: Systemabhaengigkeiten
+        # python-magic braucht libmagic zur Laufzeit.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmagic1
+
+      - name: Abhaengigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install flake8 black isort pytest-cov
+
+      - name: flake8
+        run: flake8 backend/
+
+      - name: black — Formatierung unveraendert?
+        run: black --line-length=120 --check --diff backend/
+
+      - name: isort — Importreihenfolge unveraendert?
+        run: isort --profile=black --line-length=120 --check-only --diff backend/
+
+      - name: pytest mit Abdeckungsschwelle
+        # 50 % ist der Stand vom 2026-08-25 (gemessen: 53 %) — eine Untergrenze,
+        # die nicht zurueckfallen darf. Phase 5 der ROADMAP hebt sie auf 75 %.
+        working-directory: backend
+        run: pytest tests -q --cov=. --cov-report=term-missing --cov-fail-under=50
+
+  frontend:
+    name: Frontend — Lint, Tests, Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          # 20 wie im Produktions-Image (frontend/Dockerfile.prod).
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Abhaengigkeiten installieren
+        working-directory: frontend
+        run: npm ci
+
+      - name: eslint
+        working-directory: frontend
+        # --max-warnings ist bewusst NICHT auf 0 gesetzt: es stehen 16 Warnungen
+        # aus (react-refresh, exhaustive-deps). Fehler sind 0 und muessen 0
+        # bleiben. Die Warnungen gehoeren in Phase 5.
+        run: npx eslint .
+
+      - name: vitest
+        working-directory: frontend
+        run: npx vitest run
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  images:
+    name: Produktions-Images bauen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Backend-Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.prod
+          push: false
+          load: true
+          tags: travelmind-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Frontend-Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.prod
+          push: false
+          load: true
+          tags: travelmind-frontend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Beide Images laufen als non-root
+        # Am 2026-08-25 hob die Produktions-Compose das `USER travelmind` der
+        # Images mit `user: "0:0"` auf. Diese Pruefung stellt wenigstens sicher,
+        # dass die Images selbst korrekt gebaut sind.
+        run: |
+          set -euo pipefail
+          for image in travelmind-backend:ci travelmind-frontend:ci; do
+            uid="$(docker image inspect "$image" --format '{{.Config.User}}')"
+            echo "$image -> User='$uid'"
+            if [ -z "$uid" ] || [ "$uid" = "root" ] || [ "$uid" = "0" ]; then
+              echo "FEHLER: $image laeuft als root" >&2
+              exit 1
+            fi
+          done
+
+      - name: Frontend-Bundle enthaelt keine Entwicklungs-Adresse
+        # Am 2026-08-25 stand `http://localhost:8003` im Produktions-Bundle,
+        # weil COPY . . die lokale Umgebungsdatei mitnahm. Jeder Login
+        # scheiterte mit 503. Die Gegenkontrolle stellt sicher, dass hier
+        # ueberhaupt ein Bundle geprueft wird.
+        run: |
+          set -euo pipefail
+          verzeichnis="$(mktemp -d)"
+          id="$(docker create travelmind-frontend:ci)"
+          docker cp "$id:/usr/share/nginx/html/assets" "$verzeichnis/assets"
+          docker rm "$id" >/dev/null
+          anzahl="$(find "$verzeichnis/assets" -name 'index-*.js' | wc -l)"
+          echo "Gefundene Haupt-Buendel: $anzahl"
+          if [ "$anzahl" -lt 1 ]; then
+            echo "FEHLER: kein Bundle gefunden — die Pruefung haette nichts gemessen" >&2
+            exit 1
+          fi
+          if grep -rE 'localhost:(8003|8137|5173)' "$verzeichnis/assets"; then
+            echo "FEHLER: Entwicklungs-Adresse im Produktions-Bundle" >&2
+            exit 1
+          fi
+          echo "OK: keine Entwicklungs-Adresse im Bundle"
