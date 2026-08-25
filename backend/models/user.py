@@ -2,19 +2,21 @@
 User model
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+import enum
+
 from models.database import Base
 from passlib.context import CryptContext
-import enum
+from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String, Text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AIProvider(str, enum.Enum):
     """Supported AI providers"""
-    GROQ = "GROQ"      # Default: Fast, free Llama models
+
+    GROQ = "GROQ"  # Default: Fast, free Llama models
     CLAUDE = "CLAUDE"
     OPENAI = "OPENAI"
     GEMINI = "GEMINI"

@@ -3,32 +3,31 @@ Diary Router
 CRUD operations for diary entries
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Request, status
-from fastapi.responses import Response
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, Field, ConfigDict, computed_field
-from typing import List, Optional
+import asyncio
+import os
 from datetime import datetime, timezone
 from io import BytesIO
-import os
 from pathlib import Path
-from utils.rate_limits import limiter, RateLimits
-import asyncio
-from utils.images import validate_image, process_and_save
-import structlog
-from openai import OpenAI
+from typing import List, Optional
 
+import structlog
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import Response
 from models.database import get_db
 from models.diary import DiaryEntry
+from models.media import Media
 from models.trip import Trip
 from models.user import User
-from models.media import Media
+from openai import OpenAI
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 from routes.auth import get_current_active_user, get_optional_user
 from routes.media import MediaResponse
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from utils.access_control import verify_trip_access
-from utils.images import derive_thumb_url, delete_upload_file
+from utils.images import delete_upload_file, derive_thumb_url, process_and_save, validate_image
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -124,7 +123,7 @@ async def get_diary_entries(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get all diary entries for a trip with pagination. Requires authentication and trip access."""
     # Enforce maximum limit
@@ -152,20 +151,13 @@ async def get_diary_entries(
 async def _load_entry_with_media(entry_id: int, db: AsyncSession) -> DiaryEntry:
     """Re-fetch a diary entry with its media eager-loaded for the response."""
     result = await db.execute(
-        select(DiaryEntry)
-        .options(selectinload(DiaryEntry.media))
-        .where(DiaryEntry.id == entry_id)
+        select(DiaryEntry).options(selectinload(DiaryEntry.media)).where(DiaryEntry.id == entry_id)
     )
     return result.scalar_one()
 
 
 # Handler function for creating diary entries
-async def _create_diary_entry_handler(
-    trip_id: int,
-    entry: DiaryEntryCreate,
-    db: AsyncSession,
-    current_user: User
-):
+async def _create_diary_entry_handler(trip_id: int, entry: DiaryEntryCreate, db: AsyncSession, current_user: User):
     """Create a new diary entry. Requires authentication and edit permission."""
     # Verify trip exists and user has edit access (owner or editor participant)
     await verify_trip_access(trip_id, current_user, db, require_edit=True)
@@ -187,7 +179,7 @@ async def _create_diary_entry_handler(
         photos=[],
         tags=entry.tags,
         mood=entry.mood,
-        rating=entry.rating
+        rating=entry.rating,
     )
 
     db.add(new_entry)
@@ -198,14 +190,16 @@ async def _create_diary_entry_handler(
     # them as media rows.
     if entry.photos:
         for i, url in enumerate(entry.photos):
-            db.add(Media(
-                owner_id=author_id,
-                trip_id=trip_id,
-                diary_entry_id=new_entry.id,
-                url=url,
-                thumb_url=derive_thumb_url(url),
-                order_index=i,
-            ))
+            db.add(
+                Media(
+                    owner_id=author_id,
+                    trip_id=trip_id,
+                    diary_entry_id=new_entry.id,
+                    url=url,
+                    thumb_url=derive_thumb_url(url),
+                    order_index=i,
+                )
+            )
         await db.commit()
 
     logger.info("diary_entry_created", entry_id=new_entry.id, trip_id=trip_id, user_id=current_user.id)
@@ -221,7 +215,7 @@ async def create_diary_entry(
     trip_id: int,
     entry: DiaryEntryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Create a new diary entry. Requires authentication and trip ownership."""
     return await _create_diary_entry_handler(trip_id, entry, db, current_user)
@@ -234,7 +228,7 @@ async def update_diary_entry(
     entry_id: int,
     entry: DiaryEntryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Update a diary entry. Requires authentication and ownership."""
     # Get existing entry
@@ -273,7 +267,7 @@ async def delete_diary_entry(
     request: Request,
     entry_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Delete a diary entry. Requires authentication and ownership."""
     # Get existing entry
@@ -296,9 +290,7 @@ async def delete_diary_entry(
 
 @router.get("/{trip_id}/export/markdown")
 async def export_diary_markdown(
-    trip_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Export diary entries as Markdown. Requires authentication and trip access."""
     # Verify trip exists and user has access
@@ -306,9 +298,7 @@ async def export_diary_markdown(
 
     # Get diary entries
     result = await db.execute(
-        select(DiaryEntry)
-        .where(DiaryEntry.trip_id == trip_id)
-        .order_by(DiaryEntry.entry_date.asc())
+        select(DiaryEntry).where(DiaryEntry.trip_id == trip_id).order_by(DiaryEntry.entry_date.asc())
     )
     entries = result.scalars().all()
 
@@ -321,7 +311,9 @@ async def export_diary_markdown(
     markdown_lines.append(f"\n**Reiseziel:** {trip.destination}")
 
     if trip.start_date and trip.end_date:
-        markdown_lines.append(f"**Zeitraum:** {trip.start_date.strftime('%d.%m.%Y')} bis {trip.end_date.strftime('%d.%m.%Y')}")
+        markdown_lines.append(
+            f"**Zeitraum:** {trip.start_date.strftime('%d.%m.%Y')} bis {trip.end_date.strftime('%d.%m.%Y')}"
+        )
 
     markdown_lines.append("\n---\n")
 
@@ -340,18 +332,18 @@ async def export_diary_markdown(
 
         # Rating
         if entry.rating:
-            stars = '⭐' * entry.rating
+            stars = "⭐" * entry.rating
             markdown_lines.append(f"**Bewertung:** {stars}")
 
         # Mood
         if entry.mood:
-            mood_icons = {'happy': '😊', 'neutral': '😐', 'sad': '☹️'}
-            mood_icon = mood_icons.get(entry.mood, '')
+            mood_icons = {"happy": "😊", "neutral": "😐", "sad": "☹️"}
+            mood_icon = mood_icons.get(entry.mood, "")
             markdown_lines.append(f"**Stimmung:** {mood_icon}")
 
         # Tags
         if entry.tags and len(entry.tags) > 0:
-            tags_str = ', '.join(f"`{tag}`" for tag in entry.tags)
+            tags_str = ", ".join(f"`{tag}`" for tag in entry.tags)
             markdown_lines.append(f"**Tags:** {tags_str}")
 
         markdown_lines.append("")  # Empty line before content
@@ -361,35 +353,31 @@ async def export_diary_markdown(
 
         markdown_lines.append("\n---\n")
 
-    markdown_content = '\n'.join(markdown_lines)
+    markdown_content = "\n".join(markdown_lines)
 
     # Return as downloadable file
     return Response(
         content=markdown_content,
         media_type="text/markdown",
-        headers={
-            "Content-Disposition": f"attachment; filename=\"{trip.title.replace(' ', '_')}.md\""
-        }
+        headers={"Content-Disposition": f"attachment; filename=\"{trip.title.replace(' ', '_')}.md\""},
     )
 
 
 @router.get("/{trip_id}/export/pdf")
 async def export_diary_pdf(
-    trip_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """Export diary entries as PDF. Requires authentication and trip access."""
     try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Image as RLImage, Table
         from reportlab.lib.enums import TA_CENTER
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import inch
+        from reportlab.platypus import Image as RLImage
+        from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table
     except ImportError:
         raise HTTPException(
-            status_code=500,
-            detail="PDF export requires reportlab library. Install with: pip install reportlab"
+            status_code=500, detail="PDF export requires reportlab library. Install with: pip install reportlab"
         )
 
     # Verify trip exists and user has access
@@ -409,7 +397,7 @@ async def export_diary_pdf(
 
     # Create PDF in memory
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.75*inch, bottomMargin=0.75*inch)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.75 * inch, bottomMargin=0.75 * inch)
 
     # Container for PDF elements
     story = []
@@ -417,39 +405,29 @@ async def export_diary_pdf(
     # Styles
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        textColor='#2563eb',
-        spaceAfter=12,
-        alignment=TA_CENTER
+        "CustomTitle", parent=styles["Heading1"], fontSize=24, textColor="#2563eb", spaceAfter=12, alignment=TA_CENTER
     )
     heading_style = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontSize=16,
-        textColor='#1e40af',
-        spaceAfter=6,
-        spaceBefore=12
+        "CustomHeading", parent=styles["Heading2"], fontSize=16, textColor="#1e40af", spaceAfter=6, spaceBefore=12
     )
-    meta_style = ParagraphStyle(
-        'MetaStyle',
-        parent=styles['Normal'],
-        fontSize=10,
-        textColor='#6b7280'
-    )
+    meta_style = ParagraphStyle("MetaStyle", parent=styles["Normal"], fontSize=10, textColor="#6b7280")
 
     # Title page
     story.append(Paragraph(trip.title, title_style))
-    story.append(Spacer(1, 0.2*inch))
+    story.append(Spacer(1, 0.2 * inch))
 
     if trip.destination:
         story.append(Paragraph(f"<b>Reiseziel:</b> {trip.destination}", meta_style))
 
     if trip.start_date and trip.end_date:
-        story.append(Paragraph(f"<b>Zeitraum:</b> {trip.start_date.strftime('%d.%m.%Y')} bis {trip.end_date.strftime('%d.%m.%Y')}", meta_style))
+        story.append(
+            Paragraph(
+                f"<b>Zeitraum:</b> {trip.start_date.strftime('%d.%m.%Y')} bis {trip.end_date.strftime('%d.%m.%Y')}",
+                meta_style,
+            )
+        )
 
-    story.append(Spacer(1, 0.5*inch))
+    story.append(Spacer(1, 0.5 * inch))
     story.append(PageBreak())
 
     # Entries
@@ -468,49 +446,50 @@ async def export_diary_pdf(
             meta_parts.append(f"<b>Ort:</b> {entry.location_name}")
 
         if entry.rating:
-            stars = '★' * entry.rating + '☆' * (5 - entry.rating)
+            stars = "★" * entry.rating + "☆" * (5 - entry.rating)
             meta_parts.append(f"<b>Bewertung:</b> {stars}")
 
         if entry.mood:
-            mood_labels = {'happy': 'Glücklich', 'neutral': 'Neutral', 'sad': 'Traurig'}
+            mood_labels = {"happy": "Glücklich", "neutral": "Neutral", "sad": "Traurig"}
             mood_label = mood_labels.get(entry.mood, entry.mood)
             meta_parts.append(f"<b>Stimmung:</b> {mood_label}")
 
         if meta_parts:
-            story.append(Paragraph(' | '.join(meta_parts), meta_style))
-            story.append(Spacer(1, 0.1*inch))
+            story.append(Paragraph(" | ".join(meta_parts), meta_style))
+            story.append(Spacer(1, 0.1 * inch))
 
         # Tags
         if entry.tags and len(entry.tags) > 0:
-            tags_str = ', '.join(entry.tags)
+            tags_str = ", ".join(entry.tags)
             story.append(Paragraph(f"<b>Tags:</b> {tags_str}", meta_style))
-            story.append(Spacer(1, 0.1*inch))
+            story.append(Spacer(1, 0.1 * inch))
 
         # Content - convert markdown-style formatting to basic HTML
         content = entry.content
         # Simple markdown to HTML conversion using regex for proper matching
         import re
-        content = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', content)  # Bold
-        content = re.sub(r'\*(.+?)\*', r'<i>\1</i>', content)      # Italic
+
+        content = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", content)  # Bold
+        content = re.sub(r"\*(.+?)\*", r"<i>\1</i>", content)  # Italic
 
         # Split into paragraphs
-        paragraphs = content.split('\n\n')
+        paragraphs = content.split("\n\n")
         for para in paragraphs:
             if para.strip():
-                story.append(Paragraph(para.strip().replace('\n', '<br/>'), styles['Normal']))
-                story.append(Spacer(1, 0.1*inch))
+                story.append(Paragraph(para.strip().replace("\n", "<br/>"), styles["Normal"]))
+                story.append(Spacer(1, 0.1 * inch))
 
         # Photos (from media, the source of truth)
         photo_urls = [m.url for m in entry.media]
         if photo_urls:
-            story.append(Spacer(1, 0.2*inch))
+            story.append(Spacer(1, 0.2 * inch))
 
             # Process photos in groups of 2 per row
             photo_rows = []
             for photo_idx in range(0, len(photo_urls), 2):
                 row_images = []
 
-                for photo_url in photo_urls[photo_idx:photo_idx + 2]:
+                for photo_url in photo_urls[photo_idx : photo_idx + 2]:
                     try:
                         # Convert URL path to file system path SAFELY
                         # photo_url is like "/uploads/diary/uuid.jpg"
@@ -518,7 +497,7 @@ async def export_diary_pdf(
                         photo_filename = Path(photo_url).name  # Only get filename, no path traversal
 
                         # Validate filename (must not contain path separators)
-                        if '/' in photo_filename or '\\' in photo_filename or '..' in photo_filename:
+                        if "/" in photo_filename or "\\" in photo_filename or ".." in photo_filename:
                             logger.warning("pdf_path_traversal_attempt", photo_url=photo_url)
                             row_images.append(Paragraph(f"<i>Ungültiger Dateipfad</i>", meta_style))
                             continue
@@ -528,7 +507,7 @@ async def export_diary_pdf(
 
                         if photo_file.exists() and photo_file.is_file():
                             # Create reportlab Image with max width of 2.5 inches
-                            img = RLImage(str(photo_file), width=2.5*inch, height=2.5*inch, kind='proportional')
+                            img = RLImage(str(photo_file), width=2.5 * inch, height=2.5 * inch, kind="proportional")
                             row_images.append(img)
                         else:
                             # If file doesn't exist, add placeholder
@@ -543,19 +522,21 @@ async def export_diary_pdf(
 
             # Add photos as table for layout
             if photo_rows:
-                photo_table = Table(photo_rows, colWidths=[2.7*inch, 2.7*inch])
-                photo_table.setStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ])
+                photo_table = Table(photo_rows, colWidths=[2.7 * inch, 2.7 * inch])
+                photo_table.setStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ]
+                )
                 story.append(photo_table)
-                story.append(Spacer(1, 0.2*inch))
+                story.append(Spacer(1, 0.2 * inch))
 
         # Add space between entries (but not after last entry)
         if i < len(entries) - 1:
-            story.append(Spacer(1, 0.3*inch))
-            story.append(Paragraph('─' * 80, meta_style))
-            story.append(Spacer(1, 0.2*inch))
+            story.append(Spacer(1, 0.3 * inch))
+            story.append(Paragraph("─" * 80, meta_style))
+            story.append(Spacer(1, 0.2 * inch))
 
     # Build PDF
     doc.build(story)
@@ -568,9 +549,7 @@ async def export_diary_pdf(
     return Response(
         content=pdf_content,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename=\"{trip.title.replace(' ', '_')}.pdf\""
-        }
+        headers={"Content-Disposition": f"attachment; filename=\"{trip.title.replace(' ', '_')}.pdf\""},
     )
 
 
@@ -581,7 +560,7 @@ async def upload_diary_photo(
     entry_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Upload a photo to a diary entry.
@@ -602,16 +581,12 @@ async def upload_diary_photo(
 
     # Check file size
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
-        )
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB")
 
     # CRITICAL: Validate file type by content (security check)
     if not validate_image(content, file.filename):
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid file type. Only images allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            status_code=400, detail=f"Invalid file type. Only images allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
     # Normalize, compress to WebP, generate a thumbnail and read EXIF metadata.
@@ -621,9 +596,7 @@ async def upload_diary_photo(
         raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 
     # Append after existing media (preserve order).
-    count_result = await db.execute(
-        select(func.count()).select_from(Media).where(Media.diary_entry_id == entry_id)
-    )
+    count_result = await db.execute(select(func.count()).select_from(Media).where(Media.diary_entry_id == entry_id))
     next_index = count_result.scalar() or 0
 
     new_media = Media(
@@ -676,7 +649,7 @@ async def delete_diary_photo(
     entry_id: int,
     photo_url: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Delete a photo (by URL) from a diary entry. Requires authentication.
 
@@ -694,9 +667,7 @@ async def delete_diary_photo(
     await verify_diary_edit_access(entry, current_user, db)
 
     # Find the media row for this URL
-    media_result = await db.execute(
-        select(Media).where(Media.diary_entry_id == entry_id, Media.url == photo_url)
-    )
+    media_result = await db.execute(select(Media).where(Media.diary_entry_id == entry_id, Media.url == photo_url))
     media = media_result.scalar_one_or_none()
     if not media:
         raise HTTPException(status_code=404, detail="Photo not found in entry")
@@ -748,90 +719,72 @@ async def reorder_entry_photos(
     entry.updated_at = datetime.now(timezone.utc)
     await db.commit()
 
-    ordered = await db.execute(
-        select(Media).where(Media.diary_entry_id == entry_id).order_by(Media.order_index)
-    )
+    ordered = await db.execute(select(Media).where(Media.diary_entry_id == entry_id).order_by(Media.order_index))
     logger.info("diary_photos_reordered", entry_id=entry_id, user_id=current_user.id)
     return ordered.scalars().all()
 
 
 # ==================== Audio Transcription ====================
 
+
 @router.post("/transcribe-audio")
 @limiter.limit(RateLimits.DIARY_TRANSCRIBE)
 async def transcribe_audio(
-    request: Request,
-    audio: UploadFile = File(...),
-    current_user: User = Depends(get_current_active_user)
+    request: Request, audio: UploadFile = File(...), current_user: User = Depends(get_current_active_user)
 ):
     """
     Transcribe audio to text using OpenAI Whisper API.
-    
+
     Accepts audio files in formats: mp3, mp4, mpeg, mpga, m4a, wav, webm
     Max file size: 25MB
     """
     try:
         # Validate file type
-        allowed_types = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/webm', 'audio/ogg']
-        allowed_extensions = ['.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm', '.ogg']
-        
+        allowed_types = ["audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/wav", "audio/webm", "audio/ogg"]
+        allowed_extensions = [".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm", ".ogg"]
+
         file_ext = os.path.splitext(audio.filename)[1].lower()
         if file_ext not in allowed_extensions:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
-            )
-        
+            raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}")
+
         # Read audio file
         audio_content = await audio.read()
-        
+
         # Validate size (max 25MB for Whisper API)
         max_size = 25 * 1024 * 1024  # 25MB
         if len(audio_content) > max_size:
-            raise HTTPException(
-                status_code=400,
-                detail="Audio file too large. Maximum size is 25MB"
-            )
-        
+            raise HTTPException(status_code=400, detail="Audio file too large. Maximum size is 25MB")
+
         # Get OpenAI API key from environment
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise HTTPException(
-                status_code=500,
-                detail="OpenAI API key not configured. Please add OPENAI_API_KEY to your environment."
+                status_code=500, detail="OpenAI API key not configured. Please add OPENAI_API_KEY to your environment."
             )
-        
+
         # Initialize OpenAI client
         client = OpenAI(api_key=api_key)
-        
+
         # Create a temporary file-like object
         audio_file = BytesIO(audio_content)
         audio_file.name = audio.filename
-        
+
         # Transcribe using Whisper API
         logger.info("transcribing_audio", user_id=current_user.id, filename=audio.filename, size=len(audio_content))
-        
+
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
             language="de",  # Deutsch - kann auch auto-detect mit None
-            response_format="text"
+            response_format="text",
         )
-        
+
         logger.info("transcription_complete", user_id=current_user.id, text_length=len(transcript))
-        
-        return {
-            "success": True,
-            "text": transcript,
-            "filename": audio.filename,
-            "size": len(audio_content)
-        }
-        
+
+        return {"success": True, "text": transcript, "filename": audio.filename, "size": len(audio_content)}
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error("transcription_failed", user_id=current_user.id, error=str(e))
-        raise HTTPException(
-            status_code=500,
-            detail=f"Transcription failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")

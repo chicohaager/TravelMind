@@ -3,9 +3,10 @@ Geocoding Service
 Convert location names to coordinates using Nominatim (OpenStreetMap)
 """
 
-import httpx
-from typing import Optional, Dict, Any
 import asyncio
+from typing import Any, Dict, Optional
+
+import httpx
 
 
 class GeocodingService:
@@ -27,16 +28,9 @@ class GeocodingService:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.base_url}/search",
-                    params={
-                        "q": location,
-                        "format": "json",
-                        "limit": 1,
-                        "addressdetails": 1
-                    },
-                    headers={
-                        "User-Agent": self.user_agent
-                    },
-                    timeout=10.0
+                    params={"q": location, "format": "json", "limit": 1, "addressdetails": 1},
+                    headers={"User-Agent": self.user_agent},
+                    timeout=10.0,
                 )
 
                 response.raise_for_status()
@@ -51,7 +45,7 @@ class GeocodingService:
                     "longitude": float(result["lon"]),
                     "display_name": result.get("display_name", location),
                     "type": result.get("type"),
-                    "importance": result.get("importance", 0)
+                    "importance": result.get("importance", 0),
                 }
 
         except httpx.HTTPError as e:
@@ -76,15 +70,9 @@ class GeocodingService:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.base_url}/reverse",
-                    params={
-                        "lat": latitude,
-                        "lon": longitude,
-                        "format": "json"
-                    },
-                    headers={
-                        "User-Agent": self.user_agent
-                    },
-                    timeout=10.0
+                    params={"lat": latitude, "lon": longitude, "format": "json"},
+                    headers={"User-Agent": self.user_agent},
+                    timeout=10.0,
                 )
 
                 response.raise_for_status()

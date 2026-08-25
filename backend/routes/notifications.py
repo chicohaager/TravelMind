@@ -5,19 +5,19 @@ In-app notifications for the current user. Display text is rendered client-side
 from `type` + `actor_name` / `trip_title`; see models/notification.py.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, update
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
 from datetime import datetime
-import structlog
+from typing import List, Optional
 
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Request
 from models.database import get_db
 from models.notification import Notification
 from models.user import User
+from pydantic import BaseModel, ConfigDict
 from routes.auth import get_current_active_user
-from utils.rate_limits import limiter, RateLimits
+from sqlalchemy import func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()

@@ -2,11 +2,11 @@
 Standardized error handling for TravelMind API
 """
 
-from fastapi import Request, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import structlog
+from fastapi import Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 logger = structlog.get_logger(__name__)
 
@@ -19,7 +19,7 @@ class StandardError(Exception):
         message: str,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
         error_code: str = "INTERNAL_ERROR",
-        details: dict = None
+        details: dict = None,
     ):
         self.message = message
         self.status_code = status_code
@@ -36,7 +36,7 @@ async def standard_error_handler(request: Request, exc: StandardError) -> JSONRe
         status_code=exc.status_code,
         message=exc.message,
         path=request.url.path,
-        details=exc.details
+        details=exc.details,
     )
 
     return JSONResponse(
@@ -45,8 +45,8 @@ async def standard_error_handler(request: Request, exc: StandardError) -> JSONRe
             "error": exc.error_code,
             "message": exc.message,
             "details": exc.details,
-            "path": str(request.url.path)
-        }
+            "path": str(request.url.path),
+        },
     )
 
 
@@ -54,17 +54,11 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     """Handle validation errors with standardized format"""
     errors = []
     for error in exc.errors():
-        errors.append({
-            "field": ".".join(str(loc) for loc in error["loc"]),
-            "message": error["msg"],
-            "type": error["type"]
-        })
+        errors.append(
+            {"field": ".".join(str(loc) for loc in error["loc"]), "message": error["msg"], "type": error["type"]}
+        )
 
-    logger.warning(
-        "validation_error",
-        path=request.url.path,
-        errors=errors
-    )
+    logger.warning("validation_error", path=request.url.path, errors=errors)
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -72,18 +66,14 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
             "error": "VALIDATION_ERROR",
             "message": "Request validation failed",
             "details": {"validation_errors": errors},
-            "path": str(request.url.path)
-        }
+            "path": str(request.url.path),
+        },
     )
 
 
 async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
     """Handle database integrity errors (e.g., unique constraint violations)"""
-    logger.error(
-        "integrity_error",
-        path=request.url.path,
-        error=str(exc.orig)
-    )
+    logger.error("integrity_error", path=request.url.path, error=str(exc.orig))
 
     # Try to extract meaningful info from error
     error_msg = str(exc.orig)
@@ -94,8 +84,8 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
                 "error": "DUPLICATE_ENTRY",
                 "message": "A record with this information already exists",
                 "details": {},
-                "path": str(request.url.path)
-            }
+                "path": str(request.url.path),
+            },
         )
     elif "FOREIGN KEY constraint failed" in error_msg or "foreign key constraint" in error_msg:
         return JSONResponse(
@@ -104,8 +94,8 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
                 "error": "INVALID_REFERENCE",
                 "message": "Referenced record does not exist",
                 "details": {},
-                "path": str(request.url.path)
-            }
+                "path": str(request.url.path),
+            },
         )
 
     return JSONResponse(
@@ -114,18 +104,14 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
             "error": "DATABASE_ERROR",
             "message": "Database operation failed",
             "details": {},
-            "path": str(request.url.path)
-        }
+            "path": str(request.url.path),
+        },
     )
 
 
 async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
     """Handle general SQLAlchemy errors"""
-    logger.error(
-        "database_error",
-        path=request.url.path,
-        error=str(exc)
-    )
+    logger.error("database_error", path=request.url.path, error=str(exc))
 
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -133,19 +119,14 @@ async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JS
             "error": "DATABASE_ERROR",
             "message": "An unexpected database error occurred",
             "details": {},
-            "path": str(request.url.path)
-        }
+            "path": str(request.url.path),
+        },
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle all uncaught exceptions"""
-    logger.error(
-        "unhandled_exception",
-        path=request.url.path,
-        error=str(exc),
-        exc_type=type(exc).__name__
-    )
+    logger.error("unhandled_exception", path=request.url.path, error=str(exc), exc_type=type(exc).__name__)
 
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -153,6 +134,6 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
             "error": "INTERNAL_ERROR",
             "message": "An unexpected error occurred",
             "details": {},
-            "path": str(request.url.path)
-        }
+            "path": str(request.url.path),
+        },
     )

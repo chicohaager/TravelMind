@@ -7,10 +7,10 @@ client-side from `type` + the denormalized `actor_name` / `trip_title`, so a
 notification stays readable even if the trip is later renamed or deleted.
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from models.database import Base
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
 
 
 class Notification(Base):
@@ -26,7 +26,7 @@ class Notification(Base):
 
     # Denormalized context for display + navigation.
     trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=True)
-    actor_name = Column(String(200), nullable=True)   # who triggered it
+    actor_name = Column(String(200), nullable=True)  # who triggered it
     trip_title = Column(String(200), nullable=True)
 
     is_read = Column(Boolean, nullable=False, default=False, server_default="false")

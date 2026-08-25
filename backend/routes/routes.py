@@ -2,18 +2,18 @@
 API routes for Route management (itineraries on maps)
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List, Optional
-from pydantic import BaseModel
 from datetime import datetime
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, status
 from models.database import get_db
 from models.route import Route
 from models.trip import Trip
-from routes.auth import get_current_active_user
 from models.user import User
+from pydantic import BaseModel
+from routes.auth import get_current_active_user
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/routes", tags=["routes"])
 
@@ -68,9 +68,7 @@ class RouteResponse(BaseModel):
 # Routes
 @router.post("/", response_model=RouteResponse, status_code=status.HTTP_201_CREATED)
 async def create_route(
-    route_data: RouteCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    route_data: RouteCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """
     Create a new route for a trip
@@ -80,16 +78,10 @@ async def create_route(
     trip = result.scalar_one_or_none()
 
     if not trip:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trip not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
     if trip.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to add routes to this trip"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to add routes to this trip")
 
     # Create route
     route = Route(**route_data.model_dump())
@@ -102,9 +94,7 @@ async def create_route(
 
 @router.get("/trip/{trip_id}", response_model=List[RouteResponse])
 async def get_trip_routes(
-    trip_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all routes for a trip
@@ -114,23 +104,13 @@ async def get_trip_routes(
     trip = result.scalar_one_or_none()
 
     if not trip:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trip not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
 
     if trip.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view routes for this trip"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view routes for this trip")
 
     # Get routes
-    result = await db.execute(
-        select(Route)
-        .where(Route.trip_id == trip_id)
-        .order_by(Route.order, Route.created_at)
-    )
+    result = await db.execute(select(Route).where(Route.trip_id == trip_id).order_by(Route.order, Route.created_at))
     routes = result.scalars().all()
 
     return routes
@@ -138,9 +118,7 @@ async def get_trip_routes(
 
 @router.get("/{route_id}", response_model=RouteResponse)
 async def get_route(
-    route_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    route_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """
     Get a specific route by ID
@@ -149,20 +127,14 @@ async def get_route(
     route = result.scalar_one_or_none()
 
     if not route:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Route not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
 
     # Verify user owns the trip
     result = await db.execute(select(Trip).where(Trip.id == route.trip_id))
     trip = result.scalar_one()
 
     if trip.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this route"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this route")
 
     return route
 
@@ -172,7 +144,7 @@ async def update_route(
     route_id: int,
     route_data: RouteUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Update a route
@@ -181,20 +153,14 @@ async def update_route(
     route = result.scalar_one_or_none()
 
     if not route:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Route not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
 
     # Verify user owns the trip
     result = await db.execute(select(Trip).where(Trip.id == route.trip_id))
     trip = result.scalar_one()
 
     if trip.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this route"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this route")
 
     # Update fields
     update_data = route_data.model_dump(exclude_unset=True)
@@ -209,9 +175,7 @@ async def update_route(
 
 @router.delete("/{route_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_route(
-    route_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    route_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """
     Delete a route
@@ -220,20 +184,14 @@ async def delete_route(
     route = result.scalar_one_or_none()
 
     if not route:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Route not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
 
     # Verify user owns the trip
     result = await db.execute(select(Trip).where(Trip.id == route.trip_id))
     trip = result.scalar_one()
 
     if trip.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this route"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this route")
 
     await db.delete(route)
     await db.commit()

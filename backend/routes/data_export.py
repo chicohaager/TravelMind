@@ -5,29 +5,29 @@ GDPR-compliant data export functionality.
 Allows users to download all their personal data.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
-import json
-import zipfile
 import io
+import json
 import os
+import zipfile
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from models.database import get_db
-from models.user import User
-from models.trip import Trip
 from models.diary import DiaryEntry
-from models.place import Place
-from models.media import Media
 from models.expense import Expense
+from models.media import Media
+from models.place import Place
+from models.trip import Trip
+from models.user import User
+from pydantic import BaseModel
 from routes.auth import get_current_active_user
 from services.audit_service import audit_service
-from utils.rate_limits import limiter, RateLimits
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
 
@@ -75,14 +75,14 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
         "export_info": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "user_id": user.id,
-            "format_version": "1.0"
+            "format_version": "1.0",
         },
         "user_profile": {},
         "trips": [],
         "diary_entries": [],
         "places": [],
         "expenses": [],
-        "media": []
+        "media": [],
     }
 
     # User profile (excluding sensitive fields)
@@ -98,11 +98,7 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
     }
 
     # Trips
-    trips_result = await db.execute(
-        select(Trip)
-        .where(Trip.owner_id == user.id)
-        .order_by(Trip.created_at.desc())
-    )
+    trips_result = await db.execute(select(Trip).where(Trip.owner_id == user.id).order_by(Trip.created_at.desc()))
     trips = trips_result.scalars().all()
 
     for trip in trips:
@@ -111,9 +107,7 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
 
     # Diary entries
     diary_result = await db.execute(
-        select(DiaryEntry)
-        .where(DiaryEntry.author_id == user.id)
-        .order_by(DiaryEntry.entry_date.desc())
+        select(DiaryEntry).where(DiaryEntry.author_id == user.id).order_by(DiaryEntry.entry_date.desc())
     )
     entries = diary_result.scalars().all()
 
@@ -125,9 +119,7 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
     trip_ids = [t.id for t in trips]
     if trip_ids:
         places_result = await db.execute(
-            select(Place)
-            .where(Place.trip_id.in_(trip_ids))
-            .order_by(Place.created_at.desc())
+            select(Place).where(Place.trip_id.in_(trip_ids)).order_by(Place.created_at.desc())
         )
         places = places_result.scalars().all()
 
@@ -138,9 +130,7 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
     # Expenses (from user's trips)
     if trip_ids:
         expenses_result = await db.execute(
-            select(Expense)
-            .where(Expense.trip_id.in_(trip_ids))
-            .order_by(Expense.date.desc())
+            select(Expense).where(Expense.trip_id.in_(trip_ids)).order_by(Expense.date.desc())
         )
         expenses = expenses_result.scalars().all()
 
@@ -149,11 +139,7 @@ async def gather_user_data(user: User, db: AsyncSession) -> Dict[str, Any]:
             data["expenses"].append(expense_data)
 
     # Media (photos owned by the user, across all their trips)
-    media_result = await db.execute(
-        select(Media)
-        .where(Media.owner_id == user.id)
-        .order_by(Media.created_at.desc())
-    )
+    media_result = await db.execute(select(Media).where(Media.owner_id == user.id).order_by(Media.created_at.desc()))
     for item in media_result.scalars().all():
         data["media"].append(model_to_dict(item))
 
@@ -176,39 +162,25 @@ def create_export_zip(data: Dict[str, Any], include_readme: bool = True) -> io.B
         # Individual files for each data type
         if data.get("user_profile"):
             zip_file.writestr(
-                "profile.json",
-                json.dumps(data["user_profile"], indent=2, default=str, ensure_ascii=False)
+                "profile.json", json.dumps(data["user_profile"], indent=2, default=str, ensure_ascii=False)
             )
 
         if data.get("trips"):
-            zip_file.writestr(
-                "trips.json",
-                json.dumps(data["trips"], indent=2, default=str, ensure_ascii=False)
-            )
+            zip_file.writestr("trips.json", json.dumps(data["trips"], indent=2, default=str, ensure_ascii=False))
 
         if data.get("diary_entries"):
             zip_file.writestr(
-                "diary_entries.json",
-                json.dumps(data["diary_entries"], indent=2, default=str, ensure_ascii=False)
+                "diary_entries.json", json.dumps(data["diary_entries"], indent=2, default=str, ensure_ascii=False)
             )
 
         if data.get("places"):
-            zip_file.writestr(
-                "places.json",
-                json.dumps(data["places"], indent=2, default=str, ensure_ascii=False)
-            )
+            zip_file.writestr("places.json", json.dumps(data["places"], indent=2, default=str, ensure_ascii=False))
 
         if data.get("expenses"):
-            zip_file.writestr(
-                "expenses.json",
-                json.dumps(data["expenses"], indent=2, default=str, ensure_ascii=False)
-            )
+            zip_file.writestr("expenses.json", json.dumps(data["expenses"], indent=2, default=str, ensure_ascii=False))
 
         if data.get("media"):
-            zip_file.writestr(
-                "media.json",
-                json.dumps(data["media"], indent=2, default=str, ensure_ascii=False)
-            )
+            zip_file.writestr("media.json", json.dumps(data["media"], indent=2, default=str, ensure_ascii=False))
 
         # README file
         if include_readme:
@@ -251,9 +223,7 @@ Generated: {timestamp}
 @router.get("/export/info", response_model=DataExportInfo)
 @limiter.limit("30/minute")
 async def get_export_info(
-    request,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Get information about available data export options.
@@ -261,27 +231,17 @@ async def get_export_info(
     Returns details about what data can be exported and available formats.
     """
     # Count user's data
-    trips_result = await db.execute(
-        select(Trip).where(Trip.owner_id == current_user.id)
-    )
+    trips_result = await db.execute(select(Trip).where(Trip.owner_id == current_user.id))
     trip_count = len(trips_result.scalars().all())
 
-    diary_result = await db.execute(
-        select(DiaryEntry).where(DiaryEntry.author_id == current_user.id)
-    )
+    diary_result = await db.execute(select(DiaryEntry).where(DiaryEntry.author_id == current_user.id))
     diary_count = len(diary_result.scalars().all())
 
     return DataExportInfo(
         available_formats=["json", "zip"],
-        includes=[
-            "User profile",
-            f"Trips ({trip_count})",
-            f"Diary entries ({diary_count})",
-            "Places",
-            "Expenses"
-        ],
+        includes=["User profile", f"Trips ({trip_count})", f"Diary entries ({diary_count})", "Places", "Expenses"],
         estimated_size="< 10 MB" if trip_count < 100 else "10-50 MB",
-        last_export=None  # Could track this in database
+        last_export=None,  # Could track this in database
     )
 
 
@@ -291,7 +251,7 @@ async def download_data_export(
     request,
     format: str = "zip",
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Download all user data (GDPR Article 20 compliance).
@@ -319,7 +279,7 @@ async def download_data_export(
         user_id=current_user.id,
         username=current_user.username,
         request=request,
-        details={"format": format}
+        details={"format": format},
     )
 
     if format == "json":
@@ -330,7 +290,7 @@ async def download_data_export(
             media_type="application/json",
             headers={
                 "Content-Disposition": f"attachment; filename=travelmind_export_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.json"
-            }
+            },
         )
     else:
         # Return ZIP file
@@ -340,16 +300,14 @@ async def download_data_export(
             media_type="application/zip",
             headers={
                 "Content-Disposition": f"attachment; filename=travelmind_export_{current_user.username}_{datetime.now().strftime('%Y%m%d')}.zip"
-            }
+            },
         )
 
 
 @router.delete("/account/data")
 @limiter.limit("1/day")
 async def request_data_deletion(
-    request,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Request deletion of all user data (GDPR Article 17 - Right to erasure).
@@ -375,12 +333,12 @@ async def request_data_deletion(
         user_id=current_user.id,
         username=current_user.username,
         request=request,
-        details={"data_items": len(data.get("trips", []))}
+        details={"data_items": len(data.get("trips", []))},
     )
 
     return {
         "status": "pending",
         "message": "Data deletion request received. Please delete your account via /api/users/account to complete the process.",
         "export_available": True,
-        "note": "We recommend downloading your data export before deleting your account."
+        "note": "We recommend downloading your data export before deleting your account.",
     }

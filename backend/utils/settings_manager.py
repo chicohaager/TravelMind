@@ -3,9 +3,9 @@ Settings Manager
 Helper functions to read and write application settings
 """
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from models.settings import Settings
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def get_setting(db: AsyncSession, key: str, default=None):
@@ -38,12 +38,7 @@ async def set_setting(db: AsyncSession, key: str, value: str, value_type: str = 
             setting.description = description
     else:
         # Create new
-        setting = Settings(
-            key=key,
-            value=str(value),
-            value_type=value_type,
-            description=description
-        )
+        setting = Settings(key=key, value=str(value), value_type=value_type, description=description)
         db.add(setting)
 
     await db.commit()
@@ -68,8 +63,8 @@ async def get_user_count(db: AsyncSession) -> int:
     """
     Get current number of users
     """
-    from sqlalchemy import func
     from models.user import User
+    from sqlalchemy import func
 
     result = await db.execute(select(func.count(User.id)))
     return result.scalar()

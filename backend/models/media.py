@@ -10,10 +10,10 @@ A media row always belongs to a trip and an owner, and to exactly one of a
 diary entry or a place (the other FK is NULL).
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
+from models.database import Base
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
 
 
 class Media(Base):
@@ -41,8 +41,8 @@ class Media(Base):
 
     # User / EXIF metadata
     caption = Column(String(500), nullable=True)
-    taken_at = Column(DateTime, nullable=True)   # from EXIF DateTimeOriginal
-    latitude = Column(Float, nullable=True)      # from EXIF GPS
+    taken_at = Column(DateTime, nullable=True)  # from EXIF DateTimeOriginal
+    latitude = Column(Float, nullable=True)  # from EXIF GPS
     longitude = Column(Float, nullable=True)
 
     # Display order within its parent (diary entry / place)

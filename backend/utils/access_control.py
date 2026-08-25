@@ -5,24 +5,18 @@ Shared functions for verifying user access to resources.
 Prevents IDOR (Insecure Direct Object Reference) vulnerabilities.
 """
 
-from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 import structlog
-
+from fastapi import HTTPException, status
+from models.participant import InvitationStatus, Participant, PermissionLevel
 from models.trip import Trip
 from models.user import User
-from models.participant import Participant, PermissionLevel, InvitationStatus
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger(__name__)
 
 
-async def verify_trip_access(
-    trip_id: int,
-    current_user: User,
-    db: AsyncSession,
-    require_edit: bool = False
-) -> Trip:
+async def verify_trip_access(trip_id: int, current_user: User, db: AsyncSession, require_edit: bool = False) -> Trip:
     """
     Verify user has access to a trip.
 
@@ -60,18 +54,13 @@ async def verify_trip_access(
         select(Participant).where(
             Participant.trip_id == trip_id,
             Participant.user_id == current_user.id,
-            Participant.invitation_status == InvitationStatus.ACCEPTED.value
+            Participant.invitation_status == InvitationStatus.ACCEPTED.value,
         )
     )
     participant = result.scalar_one_or_none()
 
     if not participant:
-        logger.warning(
-            "unauthorized_trip_access",
-            trip_id=trip_id,
-            user_id=current_user.id,
-            owner_id=trip.owner_id
-        )
+        logger.warning("unauthorized_trip_access", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     # Check edit permission if required
@@ -81,22 +70,14 @@ async def verify_trip_access(
             trip_id=trip_id,
             user_id=current_user.id,
             permission=participant.permission,
-            required="editor"
+            required="editor",
         )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Edit permission required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Edit permission required")
 
     return trip
 
 
-async def verify_diary_entry_access(
-    entry,
-    current_user: User,
-    db: AsyncSession,
-    require_author: bool = False
-) -> bool:
+async def verify_diary_entry_access(entry, current_user: User, db: AsyncSession, require_author: bool = False) -> bool:
     """
     Verify user has access to a diary entry.
 
@@ -116,10 +97,7 @@ async def verify_diary_entry_access(
     if require_author:
         if entry.author_id != current_user.id:
             logger.warning(
-                "unauthorized_diary_entry_access",
-                entry_id=entry.id,
-                user_id=current_user.id,
-                author_id=entry.author_id
+                "unauthorized_diary_entry_access", entry_id=entry.id, user_id=current_user.id, author_id=entry.author_id
             )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
         return True

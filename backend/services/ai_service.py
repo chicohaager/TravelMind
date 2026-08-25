@@ -3,13 +3,14 @@ Unified AI Service
 Supports multiple AI providers: Claude (Anthropic), OpenAI, Gemini (Google), and Groq
 """
 
-import json
 import asyncio
+import json
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List
-from anthropic import Anthropic
-import openai
+from typing import Any, Dict, List, Optional
+
 import google.generativeai as genai
+import openai
+from anthropic import Anthropic
 from groq import Groq
 
 
@@ -18,11 +19,7 @@ class AIProvider(ABC):
 
     @abstractmethod
     async def chat(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        max_tokens: int = 2048,
-        temperature: float = 1.0
+        self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
     ) -> str:
         """
         Send a chat message and get a response
@@ -47,20 +44,11 @@ class ClaudeProvider(AIProvider):
         self.model = model
 
     async def chat(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        max_tokens: int = 2048,
-        temperature: float = 1.0
+        self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
     ) -> str:
         messages = [{"role": "user", "content": prompt}]
 
-        kwargs = {
-            "model": self.model,
-            "max_tokens": max_tokens,
-            "messages": messages,
-            "temperature": temperature
-        }
+        kwargs = {"model": self.model, "max_tokens": max_tokens, "messages": messages, "temperature": temperature}
 
         if system_prompt:
             kwargs["system"] = system_prompt
@@ -80,11 +68,7 @@ class OpenAIProvider(AIProvider):
         self.model = model
 
     async def chat(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        max_tokens: int = 2048,
-        temperature: float = 1.0
+        self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
     ) -> str:
         messages = []
 
@@ -99,7 +83,7 @@ class OpenAIProvider(AIProvider):
             model=self.model,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=temperature
+            temperature=temperature,
         )
 
         if not response.choices or not response.choices[0].message.content:
@@ -115,11 +99,7 @@ class GeminiProvider(AIProvider):
         self.model = genai.GenerativeModel(model)
 
     async def chat(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        max_tokens: int = 2048,
-        temperature: float = 1.0
+        self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
     ) -> str:
         # Gemini combines system prompt with user prompt
         full_prompt = prompt
@@ -133,9 +113,7 @@ class GeminiProvider(AIProvider):
 
         # Run synchronous API call in thread pool to avoid blocking event loop
         response = await asyncio.to_thread(
-            self.model.generate_content,
-            full_prompt,
-            generation_config=generation_config
+            self.model.generate_content, full_prompt, generation_config=generation_config
         )
 
         text = getattr(response, "text", None)
@@ -152,11 +130,7 @@ class GroqProvider(AIProvider):
         self.model = model
 
     async def chat(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        max_tokens: int = 2048,
-        temperature: float = 1.0
+        self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
     ) -> str:
         messages = []
 
@@ -171,7 +145,7 @@ class GroqProvider(AIProvider):
             model=self.model,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=temperature
+            temperature=temperature,
         )
 
         if not response.choices or not response.choices[0].message.content:
@@ -189,11 +163,7 @@ class UnifiedAIService:
         self.provider = provider
 
     async def suggest_destinations(
-        self,
-        interests: List[str],
-        duration: int,
-        budget: Optional[str] = None,
-        season: Optional[str] = None
+        self, interests: List[str], duration: int, budget: Optional[str] = None, season: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate destination suggestions based on user preferences"""
         prompt = f"""Du bist ein erfahrener Reiseplaner. Empfehle 5 passende Reiseziele basierend auf:
@@ -240,11 +210,7 @@ Ausgabe als JSON:
             return {"destinations": [], "raw_response": response}
 
     async def plan_trip(
-        self,
-        destination: str,
-        duration: int,
-        interests: List[str],
-        accommodation_type: Optional[str] = None
+        self, destination: str, duration: int, interests: List[str], accommodation_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a detailed trip itinerary"""
         prompt = f"""Du bist ein erfahrener Reiseplaner. Erstelle einen detaillierten {duration}-tägigen Reiseplan für {destination}.
@@ -315,12 +281,7 @@ Ausgabe: Markdown-formatiert mit Absätzen"""
 
         return await self.provider.chat(prompt, max_tokens=1024)
 
-    async def chat(
-        self,
-        user_message: str,
-        context: Optional[Dict[str, Any]] = None,
-        max_tokens: int = 2048
-    ) -> str:
+    async def chat(self, user_message: str, context: Optional[Dict[str, Any]] = None, max_tokens: int = 2048) -> str:
         """Chat with AI about travel topics"""
         system_prompt = """Du bist ein lokaler Reiseexperte und beantwortest Fragen direkt und spezifisch.
 
@@ -344,7 +305,7 @@ Antworte immer in natürlichem Deutsch, strukturiert und hilfreich."""
             "sights": "Sehenswürdigkeiten",
             "activities": "Aktivitäten",
             "nightlife": "Nachtleben",
-            "all": "alle Kategorien"
+            "all": "alle Kategorien",
         }
 
         prompt = f"""Liste 10 Geheimtipps für {destination} auf, Kategorie: {categories_text.get(category, 'alle')}.

@@ -8,15 +8,15 @@ Introduces the `media` table as the source of truth for diary/place photos
 (caption, capture time, GPS, dimensions, ordering) and backfills it from the
 legacy `photos` JSON arrays on diary_entries and places.
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '0002'
-down_revision: Union[str, None] = '0001'
+revision: str = "0002"
+down_revision: Union[str, None] = "0001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -30,35 +30,37 @@ _THUMB_EXPR = (
 
 def upgrade() -> None:
     op.create_table(
-        'media',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('owner_id', sa.Integer(), nullable=False),
-        sa.Column('trip_id', sa.Integer(), nullable=False),
-        sa.Column('diary_entry_id', sa.Integer(), nullable=True),
-        sa.Column('place_id', sa.Integer(), nullable=True),
-        sa.Column('url', sa.String(length=500), nullable=False),
-        sa.Column('thumb_url', sa.String(length=500), nullable=True),
-        sa.Column('mime_type', sa.String(length=50), nullable=True),
-        sa.Column('width', sa.Integer(), nullable=True),
-        sa.Column('height', sa.Integer(), nullable=True),
-        sa.Column('size_bytes', sa.Integer(), nullable=True),
-        sa.Column('caption', sa.String(length=500), nullable=True),
-        sa.Column('taken_at', sa.DateTime(), nullable=True),
-        sa.Column('latitude', sa.Float(), nullable=True),
-        sa.Column('longitude', sa.Float(), nullable=True),
-        sa.Column('order_index', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
-        sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['trip_id'], ['trips.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['diary_entry_id'], ['diary_entries.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['place_id'], ['places.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id'),
+        "media",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("owner_id", sa.Integer(), nullable=False),
+        sa.Column("trip_id", sa.Integer(), nullable=False),
+        sa.Column("diary_entry_id", sa.Integer(), nullable=True),
+        sa.Column("place_id", sa.Integer(), nullable=True),
+        sa.Column("url", sa.String(length=500), nullable=False),
+        sa.Column("thumb_url", sa.String(length=500), nullable=True),
+        sa.Column("mime_type", sa.String(length=50), nullable=True),
+        sa.Column("width", sa.Integer(), nullable=True),
+        sa.Column("height", sa.Integer(), nullable=True),
+        sa.Column("size_bytes", sa.Integer(), nullable=True),
+        sa.Column("caption", sa.String(length=500), nullable=True),
+        sa.Column("taken_at", sa.DateTime(), nullable=True),
+        sa.Column("latitude", sa.Float(), nullable=True),
+        sa.Column("longitude", sa.Float(), nullable=True),
+        sa.Column("order_index", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=True
+        ),
+        sa.ForeignKeyConstraint(["owner_id"], ["users.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["trip_id"], ["trips.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["diary_entry_id"], ["diary_entries.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["place_id"], ["places.id"], ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_media_id'), 'media', ['id'], unique=False)
-    op.create_index(op.f('ix_media_owner_id'), 'media', ['owner_id'], unique=False)
-    op.create_index(op.f('ix_media_trip_id'), 'media', ['trip_id'], unique=False)
-    op.create_index(op.f('ix_media_diary_entry_id'), 'media', ['diary_entry_id'], unique=False)
-    op.create_index(op.f('ix_media_place_id'), 'media', ['place_id'], unique=False)
+    op.create_index(op.f("ix_media_id"), "media", ["id"], unique=False)
+    op.create_index(op.f("ix_media_owner_id"), "media", ["owner_id"], unique=False)
+    op.create_index(op.f("ix_media_trip_id"), "media", ["trip_id"], unique=False)
+    op.create_index(op.f("ix_media_diary_entry_id"), "media", ["diary_entry_id"], unique=False)
+    op.create_index(op.f("ix_media_place_id"), "media", ["place_id"], unique=False)
 
     # Backfill from legacy photos arrays (idempotent via NOT EXISTS guard).
     op.execute(f"""
@@ -87,9 +89,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(op.f('ix_media_place_id'), table_name='media')
-    op.drop_index(op.f('ix_media_diary_entry_id'), table_name='media')
-    op.drop_index(op.f('ix_media_trip_id'), table_name='media')
-    op.drop_index(op.f('ix_media_owner_id'), table_name='media')
-    op.drop_index(op.f('ix_media_id'), table_name='media')
-    op.drop_table('media')
+    op.drop_index(op.f("ix_media_place_id"), table_name="media")
+    op.drop_index(op.f("ix_media_diary_entry_id"), table_name="media")
+    op.drop_index(op.f("ix_media_trip_id"), table_name="media")
+    op.drop_index(op.f("ix_media_owner_id"), table_name="media")
+    op.drop_index(op.f("ix_media_id"), table_name="media")
+    op.drop_table("media")

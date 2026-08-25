@@ -4,8 +4,9 @@ Fetch high-quality photos for places and recommendations
 """
 
 import os
-import aiohttp
 from typing import Optional
+
+import aiohttp
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,15 +31,9 @@ async def search_photo(query: str, per_page: int = 1) -> Optional[str]:
         return None
 
     try:
-        headers = {
-            "Authorization": PEXELS_API_KEY
-        }
+        headers = {"Authorization": PEXELS_API_KEY}
 
-        params = {
-            "query": query,
-            "per_page": per_page,
-            "orientation": "landscape"  # Better for cards
-        }
+        params = {"query": query, "per_page": per_page, "orientation": "landscape"}  # Better for cards
 
         async with aiohttp.ClientSession() as session:
             async with session.get(PEXELS_API_URL, headers=headers, params=params, timeout=5) as response:
@@ -77,7 +72,7 @@ async def get_place_photo(place_name: str, category: str, destination: str = "")
     queries_to_try = []
 
     # Check if place_name looks like an AI search term (English, multiple words, lowercase)
-    is_search_term = ' ' in place_name and place_name.islower()
+    is_search_term = " " in place_name and place_name.islower()
 
     if is_search_term:
         # 1. If it's already a good search term, use it directly
@@ -105,7 +100,7 @@ async def get_place_photo(place_name: str, category: str, destination: str = "")
             "park": "park nature garden",
             "shopping": "shopping market store",
             "nightlife": "nightlife bar club",
-            "other": "travel destination"
+            "other": "travel destination",
         }
         category_query = category_keywords.get(category, "travel")
         queries_to_try.append(f"{destination} {category_query}")

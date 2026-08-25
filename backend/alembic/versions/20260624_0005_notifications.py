@@ -6,14 +6,14 @@ Create Date: 2026-06-24
 
 In-app notifications raised by trip-sharing events; see models/notification.py.
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
 
-
-revision: str = '0005'
-down_revision: Union[str, None] = '0004'
+revision: str = "0005"
+down_revision: Union[str, None] = "0004"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

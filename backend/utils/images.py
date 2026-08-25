@@ -46,7 +46,7 @@ def delete_upload_file(url: Optional[str]) -> None:
     if not url or not url.startswith("/uploads/"):
         return
     try:
-        relative = url[len("/uploads/"):]
+        relative = url[len("/uploads/") :]
         target = (UPLOADS_ROOT / relative).resolve()
         if not str(target).startswith(str(UPLOADS_ROOT)):
             logger.warning("upload_delete_path_escape_attempt", url=url)
@@ -55,6 +55,7 @@ def delete_upload_file(url: Optional[str]) -> None:
             os.remove(target)
     except Exception as e:  # pragma: no cover - best-effort
         logger.warning("upload_file_delete_failed", url=url, error=str(e))
+
 
 # Register the HEIC/HEIF decoder (default iPhone photo format) if available.
 # Kept optional so the app still boots on environments that haven't installed
@@ -87,6 +88,7 @@ def heic_supported() -> bool:
     """Whether HEIC/HEIF uploads can be decoded (pillow_heif is installed)."""
     return _HEIF_SUPPORTED
 
+
 # Derivative sizes, measured on the long edge in pixels.
 FULL_MAX_EDGE = 2560
 THUMB_MAX_EDGE = 400
@@ -99,18 +101,18 @@ THUMB_QUALITY = 75
 MAX_PIXELS = 60_000_000
 
 # EXIF tag IDs (avoids a dependency on ExifTags name maps).
-_TAG_DATETIME = 0x0132          # DateTime (fallback)
+_TAG_DATETIME = 0x0132  # DateTime (fallback)
 _TAG_DATETIME_ORIGINAL = 0x9003  # DateTimeOriginal (preferred)
-_IFD_EXIF = 0x8769               # Exif sub-IFD pointer
-_IFD_GPS = 0x8825                # GPS sub-IFD pointer
+_IFD_EXIF = 0x8769  # Exif sub-IFD pointer
+_IFD_GPS = 0x8825  # GPS sub-IFD pointer
 
 
 @dataclass
 class ProcessedImage:
     """Result of processing one uploaded image."""
 
-    url: str                       # public URL of the web-sized image
-    thumb_url: str                 # public URL of the thumbnail
+    url: str  # public URL of the web-sized image
+    thumb_url: str  # public URL of the thumbnail
     width: int
     height: int
     size_bytes: int

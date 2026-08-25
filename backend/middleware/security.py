@@ -3,16 +3,17 @@ Security Middleware
 Adds security headers and CSRF protection to all responses
 """
 
-from fastapi import Request, HTTPException, status
+import hashlib
+import hmac
+import os
+import secrets
+from typing import Callable
+
+import structlog
+from fastapi import HTTPException, Request, status
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-import secrets
-import hmac
-import hashlib
-import os
-from typing import Callable
-import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -31,11 +32,7 @@ def generate_csrf_token() -> str:
 
 def sign_csrf_token(token: str) -> str:
     """Sign a CSRF token with HMAC."""
-    return hmac.new(
-        CSRF_SECRET.encode(),
-        token.encode(),
-        hashlib.sha256
-    ).hexdigest()
+    return hmac.new(CSRF_SECRET.encode(), token.encode(), hashlib.sha256).hexdigest()
 
 
 def verify_csrf_token(token: str, signature: str) -> bool:
@@ -71,18 +68,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = (
-            "geolocation=(self), "
-            "microphone=(), "
-            "camera=(), "
-            "payment=(), "
-            "usb=()"
+            "geolocation=(self), " "microphone=(), " "camera=(), " "payment=(), " "usb=()"
         )
 
         # HSTS - only enable in production with HTTPS
         if self.enable_hsts and os.getenv("ENABLE_HSTS", "false").lower() == "true":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains; preload"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
 
         # Cache control for API responses (prevent caching of sensitive data)
         if request.url.path.startswith("/api/"):
@@ -138,24 +129,14 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 path=request.url.path,
                 method=request.method,
                 has_cookie=bool(csrf_cookie),
-                has_header=bool(csrf_header)
+                has_header=bool(csrf_header),
             )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="CSRF token missing"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token missing")
 
         # Verify token matches
         if not hmac.compare_digest(csrf_cookie, csrf_header):
-            logger.warning(
-                "csrf_token_mismatch",
-                path=request.url.path,
-                method=request.method
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="CSRF token invalid"
-            )
+            logger.warning("csrf_token_mismatch", path=request.url.path, method=request.method)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF token invalid")
 
         response = await call_next(request)
         return self._set_csrf_cookie(request, response)
@@ -171,7 +152,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 httponly=False,  # Must be readable by JavaScript
                 secure=os.getenv("SECURE_COOKIES", "false").lower() == "true",
                 samesite="strict",
-                max_age=86400  # 24 hours
+                max_age=86400,  # 24 hours
             )
         return response
 
@@ -193,14 +174,11 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
             content_length = int(content_length)
             if content_length > self.max_size:
                 logger.warning(
-                    "request_too_large",
-                    path=request.url.path,
-                    content_length=content_length,
-                    max_size=self.max_size
+                    "request_too_large", path=request.url.path, content_length=content_length, max_size=self.max_size
                 )
                 raise HTTPException(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    detail=f"Request body too large. Maximum size: {self.max_size / (1024*1024):.1f}MB"
+                    detail=f"Request body too large. Maximum size: {self.max_size / (1024*1024):.1f}MB",
                 )
 
         return await call_next(request)

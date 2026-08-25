@@ -3,21 +3,21 @@ Authentication Router
 User authentication and authorization with JWT
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt
 import os
-from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
+from dotenv import load_dotenv
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from models.database import get_db
 from models.user import User
+from pydantic import BaseModel, EmailStr, Field
 from services.audit_service import audit_service
-from utils.rate_limits import limiter, RateLimits
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.rate_limits import RateLimits, limiter
 
 load_dotenv()
 
@@ -43,7 +43,7 @@ class UserRegister(BaseModel):
                 "username": "johndoe",
                 "email": "john@example.com",
                 "password": "securepassword123",
-                "full_name": "John Doe"
+                "full_name": "John Doe",
             }
         }
 
@@ -61,7 +61,7 @@ class Token(BaseModel):
         json_schema_extra = {
             "example": {
                 "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",
-                "token_type": "bearer"
+                "token_type": "bearer",
             }
         }
 
@@ -93,7 +93,7 @@ class UserResponse(BaseModel):
                 "bio": "Travel enthusiast and photographer",
                 "is_active": True,
                 "is_superuser": False,
-                "created_at": "2025-01-15T10:30:00Z"
+                "created_at": "2025-01-15T10:30:00Z",
             }
         }
 
@@ -112,8 +112,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    token: Optional[str] = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
     """Get current authenticated user from JWT token"""
     if not token:
@@ -158,8 +157,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 # Optional: For endpoints that don't require auth but benefit from it
 async def get_optional_user(
-    token: Optional[str] = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    token: Optional[str] = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
     """Get current user if token is provided, None otherwise"""
     if not token:
@@ -185,17 +183,13 @@ async def get_registration_status(db: AsyncSession = Depends(get_db)):
     return {
         "registration_open": can_register,
         "message": reason if not can_register else "Registrierung ist geöffnet",
-        "app_name": app_name
+        "app_name": app_name,
     }
 
 
 @router.post("/register", response_model=Token, status_code=201)
 @limiter.limit(RateLimits.AUTH_REGISTER)
-async def register(
-    request: Request,
-    user_data: UserRegister,
-    db: AsyncSession = Depends(get_db)
-):
+async def register(request: Request, user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     """
     Register a new user
 
@@ -206,26 +200,17 @@ async def register(
 
     can_register, reason = await can_register_new_user(db)
     if not can_register:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=reason
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason)
 
     # Check if username exists
     result = await db.execute(select(User).where(User.username == user_data.username))
     if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="Username already registered"
-        )
+        raise HTTPException(status_code=400, detail="Username already registered")
 
     # Check if email exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered"
-        )
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     # Create new user
     new_user = User(
@@ -233,7 +218,7 @@ async def register(
         email=user_data.email,
         hashed_password=User.hash_password(user_data.password),
         full_name=user_data.full_name,
-        is_active=True
+        is_active=True,
     )
 
     db.add(new_user)
@@ -247,7 +232,7 @@ async def register(
         user_id=new_user.id,
         username=new_user.username,
         request=request,
-        details={"email": new_user.email}
+        details={"email": new_user.email},
     )
 
     # Generate access token
@@ -258,11 +243,7 @@ async def register(
 
 @router.post("/login", response_model=Token)
 @limiter.limit(RateLimits.AUTH_LOGIN)
-async def login(
-    request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db)
-):
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """
     Login with username and password
 
@@ -281,7 +262,7 @@ async def login(
             username=form_data.username,
             request=request,
             status="failure",
-            details={"reason": "invalid_credentials"}
+            details={"reason": "invalid_credentials"},
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -299,21 +280,12 @@ async def login(
             username=user.username,
             request=request,
             status="failure",
-            details={"reason": "user_inactive"}
+            details={"reason": "user_inactive"},
         )
-        raise HTTPException(
-            status_code=400,
-            detail="Inactive user"
-        )
+        raise HTTPException(status_code=400, detail="Inactive user")
 
     # Audit log: successful login
-    await audit_service.log_auth_event(
-        db=db,
-        event="login",
-        user_id=user.id,
-        username=user.username,
-        request=request
-    )
+    await audit_service.log_auth_event(db=db, event="login", user_id=user.id, username=user.username, request=request)
 
     # Generate access token
     access_token = create_access_token(data={"sub": user.username})

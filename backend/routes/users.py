@@ -3,21 +3,21 @@ Users Router
 User profile management
 """
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from models.database import get_db
 from models.user import User
+from pydantic import BaseModel, EmailStr, Field
 from routes.auth import get_current_active_user
 from services.audit_service import audit_service
-from utils.rate_limits import limiter, RateLimits
-import asyncio
-from utils.images import validate_image, process_and_save
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.images import process_and_save, validate_image
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
 
@@ -43,6 +43,7 @@ class UserProfile(BaseModel):
 
 class PublicUserProfile(BaseModel):
     """Public-facing profile exposed to other authenticated users (no email)."""
+
     id: int
     username: str
     full_name: Optional[str]
@@ -83,7 +84,7 @@ async def update_profile(
     request: Request,
     profile: UserUpdate,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update user profile
@@ -115,7 +116,7 @@ async def update_profile(
         user_id=current_user.id,
         username=current_user.username,
         request=request,
-        details={"updated_fields": list(update_data.keys())}
+        details={"updated_fields": list(update_data.keys())},
     )
 
     return current_user
@@ -127,7 +128,7 @@ async def change_password(
     request: Request,
     passwords: PasswordChange,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Change user password
@@ -144,7 +145,7 @@ async def change_password(
             username=current_user.username,
             request=request,
             status="failure",
-            details={"reason": "invalid_current_password"}
+            details={"reason": "invalid_current_password"},
         )
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
@@ -156,11 +157,7 @@ async def change_password(
 
     # Audit log: successful password change
     await audit_service.log_auth_event(
-        db=db,
-        event="password_change",
-        user_id=current_user.id,
-        username=current_user.username,
-        request=request
+        db=db, event="password_change", user_id=current_user.id, username=current_user.username, request=request
     )
 
     return {"message": "Password changed successfully"}
@@ -191,9 +188,7 @@ async def get_user(
 @router.delete("/account", status_code=204)
 @limiter.limit(RateLimits.USER_DELETE)
 async def delete_account(
-    request: Request,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Delete user account
@@ -219,7 +214,7 @@ async def delete_account(
         user_id=user_id,
         username=username,
         request=request,
-        details={"email": email, "self_deletion": True}
+        details={"email": email, "self_deletion": True},
     )
 
     return None
@@ -231,7 +226,7 @@ async def upload_avatar(
     request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Upload user avatar
@@ -243,16 +238,13 @@ async def upload_avatar(
 
     # Validate file size
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024)}MB"
-        )
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024)}MB")
 
     # Validate file type using MIME detection (not just extension)
     if not validate_image(contents, file.filename):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid file type. Only these image types are allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            detail=f"Invalid file type. Only these image types are allowed: {', '.join(ALLOWED_EXTENSIONS)}",
         )
 
     # Normalize, auto-orient and compress. Avatars stay small; no thumbnail needed.

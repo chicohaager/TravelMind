@@ -5,9 +5,10 @@ Centralized rate limit definitions for all API endpoints.
 Organized by sensitivity level and resource usage.
 """
 
+import os
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import os
 
 
 # Get custom key function that handles proxies better
@@ -24,14 +25,12 @@ def get_client_ip(request):
 
 
 # Initialize limiter with proxy-aware key function
-limiter = Limiter(
-    key_func=get_client_ip,
-    default_limits=["200 per day", "50 per hour"]
-)
+limiter = Limiter(key_func=get_client_ip, default_limits=["200 per day", "50 per hour"])
 
 
 # ==================== RATE LIMIT DEFINITIONS ====================
 # Format: "requests per period" (e.g., "10/minute", "100/hour", "1000/day")
+
 
 class RateLimits:
     """
@@ -115,6 +114,7 @@ class RateLimits:
 
 # ==================== HELPER FUNCTIONS ====================
 
+
 def get_rate_limit_status():
     """
     Get current rate limit configuration as a dictionary.
@@ -122,8 +122,8 @@ def get_rate_limit_status():
     """
     limits = {}
     for attr in dir(RateLimits):
-        if not attr.startswith('_'):
+        if not attr.startswith("_"):
             value = getattr(RateLimits, attr)
-            if isinstance(value, str) and '/' in value:
+            if isinstance(value, str) and "/" in value:
                 limits[attr] = value
     return limits
