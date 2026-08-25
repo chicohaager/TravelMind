@@ -1,0 +1,126 @@
+# ============================================================================
+# TravelMind — Produktions-Compose
+# ============================================================================
+# Ersetzt die am 2026-08-25 wiederhergestellte Fassung. Zwei Konstruktions-
+# fehler der Vorgaengerin sind hier behoben:
+#
+#   1. KEIN `build:`. Gebaut wird ausserhalb, ausgeliefert werden getaggte
+#      Images (Tag = Commit-SHA). Erst dadurch gibt es einen Rueckweg: die
+#      Vorversion bleibt unter ihrem Tag liegen und ist ein `up -d` entfernt.
+#   2. KEIN `user: "0:0"`. Die Vorgaengerin hat damit das `USER travelmind`
+#      aus dem Dockerfile ausgehebelt. Ursache war, dass nginx auf Port 80
+#      hoerte — das kann ein unprivilegierter Prozess nicht binden. Behoben
+#      an der Ursache: nginx hoert auf 8080, veroeffentlicht wird per
+#      Port-Mapping.
+#
+# Aufruf:
+#   TRAVELMIND_TAG=<commit-sha> docker compose -f docker-compose.prod.yml up -d
+#
+# Erwartet daneben eine .env mit POSTGRES_PASSWORD, JWT_SECRET, SECRET_KEY.
+# ============================================================================
+
+name: travelmind
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+
+services:
+
+  # ── Datenbank ────────────────────────────────────────────────────────────
+  db:
+    <<: *hardening
+    image: postgres:16-alpine
+    container_name: travelmind-db
+    environment:
+      POSTGRES_USER: travelmind
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+      POSTGRES_DB: travelmind
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travelmind -d travelmind"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    # postgres laeuft ohnehin als uid 70; das Entrypoint braucht zum Wechsel
+    # dorthin SETUID/SETGID, alles Uebrige faellt weg.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    networks: [travelmind]
+
+  # ── Migration (laeuft einmal, dann Ende) ─────────────────────────────────
+  migrate:
+    image: travelmind-backend:${TRAVELMIND_TAG:?TRAVELMIND_TAG fehlt (Commit-SHA)}
+    container_name: travelmind-migrate
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://travelmind:${POSTGRES_PASSWORD}@db:5432/travelmind
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY fehlt in .env}
+      TZ: ${TZ:-Europe/Berlin}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks: [travelmind]
+
+  # ── Backend ──────────────────────────────────────────────────────────────
+  backend:
+    <<: *hardening
+    image: travelmind-backend:${TRAVELMIND_TAG:?TRAVELMIND_TAG fehlt (Commit-SHA)}
+    container_name: travelmind-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://travelmind:${POSTGRES_PASSWORD}@db:5432/travelmind
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY fehlt in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8190}
+      ENABLE_DEMO_MODE: "false"
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/uploads:/app/uploads
+      - ${TRAVELMIND_DATA:-.}/backups:/app/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    cap_drop: [ALL]
+    networks: [travelmind]
+
+  # ── Frontend (nginx, non-root auf 8080) ──────────────────────────────────
+  frontend:
+    <<: *hardening
+    image: travelmind-frontend:${TRAVELMIND_TAG:?TRAVELMIND_TAG fehlt (Commit-SHA)}
+    container_name: travelmind-frontend
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+    ports:
+      - "${TRAVELMIND_PORT:-8190}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    # nginx schreibt nur nach /var/cache/nginx und /tmp — beides als tmpfs,
+    # der Rest des Dateisystems bleibt schreibgeschuetzt.
+    read_only: true
+    volumes:
+      # tmpfs braucht ausdruecklich mode 1777 — der Docker-Standard gehoert
+      # root und ist fuer uid 1001 nicht beschreibbar; nginx scheitert dann an
+      # mkdir("/var/cache/nginx/client_temp").
+      - type: tmpfs
+        target: /tmp
+        tmpfs: { mode: 01777 }
+      - type: tmpfs
+        target: /var/cache/nginx
+        tmpfs: { mode: 01777 }
+    cap_drop: [ALL]
+    networks: [travelmind]
+
+networks:
+  travelmind:
+    driver: bridge

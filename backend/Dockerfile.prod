@@ -48,8 +48,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Create non-root user
-RUN groupadd -r travelmind && useradd -r -g travelmind travelmind
+# Create non-root user.
+# uid/gid sind FESTGENAGELT, nicht dem Zufall ueberlassen: "useradd -r" ohne
+# -u vergibt die naechste freie Nummer (hier war es 999). Diese Nummer ist
+# aber ein Vertrag — die bind-gemounteten Verzeichnisse uploads/ und backups/
+# auf dem Host muessen ihr gehoeren. Verschoebe ein Rebuild auf anderer Basis
+# die Nummer, brechen die Mounts still. 1001 ist dieselbe Nummer wie im
+# Frontend-Image.
+RUN groupadd -r -g 1001 travelmind && \
+    useradd -r -u 1001 -g travelmind travelmind
 
 WORKDIR /app
 

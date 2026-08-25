@@ -52,17 +52,17 @@ RUN mkdir -p /var/cache/nginx /var/run && \
 # Remove default nginx config
 RUN rm -f /etc/nginx/conf.d/default.conf
 
-# Switch to non-root user (nginx will still bind to port 80 via capability)
-# For full non-root, use port 8080 and update nginx.conf
+# Switch to non-root user. nginx.conf hoert deshalb auf 8080 (Ports < 1024 sind
+# einem unprivilegierten Prozess verwehrt) und schreibt seine PID nach /tmp.
 USER travelmind
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
 # Health check — use 127.0.0.1 (nginx listens IPv4-only; "localhost" resolves to
 # IPv6 ::1 in this image and would false-fail) with busybox-compatible wget flags.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -q -O /dev/null http://127.0.0.1:80/ || exit 1
+    CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
