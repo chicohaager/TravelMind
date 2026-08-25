@@ -13,6 +13,7 @@ from urllib.parse import quote
 import httpx
 from anthropic import Anthropic
 from bs4 import BeautifulSoup
+from services.ai_service import modell_id
 
 
 class GuideParserService:
@@ -123,7 +124,7 @@ Text to analyze:
             # block the event loop for the multi-second Claude round-trip.
             message = await asyncio.to_thread(
                 self.claude_client.messages.create,
-                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                model=modell_id("CLAUDE_MODEL"),
                 max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}],
             )
