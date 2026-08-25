@@ -25,6 +25,17 @@ pruefe "Ratenbegrenzung fuer /api/"                          'limit_req_zone.*zo
 pruefe "strengere Grenze fuer /api/auth/"                    'limit_req_zone.*zone=auth'
 pruefe "X-Forwarded-For wird weitergereicht"                 'proxy_set_header\s+X-Forwarded-For'
 pruefe "SPA-Rueckfall auf index.html"                        'try_files.*index\.html'
+pruefe "echte Client-IP hinter dem Proxy"                     'real_ip_header\s+X-Forwarded-For'
+pruefe "Vertrauen nur fuer private Netze"                    'set_real_ip_from\s+192\.168\.0\.0/16'
+pruefe "Protokoll zeigt die Weiterleitungskette"             'log_format\s+mit_proxy'
+
+# Gegenkontrolle: kein OEFFENTLICHES Netz darf vertraut werden — sonst kann
+# jeder von aussen seine Adresse faelschen und die Ratenbegrenzung umgehen.
+if grep -E '^\s*set_real_ip_from' "$CONF" | grep -qvE '(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.)'; then
+  printf '  FEHLER  set_real_ip_from vertraut einem Netz ausserhalb von RFC 1918\n'; fehler=1
+else
+  printf '  ok    kein oeffentliches Netz in set_real_ip_from\n'
+fi
 
 # Gegenkontrolle: ein Muster, das NICHT zutreffen darf.
 if grep -qE '^\s*user\s+' "$CONF"; then
