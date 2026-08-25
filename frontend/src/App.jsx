@@ -10,6 +10,11 @@ import lazyWithRetry from '@/utils/lazyWithRetry'
 
 // Route pages are code-split: each becomes its own chunk and the heavy
 // dependencies (e.g. Leaflet on the map pages) load only when first visited.
+// UNERREICHBAR: die Route "/" leitet auf /trips um (siehe <Route index …>),
+// pages/Home.jsx wird deshalb nie gerendert. Der lazy-Import kostet nichts,
+// solange nichts ihn aufruft. Entweder anschliessen oder die Seite entfernen —
+// siehe docs/ROADMAP.md.
+// eslint-disable-next-line no-unused-vars
 const Home = lazyWithRetry(() => import('@pages/Home'))
 const Trips = lazyWithRetry(() => import('@pages/Trips'))
 const TripDetail = lazyWithRetry(() => import('@pages/TripDetail'))

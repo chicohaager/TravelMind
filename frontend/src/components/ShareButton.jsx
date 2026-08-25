@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Share2, X, Link, MessageCircle, Send } from 'lucide-react'
+import { Share2, X, Link } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import { reportError } from '@/utils/sentry'
 
 // Social Media Icons as SVG
 const TwitterIcon = () => (
@@ -79,6 +80,7 @@ export default function ShareButton({ trip, className = '' }) {
       toast.success(t('share.linkCopied'))
       setIsOpen(false)
     } catch (err) {
+      reportError(err, 'ShareButton.copyLink')
       toast.error(t('share.copyFailed'))
     }
   }

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
-import { render, screen, fireEvent } from '@/test/utils'
+import { render, screen } from '@/test/utils'
 import i18n from '@/i18n'
 import ErrorBoundary from './ErrorBoundary'
 

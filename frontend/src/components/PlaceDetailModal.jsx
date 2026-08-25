@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, MapPin, Star, Clock, Phone, Globe, ExternalLink,
-  Calendar, DollarSign, Info, MessageSquare, Image as ImageIcon,
+  Calendar, DollarSign, Info, Image as ImageIcon,
   Plus
 } from 'lucide-react'
 import { clsx } from 'clsx'

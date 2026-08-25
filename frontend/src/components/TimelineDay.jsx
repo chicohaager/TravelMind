@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Calendar, Clock, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, Reorder, AnimatePresence } from 'framer-motion'
 import TimelineEntryCard from './TimelineEntryCard'

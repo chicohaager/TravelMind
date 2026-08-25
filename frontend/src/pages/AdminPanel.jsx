@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Users, Search, Shield, UserX, Edit2, Trash2, Check, X,
+  Users, Search, Shield, UserX, Trash2, Check,
   TrendingUp, MapPin, Book, Calendar, Settings, UserPlus, Lock, Unlock
 } from 'lucide-react'
+// Symbole der halbfertigen Bearbeiten-Funktion weiter unten. Bewusst
+// behalten, damit die Stelle sichtbar bleibt statt spurlos zu verschwinden.
+// eslint-disable-next-line no-unused-vars
+import { Edit2, X } from 'lucide-react'
 import { adminService } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { reportError } from '@/utils/sentry'
 
 export default function AdminPanel() {
   const { t } = useTranslation()
@@ -20,6 +25,10 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterActive, setFilterActive] = useState(null)
+  // HALBFERTIG: Benutzer bearbeiten. Zustand und Handler sind vollstaendig,
+  // aber nirgends in die Oberflaeche eingehaengt — es gibt keinen Knopf, der
+  // setEditingUser aufruft. Siehe docs/ROADMAP.md.
+  // eslint-disable-next-line no-unused-vars
   const [editingUser, setEditingUser] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [showCreateUser, setShowCreateUser] = useState(false)
@@ -59,6 +68,7 @@ export default function AdminPanel() {
       })
       setSettings(settingsObj)
     } catch (error) {
+      reportError(error, 'AdminPanel.loadData')
       toast.error(t('admin:errorLoadingData'))
     } finally {
       setLoading(false)
@@ -75,6 +85,9 @@ export default function AdminPanel() {
     return () => clearTimeout(timer)
   }, [searchTerm, filterActive])
 
+  // Gehoert zur halbfertigen Benutzer-Bearbeitung oben: funktionsfaehig,
+  // aber von keinem Element aufgerufen.
+  // eslint-disable-next-line no-unused-vars
   const handleUpdateUser = async (userId, data) => {
     try {
       await adminService.updateUser(userId, data)
@@ -105,6 +118,7 @@ export default function AdminPanel() {
       toast.success(currentStatus ? t('admin:userDeactivated') : t('admin:userActivated'))
       loadData()
     } catch (error) {
+      reportError(error, 'AdminPanel.toggleUserStatus')
       toast.error(t('admin:errorUpdating'))
     }
   }
@@ -126,6 +140,7 @@ export default function AdminPanel() {
       toast.success(response.data.message)
       loadData()
     } catch (error) {
+      reportError(error, 'AdminPanel.toggleRegistration')
       toast.error(t('admin:errorChangingRegistration'))
     }
   }
@@ -159,6 +174,7 @@ export default function AdminPanel() {
       toast.success(t('admin:userLimitUpdated'))
       loadData()
     } catch (error) {
+      reportError(error, 'AdminPanel.updateUserLimit')
       toast.error(t('admin:errorUpdatingLimit'))
     }
   }

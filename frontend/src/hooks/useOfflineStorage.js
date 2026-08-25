@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 export const useOfflineSync = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [syncStatus, setSyncStatus] = useState({ syncing: false })
+
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -216,7 +217,6 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
 export const useOfflineMutation = (mutationFn, options = {}) => {
   const { t } = useTranslation()
   const { isOnline } = useOfflineSync()
-  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (variables) => {

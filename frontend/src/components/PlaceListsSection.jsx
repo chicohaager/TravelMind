@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plus, ChevronDown, ChevronRight, MoreVertical, Edit, Trash2,
-  MapPin, Sparkles, X, Check
+  Plus, ChevronDown, ChevronRight, Trash2,
+  Sparkles, X, Check
 } from 'lucide-react'
+// Symbole der halbfertigen Bearbeiten-Funktion weiter unten. Bewusst
+// behalten, damit die Stelle sichtbar bleibt statt spurlos zu verschwinden.
+// eslint-disable-next-line no-unused-vars
+import { Edit } from 'lucide-react'
 import { placesService } from '@/services/api'
 import toast from 'react-hot-toast'
 import PlaceCard from './PlaceCard'
@@ -46,6 +50,8 @@ export default function PlaceListsSection({
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [isCreatingList, setIsCreatingList] = useState(false)
+  // Gehoert zur halbfertigen Listen-Umbenennung (siehe updateListMutation unten).
+  // eslint-disable-next-line no-unused-vars
   const [editingListId, setEditingListId] = useState(null)
   const [newListTitle, setNewListTitle] = useState('')
   const [newListIcon, setNewListIcon] = useState('📍')
@@ -82,6 +88,9 @@ export default function PlaceListsSection({
   })
 
   // Update list mutation
+  // HALBFERTIG: Liste umbenennen. Die Mutation ist vollstaendig, aber kein
+  // Element ruft sie auf — genauso wie editingListId oben. Siehe docs/ROADMAP.md.
+  // eslint-disable-next-line no-unused-vars
   const updateListMutation = useMutation({
     mutationFn: async ({ listId, data }) => {
       const response = await placesService.updateList(listId, data)

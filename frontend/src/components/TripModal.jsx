@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Upload, Image as ImageIcon, Sparkles, MapPin as MapPinIcon } from 'lucide-react'
+import { X, Upload, Image as Sparkles, MapPin as MapPinIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { tripsService, aiService, participantsService } from '@services/api'

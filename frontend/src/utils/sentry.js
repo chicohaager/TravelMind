@@ -147,3 +147,28 @@ export const SentryErrorBoundary = Sentry.ErrorBoundary
  * Sentry Profiler for performance monitoring
  */
 export const SentryProfiler = Sentry.withProfiler
+
+/**
+ * Einen gefangenen Fehler melden, statt ihn wegzuwerfen.
+ *
+ * Am 2026-08-25 fanden sich sieben `catch (err) { toast.error(…) }`-Bloecke, in
+ * denen der Fehler selbst verworfen wurde: Der Nutzer sah eine allgemeine
+ * Meldung, und es gab keinerlei Spur, woran es lag — weder in der Konsole noch
+ * in Sentry. eslint hat sie nur als "unbenutzte Variable" gemeldet.
+ *
+ * Der Toast bleibt die Nachricht an den Nutzer; diese Funktion ist die Spur
+ * fuer die Fehlersuche.
+ *
+ * @param {unknown} fehler   Das gefangene Objekt.
+ * @param {string}  kontext  Wo es passiert ist, z.B. 'AdminPanel.loadData'.
+ * @param {object}  extra    Zusaetzliche Angaben (keine personenbezogenen Daten).
+ */
+export function reportError(fehler, kontext, extra = {}) {
+  // Immer sichtbar in der Browser-Konsole — auch ohne konfiguriertes Sentry.
+  console.error(`[${kontext}]`, fehler)
+
+  Sentry.captureException(fehler, {
+    tags: { kontext },
+    extra,
+  })
+}
