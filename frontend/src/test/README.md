@@ -20,7 +20,7 @@ npm run test:ui
 
 ## Test Structure
 
-```
+```text
 src/
 ├── test/
 │   ├── setup.js      # Global test setup (runs before each test)

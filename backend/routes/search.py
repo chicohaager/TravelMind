@@ -45,6 +45,11 @@ PG_DOCS = {
 
 # Per-entity PostgreSQL queries: each selects the common columns id, trip_id,
 # title, snippet plus a rank. ``:uid`` and ``:q`` are bound parameters.
+# Die # nosec B608 an den schliessenden """ unten: interpoliert werden hier
+# ausschliesslich die Modulkonstanten aus PG_DOCS. Alles, was vom Nutzer
+# kommt, laeuft ueber die gebundenen Parameter :q, :uid und :limit.
+# (Die Marke muss an der SCHLIESSENDEN Zeile stehen — an der oeffnenden
+#  landete sie beim ersten Versuch mitten in der SQL-Zeichenkette.)
 PG_QUERIES = {
     "trip": f"""
         SELECT id, id AS trip_id, title, description AS snippet,
@@ -52,14 +57,14 @@ PG_QUERIES = {
         FROM trips
         WHERE owner_id = :uid AND {PG_DOCS['trip']} @@ websearch_to_tsquery('simple', :q)
         ORDER BY rank DESC LIMIT :limit
-    """,
+    """,  # nosec B608
     "diary": f"""
         SELECT id, trip_id, title, content AS snippet,
                ts_rank({PG_DOCS['diary']}, websearch_to_tsquery('simple', :q)) AS rank
         FROM diary_entries
         WHERE author_id = :uid AND {PG_DOCS['diary']} @@ websearch_to_tsquery('simple', :q)
         ORDER BY rank DESC LIMIT :limit
-    """,
+    """,  # nosec B608
     "place": f"""
         SELECT id, trip_id, name AS title, coalesce(description, notes) AS snippet,
                ts_rank({PG_DOCS['place']}, websearch_to_tsquery('simple', :q)) AS rank
@@ -67,7 +72,7 @@ PG_QUERIES = {
         WHERE trip_id IN (SELECT id FROM trips WHERE owner_id = :uid)
           AND {PG_DOCS['place']} @@ websearch_to_tsquery('simple', :q)
         ORDER BY rank DESC LIMIT :limit
-    """,
+    """,  # nosec B608
     "media": f"""
         SELECT id, trip_id, caption AS title, NULL AS snippet,
                ts_rank({PG_DOCS['media']}, websearch_to_tsquery('simple', :q)) AS rank
@@ -75,7 +80,7 @@ PG_QUERIES = {
         WHERE owner_id = :uid AND caption IS NOT NULL
           AND {PG_DOCS['media']} @@ websearch_to_tsquery('simple', :q)
         ORDER BY rank DESC LIMIT :limit
-    """,
+    """,  # nosec B608
 }
 
 

@@ -27,8 +27,18 @@ skip = ["venv", "node_modules", "backend/alembic/versions"]
 
 [tool.bandit]
 exclude_dirs = ["venv", "node_modules", "backend/tests", "backend/alembic"]
-# B101 (assert) ist in Tests ueblich; Tests sind ohnehin ausgeschlossen.
-skips = ["B101"]
+# Projektweite Ausnahmen — jede mit Begruendung. Alles Uebrige wird je ZEILE
+# mit `# nosec <code> — <grund>` ausgenommen, nicht pauschal.
+#
+#   B101  assert — in Tests ueblich; Tests sind ohnehin ausgeschlossen.
+#   B104  Bindung an 0.0.0.0 — in einem Container ist das die Absicht: der
+#         Prozess lauscht im Container-Netz, veroeffentlicht wird ueber das
+#         Port-Mapping der Compose.
+#   B404/B603/B607  subprocess in den Sicherungsskripten. Sie rufen pg_dump
+#         bzw. psql mit einer im Code gebauten Argumentliste auf (kein
+#         shell=True, keine Zeichenkette). Der Aufruf ist der Zweck der
+#         Skripte; ohne Ausnahme waeren sie nicht pruefbar.
+skips = ["B101", "B104", "B404", "B603", "B607"]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]

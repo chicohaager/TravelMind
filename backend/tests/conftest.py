@@ -15,6 +15,7 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from main import app
+
 # NEBENWIRKUNGS-IMPORTE: jedes Modul registriert seine Tabelle an Base.metadata.
 # Ohne sie legt create_all() in der Testdatenbank nicht alle Tabellen an — am
 # 2026-08-25 entfernte autoflake sie und test_register_success fiel mit

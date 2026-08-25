@@ -36,7 +36,7 @@ python scripts/backup_database.py --uploads-dir /data/uploads
 The database connection comes from `DATABASE_URL` (override with `--database-url`).
 This produces a matching pair, e.g.:
 
-```
+```text
 travelmind_backup_20260623_120000.dump      # PostgreSQL (or .db for SQLite)
 travelmind_uploads_20260623_120000.tar.gz   # photos
 ```
@@ -103,7 +103,7 @@ Persistent data lives under `/DATA`.
 `travelmind-backend`, its uploads are at `/app/uploads`, and a host backups
 directory is bind-mounted in:
 
-```
+```text
 /DATA/AppData/travelmind/backups   ->  /app/backups   (in the backend container)
 ```
 

@@ -2,19 +2,26 @@
 
 /* Ensure better touch targets (min 44x44px) */
 @media (max-width: 640px) {
-  button, a, input[type="button"], input[type="submit"] {
+  button,
+  a,
+  input[type='button'],
+  input[type='submit'] {
     min-height: 44px;
     min-width: 44px;
   }
 
   /* Larger tap targets for interactive elements */
-  .btn, .btn-primary, .btn-secondary {
+  .btn,
+  .btn-primary,
+  .btn-secondary {
     padding: 12px 20px !important;
     font-size: 16px !important;
   }
 
   /* Better spacing for form elements */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px !important; /* Prevents zoom on iOS */
     padding: 12px !important;
   }
@@ -94,24 +101,29 @@
 
 /* Touch-friendly hover states */
 @media (hover: none) {
-  button:hover, a:hover {
+  button:hover,
+  a:hover {
     transform: none;
   }
 
-  button:active, a:active {
+  button:active,
+  a:active {
     transform: scale(0.98);
     opacity: 0.8;
   }
 }
 
 /* Better focus states for keyboard navigation */
-button:focus-visible, a:focus-visible, input:focus-visible {
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
   outline: 2px solid #6366f1;
   outline-offset: 2px;
 }
 
 /* Prevent text selection on buttons */
-button, .btn {
+button,
+.btn {
   -webkit-user-select: none;
   user-select: none;
 }
@@ -139,7 +151,8 @@ html {
 /* Better accessibility for touch */
 @media (max-width: 640px) {
   /* Larger checkboxes and radio buttons */
-  input[type="checkbox"], input[type="radio"] {
+  input[type='checkbox'],
+  input[type='radio'] {
     width: 24px;
     height: 24px;
   }
@@ -172,7 +185,8 @@ html {
 
 /* Better contrast for readability */
 @media (prefers-contrast: high) {
-  button, a {
+  button,
+  a {
     border: 2px solid currentColor;
   }
 }

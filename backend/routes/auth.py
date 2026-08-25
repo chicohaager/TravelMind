@@ -42,7 +42,7 @@ class UserRegister(BaseModel):
             "example": {
                 "username": "johndoe",
                 "email": "john@example.com",
-                "password": "securepassword123",
+                "password": "securepassword123",  # nosec B105
                 "full_name": "John Doe",
             }
         }
@@ -60,8 +60,8 @@ class Token(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",  # noqa: E501
-                "token_type": "bearer",
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",  # noqa: E501  # nosec B105
+                "token_type": "bearer",  # nosec B105
             }
         }
 
@@ -238,7 +238,7 @@ async def register(request: Request, user_data: UserRegister, db: AsyncSession =
     # Generate access token
     access_token = create_access_token(data={"sub": new_user.username})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}  # nosec B105
 
 
 @router.post("/login", response_model=Token)
@@ -290,7 +290,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     # Generate access token
     access_token = create_access_token(data={"sub": user.username})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}  # nosec B105
 
 
 @router.post("/logout")
@@ -322,4 +322,4 @@ async def refresh_token(request: Request, current_user: User = Depends(get_curre
     Generates a new access token from a valid existing token.
     """
     access_token = create_access_token(data={"sub": current_user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}  # nosec B105

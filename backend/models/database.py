@@ -162,6 +162,8 @@ async def backfill_media(conn):
     from sqlalchemy import text
 
     # Derive the thumbnail URL from the WebP naming convention used by utils.images.
+    # Die # nosec B608 weiter unten: in die SQL-Zeichenketten wird nur
+    # thumb_expr interpoliert, ein festes Literal ohne Eingabewerte.
     thumb_expr = (
         "CASE WHEN elem.value LIKE '%.webp' "
         "THEN regexp_replace(elem.value, '\\.webp$', '_thumb.webp') "
@@ -179,7 +181,7 @@ async def backfill_media(conn):
               AND jsonb_typeof(d.photos::jsonb) = 'array'
               AND jsonb_array_length(d.photos::jsonb) > 0
               AND NOT EXISTS (SELECT 1 FROM media m WHERE m.diary_entry_id = d.id)
-        """))
+        """))  # nosec B608
 
         await conn.execute(text(f"""
             INSERT INTO media (owner_id, trip_id, place_id, url, thumb_url, order_index, created_at)
@@ -192,14 +194,14 @@ async def backfill_media(conn):
               AND jsonb_typeof(p.photos::jsonb) = 'array'
               AND jsonb_array_length(p.photos::jsonb) > 0
               AND NOT EXISTS (SELECT 1 FROM media m WHERE m.place_id = p.id)
-        """))
+        """))  # nosec B608
         print("  ✓ Backfilled media table from legacy photos arrays")
     except Exception as e:
         print(f"  ⚠️  Media backfill warning: {e}")
 
 
 async def create_search_indexes(conn):
-    """
+    """# nosec B608
     Create GIN full-text indexes (PostgreSQL only).
 
     Uses the same document expressions as the search queries (routes.search)
@@ -271,17 +273,7 @@ async def init_db():
         from models import audit_log  # noqa: F401  Audit-Protokoll
         from models import media  # noqa: F401  Fotos/Videos
         from models import notification  # noqa: F401  Benachrichtigungen
-        from models import (  # noqa: F401
-            diary,
-            expense,
-            participant,
-            place,
-            place_list,
-            route,
-            settings,
-            trip,
-            user,
-        )
+        from models import diary, expense, participant, place, place_list, route, settings, trip, user  # noqa: F401
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)

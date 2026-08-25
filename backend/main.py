@@ -88,6 +88,16 @@ structlog.configure(
 logger = structlog.get_logger(__name__)
 
 
+# Die beiden Werte, die .env.example als Platzhalter mitliefert. Startet die
+# Anwendung mit einem davon, ist das Geheimnis oeffentlich bekannt — deshalb
+# bricht sie unten ab. Es sind ausdruecklich KEINE hinterlegten Geheimnisse,
+# sondern die Vergleichswerte dafuer.
+UNSICHERER_JWT_STANDARD = (  # pragma: allowlist secret
+    "your-super-secret-jwt-key-change-this-in-production"  # nosec B105
+)
+UNSICHERER_SECRET_STANDARD = "default-secret-key-change-this"  # nosec B105  # pragma: allowlist secret
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
@@ -102,13 +112,13 @@ async def lifespan(app: FastAPI):
     jwt_secret = os.getenv("JWT_SECRET")
     secret_key = os.getenv("SECRET_KEY")
 
-    if not jwt_secret or jwt_secret == "your-super-secret-jwt-key-change-this-in-production":
+    if not jwt_secret or jwt_secret == UNSICHERER_JWT_STANDARD:
         print("❌ ERROR: JWT_SECRET not configured or using default value!")
         print("   Please set a secure JWT_SECRET in your .env file.")
         print('   Generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"')
         raise ValueError("JWT_SECRET must be configured with a secure value")
 
-    if not secret_key or secret_key == "default-secret-key-change-this":
+    if not secret_key or secret_key == UNSICHERER_SECRET_STANDARD:
         print("❌ ERROR: SECRET_KEY not configured or using default value!")
         print("   Please set a secure SECRET_KEY in your .env file.")
         print('   Generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"')
