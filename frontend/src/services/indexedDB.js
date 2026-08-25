@@ -12,15 +12,16 @@ const STORES = {
   DIARY_ENTRIES: 'diary_entries',
   PLACES: 'places',
   SYNC_QUEUE: 'sync_queue',
-  METADATA: 'metadata'
+  METADATA: 'metadata',
 }
 
 class IndexedDBService {
   constructor() {
     this.db = null
-    this.isAvailable = typeof window !== 'undefined' &&
-                       typeof window.indexedDB !== 'undefined' &&
-                       window.indexedDB !== null
+    this.isAvailable =
+      typeof window !== 'undefined' &&
+      typeof window.indexedDB !== 'undefined' &&
+      window.indexedDB !== null
   }
 
   /**
@@ -76,7 +77,7 @@ class IndexedDBService {
         if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
           const syncStore = db.createObjectStore(STORES.SYNC_QUEUE, {
             keyPath: 'id',
-            autoIncrement: true
+            autoIncrement: true,
           })
           syncStore.createIndex('timestamp', 'timestamp', { unique: false })
           syncStore.createIndex('status', 'status', { unique: false })
@@ -184,7 +185,7 @@ class IndexedDBService {
   async saveTrip(trip) {
     return this.put(STORES.TRIPS, {
       ...trip,
-      _cached_at: new Date().toISOString()
+      _cached_at: new Date().toISOString(),
     })
   }
 
@@ -217,7 +218,7 @@ class IndexedDBService {
   async saveDiaryEntry(entry) {
     return this.put(STORES.DIARY_ENTRIES, {
       ...entry,
-      _cached_at: new Date().toISOString()
+      _cached_at: new Date().toISOString(),
     })
   }
 
@@ -238,7 +239,7 @@ class IndexedDBService {
   async savePlace(place) {
     return this.put(STORES.PLACES, {
       ...place,
-      _cached_at: new Date().toISOString()
+      _cached_at: new Date().toISOString(),
     })
   }
 
@@ -261,7 +262,7 @@ class IndexedDBService {
       ...operation,
       timestamp: new Date().toISOString(),
       status: 'pending', // pending, syncing, failed, completed
-      retries: 0
+      retries: 0,
     }
     return this.put(STORES.SYNC_QUEUE, queueItem)
   }
@@ -269,7 +270,7 @@ class IndexedDBService {
   async getSyncQueue(status = 'pending') {
     const allItems = await this.getAll(STORES.SYNC_QUEUE)
     if (!status) return allItems
-    return allItems.filter(item => item.status === status)
+    return allItems.filter((item) => item.status === status)
   }
 
   async updateSyncQueueItem(id, updates) {
@@ -278,7 +279,7 @@ class IndexedDBService {
 
     return this.put(STORES.SYNC_QUEUE, {
       ...item,
-      ...updates
+      ...updates,
     })
   }
 
@@ -312,17 +313,17 @@ class IndexedDBService {
   // ==================== BULK OPERATIONS ====================
 
   async saveTrips(trips) {
-    const promises = trips.map(trip => this.saveTrip(trip))
+    const promises = trips.map((trip) => this.saveTrip(trip))
     return Promise.all(promises)
   }
 
   async saveDiaryEntries(entries) {
-    const promises = entries.map(entry => this.saveDiaryEntry(entry))
+    const promises = entries.map((entry) => this.saveDiaryEntry(entry))
     return Promise.all(promises)
   }
 
   async savePlaces(places) {
-    const promises = places.map(place => this.savePlace(place))
+    const promises = places.map((place) => this.savePlace(place))
     return Promise.all(promises)
   }
 
@@ -348,7 +349,7 @@ class IndexedDBService {
       diary_entries: diary.length,
       places: places.length,
       sync_queue: syncQueue.length,
-      pending_sync: syncQueue.filter(item => item.status === 'pending').length
+      pending_sync: syncQueue.filter((item) => item.status === 'pending').length,
     }
   }
 }

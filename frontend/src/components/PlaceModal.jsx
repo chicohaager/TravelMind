@@ -1,5 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, MapPin, Star, Calendar, DollarSign, Sparkles, Lightbulb, Image, Upload } from 'lucide-react'
+import {
+  X,
+  MapPin,
+  Star,
+  Calendar,
+  DollarSign,
+  Sparkles,
+  Lightbulb,
+  Image,
+  Upload,
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation } from '@tanstack/react-query'
 import { tripsService, aiService, placesService } from '@services/api'
@@ -8,7 +18,14 @@ import toast from 'react-hot-toast'
 import NativeCamera from './NativeCamera'
 import { useTranslation } from 'react-i18next'
 
-export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = null, tripDestination, placeId = null }) {
+export default function PlaceModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData = null,
+  tripDestination,
+  placeId = null,
+}) {
   const { t } = useTranslation()
 
   const categories = [
@@ -17,7 +34,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
     { value: 'hotel', labelKey: 'places.categories.hotel', icon: '🏨' },
     { value: 'activity', labelKey: 'places.categories.activity', icon: '🎯' },
     { value: 'shopping', labelKey: 'places.categories.shopping', icon: '🛍️' },
-    { value: 'transport', labelKey: 'places.categories.transport', icon: '🚌' }
+    { value: 'transport', labelKey: 'places.categories.transport', icon: '🚌' },
   ]
   const [formData, setFormData] = useState({
     name: '',
@@ -34,7 +51,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
     currency: 'EUR',
     rating: 0,
     notes: '',
-    photos: []
+    photos: [],
   })
   const [aiSuggestions, setAiSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -43,13 +60,13 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
   // Create preview URLs with automatic cleanup
   const previewUrls = useMemo(() => {
-    return selectedFiles.map(file => URL.createObjectURL(file))
+    return selectedFiles.map((file) => URL.createObjectURL(file))
   }, [selectedFiles])
 
   // Cleanup blob URLs on unmount or when files change
   useEffect(() => {
     return () => {
-      previewUrls.forEach(url => URL.revokeObjectURL(url))
+      previewUrls.forEach((url) => URL.revokeObjectURL(url))
     }
   }, [previewUrls])
 
@@ -64,25 +81,25 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
         ...prev,
         latitude: data.latitude,
         longitude: data.longitude,
-        address: prev.address || data.display_name
+        address: prev.address || data.display_name,
       }))
       toast.success(t('places:coordinatesFound'))
     },
     onError: () => {
       toast.error(t('places:coordinatesNotFound'))
-    }
+    },
   })
 
   // AI suggestions mutation
   const aiSuggestionsMutation = useMutation({
     mutationFn: async ({ destination, category }) => {
       const categoryMap = {
-        'sight': 'sights',
-        'restaurant': 'restaurants',
-        'activity': 'activities',
-        'hotel': 'restaurants',
-        'shopping': 'activities',
-        'transport': 'activities'
+        sight: 'sights',
+        restaurant: 'restaurants',
+        activity: 'activities',
+        hotel: 'restaurants',
+        shopping: 'activities',
+        transport: 'activities',
       }
       const response = await aiService.localTips(destination, categoryMap[category] || 'all')
       return response.data
@@ -98,7 +115,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
     },
     onError: () => {
       toast.error(t('places:aiSuggestionsError'))
-    }
+    },
   })
 
   useEffect(() => {
@@ -119,7 +136,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
         cost: initialData.cost || '',
         currency: initialData.currency || 'EUR',
         rating: initialData.rating || 0,
-        notes: initialData.notes || ''
+        notes: initialData.notes || '',
       })
     } else if (!isOpen) {
       // Reset form
@@ -137,7 +154,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
         cost: '',
         currency: 'EUR',
         rating: 0,
-        notes: ''
+        notes: '',
       })
     }
   }, [initialData, isOpen])
@@ -146,12 +163,15 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
     const { name, value, type, checked } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }))
   }
 
   const handleGeocode = () => {
-    const location = formData.name + (formData.address ? ', ' + formData.address : '') + (tripDestination ? ', ' + tripDestination : '')
+    const location =
+      formData.name +
+      (formData.address ? ', ' + formData.address : '') +
+      (tripDestination ? ', ' + tripDestination : '')
     if (location.trim()) {
       geocodeMutation.mutate(location.trim())
     }
@@ -164,7 +184,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
     }
     aiSuggestionsMutation.mutate({
       destination: tripDestination,
-      category: formData.category
+      category: formData.category,
     })
   }
 
@@ -176,7 +196,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
       address: suggestion.location || prev.address,
       latitude: suggestion.coordinates?.lat || prev.latitude,
       longitude: suggestion.coordinates?.lng || prev.longitude,
-      notes: suggestion.insider_tip || prev.notes
+      notes: suggestion.insider_tip || prev.notes,
     }))
     setShowSuggestions(false)
     toast.success(t('places:suggestionApplied'))
@@ -196,7 +216,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
   const removeExistingPhoto = (photoUrl) => {
     setFormData((prev) => ({
       ...prev,
-      photos: prev.photos.filter((p) => p !== photoUrl)
+      photos: prev.photos.filter((p) => p !== photoUrl),
     }))
   }
 
@@ -213,7 +233,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
       longitude: parseFloat(formData.longitude) || 0,
       cost: formData.cost ? parseFloat(formData.cost) : null,
       visit_date: formData.visit_date ? `${formData.visit_date}T00:00:00` : null,
-      rating: formData.rating || null
+      rating: formData.rating || null,
     }
 
     try {
@@ -258,7 +278,7 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
         currency: 'EUR',
         rating: 0,
         notes: '',
-        photos: []
+        photos: [],
       })
       setSelectedFiles([])
     } catch (error) {
@@ -309,7 +329,9 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                       ) : (
                         <>
                           <Lightbulb className="w-4 h-4" />
-                          <span className="hidden sm:inline ml-2">{t('places:aiSuggestionsButton')}</span>
+                          <span className="hidden sm:inline ml-2">
+                            {t('places:aiSuggestionsButton')}
+                          </span>
                         </>
                       )}
                     </button>
@@ -369,7 +391,9 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                 {/* Name & Category */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places:placeName')} *</label>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('places:placeName')} *
+                    </label>
                     <input
                       type="text"
                       name="name"
@@ -381,8 +405,15 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places:categoryLabel')}</label>
-                    <select name="category" value={formData.category} onChange={handleChange} className="input">
+                    <label className="block text-sm font-medium mb-2">
+                      {t('places:categoryLabel')}
+                    </label>
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="input"
+                    >
                       {categories.map((cat) => (
                         <option key={cat.value} value={cat.value}>
                           {cat.icon} {t(cat.labelKey)}
@@ -394,7 +425,9 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('places:descriptionLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('places:descriptionLabel')}
+                  </label>
                   <textarea
                     name="description"
                     value={formData.description}
@@ -450,7 +483,9 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places:longitude')}</label>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('places:longitude')}
+                    </label>
                     <input
                       type="number"
                       name="longitude"
@@ -493,8 +528,15 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places:currencyLabel')}</label>
-                    <select name="currency" value={formData.currency} onChange={handleChange} className="input">
+                    <label className="block text-sm font-medium mb-2">
+                      {t('places:currencyLabel')}
+                    </label>
+                    <select
+                      name="currency"
+                      value={formData.currency}
+                      onChange={handleChange}
+                      className="input"
+                    >
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
                       <option value="GBP">GBP (£)</option>
@@ -504,13 +546,20 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
                 {/* Rating */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('places:ratingLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('places:ratingLabel')}
+                  </label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, rating: prev.rating === star ? 0 : star }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            rating: prev.rating === star ? 0 : star,
+                          }))
+                        }
                         className="transition-colors"
                       >
                         <Star
@@ -528,7 +577,9 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                 {/* Website & Phone */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places:websiteLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('places:websiteLabel')}
+                    </label>
                     <input
                       type="url"
                       name="website"
@@ -539,7 +590,9 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('places:phoneLabel')}</label>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('places:phoneLabel')}
+                    </label>
                     <input
                       type="tel"
                       name="phone"
@@ -635,15 +688,10 @@ export default function PlaceModal({ isOpen, onClose, onSubmit, initialData = nu
 
                   {/* Native Camera */}
                   <div className="mt-3">
-                    <NativeCamera
-                      onPhotoTaken={handleCameraPhoto}
-                      disabled={uploadingPhoto}
-                    />
+                    <NativeCamera onPhotoTaken={handleCameraPhoto} disabled={uploadingPhoto} />
                   </div>
 
-                  <p className="text-xs text-gray-500 mt-2">
-                    {t('places:fileTypesInfo')}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-2">{t('places:fileTypesInfo')}</p>
                 </div>
 
                 {/* Visited Checkbox */}

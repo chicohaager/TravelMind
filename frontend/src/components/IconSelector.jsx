@@ -1,4 +1,17 @@
-import { MapPin, Hotel, Coffee, UtensilsCrossed, Camera, Mountain, Ship, Plane, ShoppingBag, Museum, TreePine, Waves } from 'lucide-react'
+import {
+  MapPin,
+  Hotel,
+  Coffee,
+  UtensilsCrossed,
+  Camera,
+  Mountain,
+  Ship,
+  Plane,
+  ShoppingBag,
+  Museum,
+  TreePine,
+  Waves,
+} from 'lucide-react'
 
 const ICON_OPTIONS = [
   { type: 'location', icon: MapPin, label: 'Location' },
@@ -34,9 +47,11 @@ export default function IconSelector({ value = 'location', onChange, label = 'Ic
             onClick={() => handleIconChange(type)}
             className={`
               flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all
-              ${value === type
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                : 'border-gray-200 hover:border-gray-400 text-gray-600 hover:bg-gray-50'}
+              ${
+                value === type
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                  : 'border-gray-200 hover:border-gray-400 text-gray-600 hover:bg-gray-50'
+              }
             `}
             title={iconLabel}
           >

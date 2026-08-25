@@ -11,8 +11,8 @@ export default function AIAssistant() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: t('ai:greeting')
-    }
+      content: t('ai:greeting'),
+    },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,26 +22,26 @@ export default function AIAssistant() {
       icon: MapPin,
       label: t('ai:suggestDestinations'),
       prompt: t('ai:destinationsPrompt'),
-      color: 'bg-blue-500'
+      color: 'bg-blue-500',
     },
     {
       icon: Compass,
       label: t('ai:trip7Days'),
       prompt: t('ai:tripPlanPrompt'),
-      color: 'bg-purple-500'
+      color: 'bg-purple-500',
     },
     {
       icon: Coffee,
       label: t('ai:localTips'),
       prompt: t('ai:secretTipsPrompt'),
-      color: 'bg-orange-500'
+      color: 'bg-orange-500',
     },
     {
       icon: Camera,
       label: t('ai:bestPhotoSpots'),
       prompt: t('ai:photoSpotsPrompt'),
-      color: 'bg-pink-500'
-    }
+      color: 'bg-pink-500',
+    },
   ]
 
   const handleSubmit = async (e) => {
@@ -55,23 +55,26 @@ export default function AIAssistant() {
 
     try {
       // Erstelle Kontext aus bisherigen Nachrichten
-      const context = messages.slice(1).map(msg => ({
+      const context = messages.slice(1).map((msg) => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
       }))
 
       const response = await aiService.chat(userMessage, context)
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: response.data.answer || response.data.response
-      }])
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: response.data.answer || response.data.response,
+        },
+      ])
     } catch (error) {
       console.error('Error sending message:', error)
       toast.error(t('ai:errorMessage'))
 
       // Remove last user message on error
-      setMessages(prev => prev.slice(0, -1))
+      setMessages((prev) => prev.slice(0, -1))
     } finally {
       setLoading(false)
     }
@@ -92,9 +95,7 @@ export default function AIAssistant() {
         </div>
         <div>
           <h1 className="text-3xl font-bold">{t('ai:title')}</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('ai:personalTravelAdvisor')}
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">{t('ai:personalTravelAdvisor')}</p>
         </div>
       </div>
 
@@ -114,7 +115,9 @@ export default function AIAssistant() {
               onClick={() => handleQuickAction(action.prompt)}
               className="card hover:shadow-lg transition-all duration-200 text-left group"
             >
-              <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+              <div
+                className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+              >
                 <action.icon className="w-5 h-5 text-white" />
               </div>
               <h3 className="font-semibold mb-1">{action.label}</h3>
@@ -183,17 +186,11 @@ export default function AIAssistant() {
               className="input flex-1"
               disabled={loading}
             />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="btn btn-primary"
-            >
+            <button type="submit" disabled={loading || !input.trim()} className="btn btn-primary">
               <Send className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            {t('ai:tipMessage')}
-          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{t('ai:tipMessage')}</p>
         </form>
       </div>
     </div>

@@ -42,7 +42,9 @@ export default function PublicDiary() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <div className="text-center max-w-md">
           <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-700 dark:text-gray-300 font-medium">{t('common:share.public.notFound')}</p>
+          <p className="text-gray-700 dark:text-gray-300 font-medium">
+            {t('common:share.public.notFound')}
+          </p>
         </div>
       </div>
     )

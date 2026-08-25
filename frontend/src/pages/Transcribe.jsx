@@ -19,9 +19,9 @@ export default function Transcribe() {
       id: Date.now(),
       text: text,
       timestamp: new Date().toLocaleString(aktuelleLocale()),
-      length: text.length
+      length: text.length,
     }
-    setHistory(prev => [newEntry, ...prev])
+    setHistory((prev) => [newEntry, ...prev])
 
     toast.success(t('transcribe:audioTranscribedSuccess'))
   }
@@ -61,15 +61,9 @@ export default function Transcribe() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('transcribe:title')}</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          {t('transcribe:description')}
-        </p>
+        <p className="text-gray-600 dark:text-gray-400">{t('transcribe:description')}</p>
       </motion.div>
 
       {/* Audio Recorder */}
@@ -132,7 +126,7 @@ export default function Transcribe() {
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {t('transcribe:charactersWords', {
               chars: transcribedText.length,
-              words: transcribedText.split(/\s+/).filter(w => w).length
+              words: transcribedText.split(/\s+/).filter((w) => w).length,
             })}
           </div>
         </motion.div>
@@ -167,16 +161,12 @@ export default function Transcribe() {
                 onClick={() => handleLoadFromHistory(entry.text)}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {entry.timestamp}
-                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{entry.timestamp}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
                     {t('transcribe:characters', { count: entry.length })}
                   </div>
                 </div>
-                <p className="text-sm line-clamp-2">
-                  {entry.text}
-                </p>
+                <p className="text-sm line-clamp-2">{entry.text}</p>
               </div>
             ))}
           </div>

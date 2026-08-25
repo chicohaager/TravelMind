@@ -21,7 +21,12 @@ const baseURL = configuredApiUrl ? `${configuredApiUrl.replace(/\/+$/, '')}/api`
 
 // Only log in development
 if (isDev) {
-  console.log('API Config:', { isDev, configuredApiUrl, baseURL, hostname: window.location.hostname })
+  console.log('API Config:', {
+    isDev,
+    configuredApiUrl,
+    baseURL,
+    hostname: window.location.hostname,
+  })
 }
 
 // Create axios instance with timeout
@@ -101,10 +106,8 @@ export const aiService = {
   chat: (message, context) => api.post('/ai/chat', { message, context }),
   localTips: (destination, category = 'all') =>
     api.post('/ai/local-tips', { destination, category }),
-  getTripSuggestions: (destination) =>
-    api.post('/ai/trip-suggestions', { destination }),
-  getPersonalizedRecommendations: (data) =>
-    api.post('/ai/personalized-recommendations', data),
+  getTripSuggestions: (destination) => api.post('/ai/trip-suggestions', { destination }),
+  getPersonalizedRecommendations: (data) => api.post('/ai/personalized-recommendations', data),
 }
 
 // Trips Services
@@ -152,7 +155,8 @@ export const diaryService = {
       },
     })
   },
-  deletePhoto: (entryId, photoUrl) => api.delete(`/diary/${entryId}/photo`, { params: { photo_url: photoUrl } }),
+  deletePhoto: (entryId, photoUrl) =>
+    api.delete(`/diary/${entryId}/photo`, { params: { photo_url: photoUrl } }),
   exportMarkdown: (tripId) => api.get(`/diary/${tripId}/export/markdown`, { responseType: 'blob' }),
   exportPdf: (tripId) => api.get(`/diary/${tripId}/export/pdf`, { responseType: 'blob' }),
 }
@@ -163,7 +167,8 @@ export const placesService = {
   create: (tripId, data) => api.post(`/places/${tripId}/places`, data),
   update: (placeId, data) => api.put(`/places/places/${placeId}`, data),
   delete: (placeId) => api.delete(`/places/places/${placeId}`),
-  markVisited: (placeId, visited) => api.put(`/places/places/${placeId}/visited`, null, { params: { visited } }),
+  markVisited: (placeId, visited) =>
+    api.put(`/places/places/${placeId}/visited`, null, { params: { visited } }),
   reorder: (tripId, placeIds) => api.post(`/places/${tripId}/places/reorder`, placeIds),
   // Guide Import
   searchGuides: (tripId, destination) =>
@@ -183,7 +188,7 @@ export const placesService = {
     const formData = new FormData()
     formData.append('file', file)
     return api.post(`/places/places/${placeId}/upload-photo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
   deletePhoto: (placeId, photoUrl) =>
@@ -228,7 +233,8 @@ export const timelineService = {
   update: (entryId, data) => api.put(`/timeline/timeline/${entryId}`, data),
   delete: (entryId) => api.delete(`/timeline/timeline/${entryId}`),
   reorder: (tripId, entryIds) => api.post(`/timeline/${tripId}/timeline/reorder`, entryIds),
-  optimize: (tripId, dayDate) => api.post(`/timeline/${tripId}/timeline/optimize`, null, { params: { day_date: dayDate } }),
+  optimize: (tripId, dayDate) =>
+    api.post(`/timeline/${tripId}/timeline/optimize`, null, { params: { day_date: dayDate } }),
 }
 
 // Budget Services
@@ -238,7 +244,8 @@ export const budgetService = {
   update: (expenseId, data) => api.put(`/budget/expenses/${expenseId}`, data),
   delete: (expenseId) => api.delete(`/budget/expenses/${expenseId}`),
   getSummary: (tripId) => api.get(`/budget/${tripId}/budget-summary`),
-  splitEqually: (tripId, data) => api.post(`/budget/${tripId}/expenses/split-equally`, null, { params: data }),
+  splitEqually: (tripId, data) =>
+    api.post(`/budget/${tripId}/expenses/split-equally`, null, { params: data }),
 }
 
 // Auth Services

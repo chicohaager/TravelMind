@@ -15,9 +15,7 @@ export default function SharePanel({ trip }) {
   const [copied, setCopied] = useState(false)
 
   const isPublic = !!trip?.is_public
-  const shareUrl = trip?.share_token
-    ? `${window.location.origin}/share/${trip.share_token}`
-    : ''
+  const shareUrl = trip?.share_token ? `${window.location.origin}/share/${trip.share_token}` : ''
 
   const mutation = useMutation({
     mutationFn: ({ is_public, regenerate }) =>
@@ -112,7 +110,9 @@ export default function SharePanel({ trip }) {
       )}
 
       {!isPublic && (
-        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{t('common:share.public.hint')}</p>
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          {t('common:share.public.hint')}
+        </p>
       )}
     </div>
   )

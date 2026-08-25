@@ -1,5 +1,23 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { MapPin, Calendar, DollarSign, Users, Edit, Trash2, ArrowLeft, BookOpen, Plus, Download, FileText, Globe, Clock, Map as MapIcon, Sparkles, Check, X } from 'lucide-react'
+import {
+  MapPin,
+  Calendar,
+  DollarSign,
+  Users,
+  Edit,
+  Trash2,
+  ArrowLeft,
+  BookOpen,
+  Plus,
+  Download,
+  FileText,
+  Globe,
+  Clock,
+  Map as MapIcon,
+  Sparkles,
+  Check,
+  X,
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tripsService, participantsService, diaryService, placesService } from '@services/api'
@@ -47,7 +65,7 @@ const INTEREST_KEYS = [
   'nightlife',
   'architecture',
   'music',
-  'art'
+  'art',
 ]
 
 export default function TripDetail() {
@@ -89,12 +107,16 @@ export default function TripDetail() {
   }
 
   // Fetch trip data
-  const { data: trip, isLoading, error } = useQuery({
+  const {
+    data: trip,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['trip', id],
     queryFn: async () => {
       const response = await tripsService.getById(id)
       return response.data
-    }
+    },
   })
 
   // Fetch participants
@@ -104,7 +126,7 @@ export default function TripDetail() {
       const response = await participantsService.getParticipants(id)
       return response.data
     },
-    enabled: !!id
+    enabled: !!id,
   })
 
   // Fetch diary entries
@@ -114,7 +136,7 @@ export default function TripDetail() {
       const response = await diaryService.getEntries(id)
       return response.data
     },
-    enabled: !!id
+    enabled: !!id,
   })
 
   // Fetch places
@@ -124,7 +146,7 @@ export default function TripDetail() {
       const response = await placesService.getPlaces(id)
       return response.data
     },
-    enabled: !!id
+    enabled: !!id,
   })
 
   // Create place mutation
@@ -140,7 +162,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:addError'))
-    }
+    },
   })
 
   // Update place mutation
@@ -157,7 +179,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:updateError'))
-    }
+    },
   })
 
   // Delete place mutation
@@ -171,7 +193,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:deleteError'))
-    }
+    },
   })
 
   // Toggle visited mutation
@@ -181,7 +203,7 @@ export default function TripDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['places', id])
-    }
+    },
   })
 
   // Create diary entry mutation
@@ -197,7 +219,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:addError'))
-    }
+    },
   })
 
   // Update diary entry mutation
@@ -214,7 +236,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:updateError'))
-    }
+    },
   })
 
   // Delete diary entry mutation
@@ -228,7 +250,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:deleteError'))
-    }
+    },
   })
 
   // Handler functions for places
@@ -345,10 +367,8 @@ export default function TripDetail() {
   }
 
   const handleToggleInterest = (interest) => {
-    setSelectedInterests(prev =>
-      prev.includes(interest)
-        ? prev.filter(i => i !== interest)
-        : [...prev, interest]
+    setSelectedInterests((prev) =>
+      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
     )
   }
 
@@ -369,7 +389,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:updateError'))
-    }
+    },
   })
 
   // Delete mutation
@@ -383,7 +403,7 @@ export default function TripDetail() {
     },
     onError: () => {
       toast.error(t('tripDetail:deleteError'))
-    }
+    },
   })
 
   if (isLoading) {
@@ -405,9 +425,8 @@ export default function TripDetail() {
     )
   }
 
-  const mapCenter = trip.latitude && trip.longitude
-    ? [trip.latitude, trip.longitude]
-    : [51.1657, 10.4515] // Germany center as fallback
+  const mapCenter =
+    trip.latitude && trip.longitude ? [trip.latitude, trip.longitude] : [51.1657, 10.4515] // Germany center as fallback
 
   return (
     <div className="space-y-6">
@@ -427,11 +446,7 @@ export default function TripDetail() {
         className="relative h-64 md:h-80 rounded-2xl overflow-hidden"
       >
         {trip.cover_image ? (
-          <img
-            src={trip.cover_image}
-            alt={trip.title}
-            className="w-full h-full object-cover"
-          />
+          <img src={trip.cover_image} alt={trip.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">
             <MapPin className="w-24 h-24 text-white/50" />
@@ -470,13 +485,22 @@ export default function TripDetail() {
               <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail:period')}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {t('tripDetail:period')}
+              </div>
               <div className="font-semibold">
                 {trip.start_date && trip.end_date ? (
                   <>
-                    {new Date(trip.start_date).toLocaleDateString(aktuelleLocale(), { day: '2-digit', month: 'short' })}
+                    {new Date(trip.start_date).toLocaleDateString(aktuelleLocale(), {
+                      day: '2-digit',
+                      month: 'short',
+                    })}
                     {' - '}
-                    {new Date(trip.end_date).toLocaleDateString(aktuelleLocale(), { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(trip.end_date).toLocaleDateString(aktuelleLocale(), {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
                   </>
                 ) : (
                   t('common:notSet')
@@ -492,9 +516,13 @@ export default function TripDetail() {
               <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail:budget')}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {t('tripDetail:budget')}
+              </div>
               <div className="font-semibold">
-                {trip.budget ? formatCurrency(trip.budget, trip.currency || 'EUR') : t('common:notSet')}
+                {trip.budget
+                  ? formatCurrency(trip.budget, trip.currency || 'EUR')
+                  : t('common:notSet')}
               </div>
             </div>
           </div>
@@ -506,14 +534,16 @@ export default function TripDetail() {
               <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="flex-1">
-              <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail:participants')}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {t('tripDetail:participants')}
+              </div>
               <div className="font-semibold">{participants.length || t('common:none')}</div>
             </div>
           </div>
           {/* Participant Avatars */}
           {participants.length > 0 && (
             <div className="flex -space-x-2 mt-3">
-              {participants.slice(0, 5).map((participant) => (
+              {participants.slice(0, 5).map((participant) =>
                 participant.photo_url ? (
                   <img
                     key={participant.id}
@@ -531,7 +561,7 @@ export default function TripDetail() {
                     {participant.name.charAt(0).toUpperCase()}
                   </div>
                 )
-              ))}
+              )}
               {participants.length > 5 && (
                 <div className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-semibold">
                   +{participants.length - 5}
@@ -646,10 +676,7 @@ export default function TripDetail() {
                   <div className="flex flex-wrap gap-2">
                     {trip.interests && trip.interests.length > 0 ? (
                       trip.interests.map((interest) => (
-                        <span
-                          key={interest}
-                          className="badge badge-primary"
-                        >
+                        <span key={interest} className="badge badge-primary">
                           {t(`interests:${interest}`, interest)}
                         </span>
                       ))
@@ -666,11 +693,7 @@ export default function TripDetail() {
 
           {/* Recommendations Tab */}
           {activeTab === 'recommendations' && (
-            <RecommendationsView
-              tripId={id}
-              trip={trip}
-              places={places}
-            />
+            <RecommendationsView tripId={id} trip={trip} places={places} />
           )}
 
           {/* Participants Tab */}
@@ -683,193 +706,193 @@ export default function TripDetail() {
 
           {/* Diary Tab */}
           {activeTab === 'diary' && (
-          <div className="card">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <BookOpen className="w-6 h-6" />
-                {t('tripDetail:travelDiary')}
-              </h2>
-              <div className="flex gap-2">
-                {diaryEntries.length > 0 && (
-                  <>
-                    <button
-                      onClick={handleExportMarkdown}
-                      className="btn btn-secondary btn-sm"
-                      title="Als Markdown exportieren"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Markdown
-                    </button>
-                    <button
-                      onClick={handleExportPdf}
-                      className="btn btn-secondary btn-sm"
-                      title="Als PDF exportieren"
-                    >
-                      <Download className="w-4 h-4" />
-                      PDF
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    setEditingEntry(null)
-                    setIsDiaryModalOpen(true)
-                  }}
-                  className="btn btn-primary btn-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Eintrag hinzufügen
-                </button>
+            <div className="card">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <BookOpen className="w-6 h-6" />
+                  {t('tripDetail:travelDiary')}
+                </h2>
+                <div className="flex gap-2">
+                  {diaryEntries.length > 0 && (
+                    <>
+                      <button
+                        onClick={handleExportMarkdown}
+                        className="btn btn-secondary btn-sm"
+                        title="Als Markdown exportieren"
+                      >
+                        <FileText className="w-4 h-4" />
+                        Markdown
+                      </button>
+                      <button
+                        onClick={handleExportPdf}
+                        className="btn btn-secondary btn-sm"
+                        title="Als PDF exportieren"
+                      >
+                        <Download className="w-4 h-4" />
+                        PDF
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      setEditingEntry(null)
+                      setIsDiaryModalOpen(true)
+                    }}
+                    className="btn btn-primary btn-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Eintrag hinzufügen
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {diaryEntries.length > 0 ? (
-              <div className="space-y-4">
-                {diaryEntries.map((entry) => (
-                  <DiaryEntry
-                    key={entry.id}
-                    entry={entry}
-                    onEdit={handleEditEntry}
-                    onDelete={handleDeleteEntry}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                {t('tripDetail:noDiaryEntriesYet')}
-              </p>
-            )}
-          </div>
+              {diaryEntries.length > 0 ? (
+                <div className="space-y-4">
+                  {diaryEntries.map((entry) => (
+                    <DiaryEntry
+                      key={entry.id}
+                      entry={entry}
+                      onEdit={handleEditEntry}
+                      onDelete={handleDeleteEntry}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                  {t('tripDetail:noDiaryEntriesYet')}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Places Tab - With Custom Lists */}
           {activeTab === 'places' && (
-          <div className="space-y-4">
-            {/* Header with Actions */}
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <MapPin className="w-6 h-6" />
-                Orte & Aktivitäten
-                {places.length > 0 && (
-                  <span className="text-sm font-normal text-gray-600 dark:text-gray-400">
-                    ({places.length})
-                  </span>
-                )}
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsImportModalOpen(true)}
-                  className="btn btn-outline btn-sm flex items-center gap-2"
-                >
-                  <Globe className="w-4 h-4" />
-                  <span className="hidden sm:inline">Aus Reiseführer</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingPlace(null)
-                    setIsPlaceModalOpen(true)
-                  }}
-                  className="btn btn-primary btn-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Ort hinzufügen
-                </button>
-              </div>
-            </div>
-
-            {/* Custom Place Lists Section */}
-            <PlaceListsSection
-              tripId={id}
-              places={places}
-              onEditPlace={handleEditPlace}
-              onDeletePlace={handleDeletePlace}
-              onToggleVisited={handleToggleVisited}
-              onPlaceClick={handlePlaceClick}
-            />
-
-            {/* Map View */}
-            <div className="card h-[70vh] min-h-[500px]">
-              <h3 className="text-lg font-bold mb-3">{t('map:title')}</h3>
-              <div className="h-[calc(100%-2.5rem)] rounded-lg overflow-hidden">
-                <MapContainer
-                  center={mapCenter}
-                  zoom={places.length > 0 ? 12 : (trip.latitude && trip.longitude ? 10 : 6)}
-                  style={{ height: '100%', width: '100%' }}
-                  scrollWheelZoom={true}
-                  className="rounded-lg"
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-
-                  {/* Trip Destination Marker */}
-                  {trip.latitude && trip.longitude && (
-                    <Marker position={[trip.latitude, trip.longitude]}>
-                      <Popup>
-                        <div className="text-center">
-                          <strong>{trip.destination}</strong>
-                          <br />
-                          <span className="text-xs text-gray-600">{t('tripDetail:destination')}</span>
-                        </div>
-                      </Popup>
-                    </Marker>
+            <div className="space-y-4">
+              {/* Header with Actions */}
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <MapPin className="w-6 h-6" />
+                  Orte & Aktivitäten
+                  {places.length > 0 && (
+                    <span className="text-sm font-normal text-gray-600 dark:text-gray-400">
+                      ({places.length})
+                    </span>
                   )}
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="btn btn-outline btn-sm flex items-center gap-2"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span className="hidden sm:inline">Aus Reiseführer</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingPlace(null)
+                      setIsPlaceModalOpen(true)
+                    }}
+                    className="btn btn-primary btn-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Ort hinzufügen
+                  </button>
+                </div>
+              </div>
 
-                  {/* Place Markers */}
-                  {places
-                    .filter(place => place.latitude && place.longitude && place.latitude !== 0 && place.longitude !== 0)
-                    .map((place) => (
-                      <Marker
-                        key={place.id}
-                        position={[place.latitude, place.longitude]}
-                      >
+              {/* Custom Place Lists Section */}
+              <PlaceListsSection
+                tripId={id}
+                places={places}
+                onEditPlace={handleEditPlace}
+                onDeletePlace={handleDeletePlace}
+                onToggleVisited={handleToggleVisited}
+                onPlaceClick={handlePlaceClick}
+              />
+
+              {/* Map View */}
+              <div className="card h-[70vh] min-h-[500px]">
+                <h3 className="text-lg font-bold mb-3">{t('map:title')}</h3>
+                <div className="h-[calc(100%-2.5rem)] rounded-lg overflow-hidden">
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={places.length > 0 ? 12 : trip.latitude && trip.longitude ? 10 : 6}
+                    style={{ height: '100%', width: '100%' }}
+                    scrollWheelZoom={true}
+                    className="rounded-lg"
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+
+                    {/* Trip Destination Marker */}
+                    {trip.latitude && trip.longitude && (
+                      <Marker position={[trip.latitude, trip.longitude]}>
                         <Popup>
-                          <div className="min-w-[200px]">
-                            <h3 className="font-bold mb-1">{place.name}</h3>
-                            {place.category && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                                {place.category}
-                              </span>
-                            )}
-                            {place.description && (
-                              <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                                {place.description}
-                              </p>
-                            )}
-                            {place.address && (
-                              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {place.address}
-                              </p>
-                            )}
+                          <div className="text-center">
+                            <strong>{trip.destination}</strong>
+                            <br />
+                            <span className="text-xs text-gray-600">
+                              {t('tripDetail:destination')}
+                            </span>
                           </div>
                         </Popup>
                       </Marker>
-                    ))}
-                </MapContainer>
+                    )}
+
+                    {/* Place Markers */}
+                    {places
+                      .filter(
+                        (place) =>
+                          place.latitude &&
+                          place.longitude &&
+                          place.latitude !== 0 &&
+                          place.longitude !== 0
+                      )
+                      .map((place) => (
+                        <Marker key={place.id} position={[place.latitude, place.longitude]}>
+                          <Popup>
+                            <div className="min-w-[200px]">
+                              <h3 className="font-bold mb-1">{place.name}</h3>
+                              {place.category && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                  {place.category}
+                                </span>
+                              )}
+                              {place.description && (
+                                <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                                  {place.description}
+                                </p>
+                              )}
+                              {place.address && (
+                                <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {place.address}
+                                </p>
+                              )}
+                            </div>
+                          </Popup>
+                        </Marker>
+                      ))}
+                  </MapContainer>
+                </div>
               </div>
             </div>
-          </div>
           )}
 
           {/* Timeline Tab */}
           {activeTab === 'timeline' && (
-          <TimelineView
-            tripId={id}
-            places={places}
-            tripStartDate={trip.start_date}
-            tripEndDate={trip.end_date}
-          />
+            <TimelineView
+              tripId={id}
+              places={places}
+              tripStartDate={trip.start_date}
+              tripEndDate={trip.end_date}
+            />
           )}
 
           {/* Budget Tab */}
-          {activeTab === 'budget' && (
-          <BudgetView
-            tripId={id}
-            participants={participants}
-          />
-          )}
+          {activeTab === 'budget' && <BudgetView tripId={id} participants={participants} />}
         </div>
 
         {/* Sidebar */}
@@ -915,11 +938,13 @@ export default function TripDetail() {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">{t('tripDetail:visited')}</span>
                 <span className="font-semibold">
-                  {places.filter(p => p.visited).length} / {places.length}
+                  {places.filter((p) => p.visited).length} / {places.length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">{t('tripDetail:diaryEntries')}</span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {t('tripDetail:diaryEntries')}
+                </span>
                 <span className="font-semibold">{diaryEntries.length}</span>
               </div>
               <div className="flex justify-between">

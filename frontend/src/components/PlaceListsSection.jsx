@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Plus, ChevronDown, ChevronRight, Trash2,
-  Sparkles, X, Check
-} from 'lucide-react'
+import { Plus, ChevronDown, ChevronRight, Trash2, Sparkles, X, Check } from 'lucide-react'
 // Symbole der halbfertigen Bearbeiten-Funktion weiter unten. Bewusst
 // behalten, damit die Stelle sichtbar bleibt statt spurlos zu verschwinden.
 // eslint-disable-next-line no-unused-vars
@@ -45,7 +42,7 @@ export default function PlaceListsSection({
   onEditPlace,
   onDeletePlace,
   onToggleVisited,
-  onPlaceClick
+  onPlaceClick,
 }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -65,7 +62,7 @@ export default function PlaceListsSection({
       const response = await placesService.getLists(tripId)
       return response.data
     },
-    enabled: !!tripId
+    enabled: !!tripId,
   })
 
   // Create list mutation
@@ -84,7 +81,7 @@ export default function PlaceListsSection({
     },
     onError: () => {
       toast.error(t('placeLists:errorCreating'))
-    }
+    },
   })
 
   // Update list mutation
@@ -103,7 +100,7 @@ export default function PlaceListsSection({
     },
     onError: () => {
       toast.error(t('placeLists:errorUpdating'))
-    }
+    },
   })
 
   // Delete list mutation
@@ -118,7 +115,7 @@ export default function PlaceListsSection({
     },
     onError: () => {
       toast.error(t('placeLists:errorDeleting'))
-    }
+    },
   })
 
   const handleCreateList = async () => {
@@ -131,7 +128,7 @@ export default function PlaceListsSection({
       title: newListTitle,
       icon: newListIcon,
       color: newListColor,
-      is_collapsed: false
+      is_collapsed: false,
     })
   }
 
@@ -142,7 +139,7 @@ export default function PlaceListsSection({
   }
 
   const toggleListCollapse = (listId) => {
-    setCollapsedLists(prev => {
+    setCollapsedLists((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(listId)) {
         newSet.delete(listId)
@@ -154,14 +151,14 @@ export default function PlaceListsSection({
   }
 
   // Group places by list
-  const placesWithoutList = places.filter(p => !p.list_id)
-  const placesByList = placeLists.map(list => ({
+  const placesWithoutList = places.filter((p) => !p.list_id)
+  const placesByList = placeLists.map((list) => ({
     ...list,
-    places: places.filter(p => p.list_id === list.id)
+    places: places.filter((p) => p.list_id === list.id),
   }))
 
   // Recommended places section (places without a custom list and no visit_date)
-  const recommendedPlaces = placesWithoutList.filter(p => !p.visit_date)
+  const recommendedPlaces = placesWithoutList.filter((p) => !p.visit_date)
 
   return (
     <div className="space-y-4">

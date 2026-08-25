@@ -68,7 +68,7 @@ function schluesselDerSprache(sprache) {
 }
 
 const sprachen = readdirSync(localesVerzeichnis).filter((e) =>
-  statSync(join(localesVerzeichnis, e)).isDirectory(),
+  statSync(join(localesVerzeichnis, e)).isDirectory()
 )
 const namensraeume = readdirSync(join(localesVerzeichnis, REFERENZSPRACHE))
   .filter((d) => d.endsWith('.json'))
@@ -113,7 +113,7 @@ describe('i18n: Sprachdateien decken sich', () => {
 
 describe('i18n: Namensräume werden mit Doppelpunkt angesprochen', () => {
   const quellDateien = dateienRekursiv(srcVerzeichnis, ['.jsx', '.js']).filter(
-    (p) => !p.endsWith('.test.js') && !p.endsWith('.test.jsx'),
+    (p) => !p.endsWith('.test.js') && !p.endsWith('.test.jsx')
   )
 
   it('findet überhaupt Quelldateien', () => {
@@ -131,10 +131,10 @@ describe('i18n: Namensräume werden mit Doppelpunkt angesprochen', () => {
   })
 
   it('Positivkontrolle: der Scanner erkennt einen künstlichen Verstoß', () => {
-    const beispiel = "const x = t(`interests.${interest}`, interest)"
+    const beispiel = 'const x = t(`interests.${interest}`, interest)'
     expect(namensraumMitPunkt(beispiel).length).toBe(1)
     // Gegenkontrolle: die richtige Schreibweise darf NICHT anschlagen
-    const richtig = "const x = t(`interests:${interest}`, interest)"
+    const richtig = 'const x = t(`interests:${interest}`, interest)'
     expect(namensraumMitPunkt(richtig)).toEqual([])
   })
 })

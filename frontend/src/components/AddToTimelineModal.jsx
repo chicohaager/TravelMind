@@ -3,7 +3,14 @@ import { X, Calendar, Clock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 
-export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, tripStartDate, tripEndDate }) {
+export default function AddToTimelineModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  places,
+  tripStartDate,
+  tripEndDate,
+}) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState({
     place_id: '',
@@ -11,7 +18,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
     start_time: '',
     end_time: '',
     duration_minutes: '',
-    notes: ''
+    notes: '',
   })
 
   useEffect(() => {
@@ -23,7 +30,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
         start_time: '',
         end_time: '',
         duration_minutes: '',
-        notes: ''
+        notes: '',
       })
     } else if (tripStartDate && !formData.day_date) {
       // Set default date to trip start date
@@ -46,7 +53,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
       end_time: formData.end_time || null,
       duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
       notes: formData.notes || null,
-      order: 0
+      order: 0,
     }
 
     await onSubmit(data)
@@ -58,7 +65,7 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
       start_time: '',
       end_time: '',
       duration_minutes: '',
-      notes: ''
+      notes: '',
     })
   }
 
@@ -103,7 +110,9 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 {/* Place Selection */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('timeline:placeLabel')} *</label>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('timeline:placeLabel')} *
+                  </label>
                   <select
                     name="place_id"
                     value={formData.place_id}
@@ -154,7 +163,9 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('timeline:endTime')}</label>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('timeline:endTime')}
+                    </label>
                     <input
                       type="time"
                       name="end_time"
@@ -181,7 +192,9 @@ export default function AddToTimelineModal({ isOpen, onClose, onSubmit, places, 
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('timeline:notesLabel')}</label>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('timeline:notesLabel')}
+                  </label>
                   <textarea
                     name="notes"
                     value={formData.notes}

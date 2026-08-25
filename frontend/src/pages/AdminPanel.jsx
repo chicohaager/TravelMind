@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Users, Search, Shield, UserX, Trash2, Check,
-  TrendingUp, MapPin, Book, Calendar, Settings, UserPlus, Lock, Unlock
+  Users,
+  Search,
+  Shield,
+  UserX,
+  Trash2,
+  Check,
+  TrendingUp,
+  MapPin,
+  Book,
+  Calendar,
+  Settings,
+  UserPlus,
+  Lock,
+  Unlock,
 } from 'lucide-react'
 // Symbole der halbfertigen Bearbeiten-Funktion weiter unten. Bewusst
 // behalten, damit die Stelle sichtbar bleibt statt spurlos zu verschwinden.
@@ -36,7 +48,7 @@ export default function AdminPanel() {
     username: '',
     email: '',
     password: '',
-    full_name: ''
+    full_name: '',
   })
 
   useEffect(() => {
@@ -56,14 +68,14 @@ export default function AdminPanel() {
       const [usersRes, statsRes, settingsRes] = await Promise.all([
         adminService.getUsers({ search: searchTerm, is_active: filterActive }),
         adminService.getStats(),
-        adminService.getSettings()
+        adminService.getSettings(),
       ])
       setUsers(usersRes.data)
       setStats(statsRes.data)
 
       // Convert settings array to object for easier access
       const settingsObj = {}
-      settingsRes.data.forEach(setting => {
+      settingsRes.data.forEach((setting) => {
         settingsObj[setting.key] = setting
       })
       setSettings(settingsObj)
@@ -169,7 +181,7 @@ export default function AdminPanel() {
     try {
       await adminService.updateSetting('max_users', {
         value: value.toString(),
-        value_type: 'integer'
+        value_type: 'integer',
       })
       toast.success(t('admin:userLimitUpdated'))
       loadData()
@@ -187,7 +199,11 @@ export default function AdminPanel() {
       const { fixed_count, total_found, failed_count } = response.data
 
       if (fixed_count > 0) {
-        toast.success(t('admin:placesGeocoded').replace('{fixed_count}', fixed_count).replace('{total_found}', total_found))
+        toast.success(
+          t('admin:placesGeocoded')
+            .replace('{fixed_count}', fixed_count)
+            .replace('{total_found}', total_found)
+        )
       } else if (total_found === 0) {
         toast.success(t('admin:noPlacesNeedGeocode'))
       } else {
@@ -210,15 +226,9 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('admin:title')}</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          {t('admin:systemManagement')}
-        </p>
+        <p className="text-gray-600 dark:text-gray-400">{t('admin:systemManagement')}</p>
       </motion.div>
 
       {/* Stats Cards */}
@@ -346,7 +356,9 @@ export default function AdminPanel() {
                       : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800'
                   }`}
                 >
-                  {settings.registration_open?.value === 'true' ? t('admin:open') : t('admin:closed')}
+                  {settings.registration_open?.value === 'true'
+                    ? t('admin:open')
+                    : t('admin:closed')}
                 </button>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -372,7 +384,10 @@ export default function AdminPanel() {
                 </div>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('admin:currentUsers').replace('{count}', stats?.total_users || 0)} {settings.max_users?.value > 0 ? `/ ${settings.max_users.value}` : `(${t('admin:unlimited')})`}
+                {t('admin:currentUsers').replace('{count}', stats?.total_users || 0)}{' '}
+                {settings.max_users?.value > 0
+                  ? `/ ${settings.max_users.value}`
+                  : `(${t('admin:unlimited')})`}
               </p>
             </div>
 
@@ -468,13 +483,18 @@ export default function AdminPanel() {
                 <th className="text-left py-3 px-4 font-semibold text-sm">{t('admin:user')}</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">{t('admin:email')}</th>
                 <th className="text-center py-3 px-4 font-semibold text-sm">{t('admin:status')}</th>
-                <th className="text-center py-3 px-4 font-semibold text-sm">{t('admin:statistics')}</th>
+                <th className="text-center py-3 px-4 font-semibold text-sm">
+                  {t('admin:statistics')}
+                </th>
                 <th className="text-right py-3 px-4 font-semibold text-sm">{t('admin:actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <tr
+                  key={u.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
                       {u.avatar_url ? (
@@ -547,7 +567,11 @@ export default function AdminPanel() {
                         }`}
                         title={u.is_active ? t('admin:deactivate') : t('admin:activate')}
                       >
-                        {u.is_active ? <Check className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                        {u.is_active ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <UserX className="w-4 h-4" />
+                        )}
                       </button>
 
                       {/* Toggle Admin */}
@@ -583,9 +607,7 @@ export default function AdminPanel() {
           </table>
 
           {users.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              {t('admin:noUsersFound')}
-            </div>
+            <div className="text-center py-12 text-gray-500">{t('admin:noUsersFound')}</div>
           )}
         </div>
       </motion.div>
@@ -599,14 +621,9 @@ export default function AdminPanel() {
             className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full"
           >
             <h3 className="text-xl font-bold mb-4">{t('admin:deleteUser')}</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {t('admin:deleteUserConfirm')}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">{t('admin:deleteUserConfirm')}</p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="btn-outline flex-1"
-              >
+              <button onClick={() => setDeleteConfirm(null)} className="btn-outline flex-1">
                 {t('admin:cancel')}
               </button>
               <button
@@ -693,10 +710,7 @@ export default function AdminPanel() {
                 >
                   {t('admin:cancel')}
                 </button>
-                <button
-                  type="submit"
-                  className="btn-primary flex-1"
-                >
+                <button type="submit" className="btn-primary flex-1">
                   {t('admin:create')}
                 </button>
               </div>

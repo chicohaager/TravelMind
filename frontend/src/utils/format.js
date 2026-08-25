@@ -85,7 +85,7 @@ export const formatNumber = (number, decimals = 0) => {
 
   return new Intl.NumberFormat(aktuelleLocale(), {
     minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
+    maximumFractionDigits: decimals,
   }).format(number)
 }
 

@@ -21,7 +21,7 @@ export default function BudgetView({ tripId, participants }) {
       const response = await budgetService.getExpenses(tripId)
       return response.data
     },
-    enabled: !!tripId
+    enabled: !!tripId,
   })
 
   // Fetch budget summary
@@ -31,7 +31,7 @@ export default function BudgetView({ tripId, participants }) {
       const response = await budgetService.getSummary(tripId)
       return response.data
     },
-    enabled: !!tripId
+    enabled: !!tripId,
   })
 
   // Create expense mutation
@@ -48,7 +48,7 @@ export default function BudgetView({ tripId, participants }) {
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorAdding')))
-    }
+    },
   })
 
   // Update expense mutation
@@ -66,7 +66,7 @@ export default function BudgetView({ tripId, participants }) {
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorUpdating')))
-    }
+    },
   })
 
   // Delete expense mutation
@@ -81,7 +81,7 @@ export default function BudgetView({ tripId, participants }) {
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorDeleting')))
-    }
+    },
   })
 
   const handleExpenseSubmit = async (data) => {
@@ -119,7 +119,7 @@ export default function BudgetView({ tripId, participants }) {
     accommodation: t('budget:categories.accommodation'),
     activities: t('budget:categories.activities'),
     shopping: t('budget:categories.shopping'),
-    other: t('budget:categories.other')
+    other: t('budget:categories.other'),
   }
 
   return (
@@ -168,31 +168,46 @@ export default function BudgetView({ tripId, participants }) {
                     const isNeutral = Math.abs(balance) < 0.01
 
                     return (
-                      <div key={participantId} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                      <div
+                        key={participantId}
+                        className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
+                      >
                         <div className="flex items-center justify-between mb-2">
                           <div className="font-semibold">{data.name}</div>
-                          <div className={`flex items-center gap-1 font-bold ${
-                            isNeutral
-                              ? 'text-gray-600 dark:text-gray-400'
-                              : isPositive
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`}>
+                          <div
+                            className={`flex items-center gap-1 font-bold ${
+                              isNeutral
+                                ? 'text-gray-600 dark:text-gray-400'
+                                : isPositive
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}
+                          >
                             {isPositive && <TrendingUp className="w-4 h-4" />}
                             {!isPositive && !isNeutral && <TrendingDown className="w-4 h-4" />}
                             <span>
-                              {isNeutral ? t('budget:balanced') : `${isPositive ? '+' : ''}${balance.toFixed(2)} ${summary.currency}`}
+                              {isNeutral
+                                ? t('budget:balanced')
+                                : `${isPositive ? '+' : ''}${balance.toFixed(2)} ${summary.currency}`}
                             </span>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">{t('budget:paid')}:</span>
-                            <span className="ml-2 font-medium">{data.paid.toFixed(2)} {summary.currency}</span>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {t('budget:paid')}:
+                            </span>
+                            <span className="ml-2 font-medium">
+                              {data.paid.toFixed(2)} {summary.currency}
+                            </span>
                           </div>
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">{t('budget:owes')}:</span>
-                            <span className="ml-2 font-medium">{data.owes.toFixed(2)} {summary.currency}</span>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {t('budget:owes')}:
+                            </span>
+                            <span className="ml-2 font-medium">
+                              {data.owes.toFixed(2)} {summary.currency}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -226,9 +241,7 @@ export default function BudgetView({ tripId, participants }) {
           {expenses.length === 0 ? (
             <div className="text-center py-12">
               <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {t('budget:noExpensesYet')}
-              </p>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{t('budget:noExpensesYet')}</p>
               <button
                 onClick={() => {
                   setEditingExpense(null)

@@ -62,9 +62,7 @@ export default function Login() {
               <LogIn className="w-8 h-8 text-white" />
             </motion.div>
             <h1 className="text-3xl font-bold mb-2">{t('auth:welcomeBack')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              {t('auth:loginDescription')}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400">{t('auth:loginDescription')}</p>
           </div>
 
           {/* Form */}
@@ -126,10 +124,7 @@ export default function Login() {
           <div className="mt-6 text-center text-sm">
             <p className="text-gray-600 dark:text-gray-400">
               {t('auth:noAccount')}{' '}
-              <Link
-                to="/register"
-                className="text-primary-500 hover:text-primary-600 font-medium"
-              >
+              <Link to="/register" className="text-primary-500 hover:text-primary-600 font-medium">
                 {t('auth:registerNow')}
               </Link>
             </p>

@@ -34,14 +34,14 @@ export default function LanguageSwitcher() {
             key={lang.code}
             onClick={() => changeLanguage(lang.code)}
             className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-              i18n.language === lang.code ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' : ''
+              i18n.language === lang.code
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : ''
             }`}
           >
             <span className="text-xl">{lang.flag}</span>
             <span className="text-sm font-medium">{lang.name}</span>
-            {i18n.language === lang.code && (
-              <span className="ml-auto text-primary-500">✓</span>
-            )}
+            {i18n.language === lang.code && <span className="ml-auto text-primary-500">✓</span>}
           </button>
         ))}
       </div>

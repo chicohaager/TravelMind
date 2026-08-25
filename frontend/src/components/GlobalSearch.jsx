@@ -59,9 +59,14 @@ export default function GlobalSearch() {
         <input
           type="text"
           value={q}
-          onChange={(e) => { setQ(e.target.value); setOpen(true) }}
+          onChange={(e) => {
+            setQ(e.target.value)
+            setOpen(true)
+          }}
           onFocus={() => setOpen(true)}
-          onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setOpen(false)
+          }}
           placeholder={t('common:searchPlaceholder', 'Reisen, Einträge, Orte…')}
           aria-label={t('common:search', 'Suchen')}
           className="w-36 sm:w-52 md:w-64 pl-8 pr-7 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 border border-transparent focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none transition-colors"
@@ -69,7 +74,10 @@ export default function GlobalSearch() {
         {q && (
           <button
             type="button"
-            onClick={() => { setQ(''); setOpen(false) }}
+            onClick={() => {
+              setQ('')
+              setOpen(false)
+            }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
             aria-label={t('common:clear', 'Löschen')}
           >
@@ -84,7 +92,9 @@ export default function GlobalSearch() {
             <div className="px-4 py-3 text-sm text-gray-500">{t('common:loading', 'Lädt…')}</div>
           )}
           {!isFetching && results.length === 0 && (
-            <div className="px-4 py-3 text-sm text-gray-500">{t('common:noResults', 'Keine Treffer')}</div>
+            <div className="px-4 py-3 text-sm text-gray-500">
+              {t('common:noResults', 'Keine Treffer')}
+            </div>
           )}
           {results.map((hit) => {
             const Icon = TYPE_META[hit.type]?.icon || Search
@@ -99,7 +109,9 @@ export default function GlobalSearch() {
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">{hit.title || '—'}</div>
                   {hit.snippet && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{hit.snippet}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {hit.snippet}
+                    </div>
                   )}
                 </div>
               </button>

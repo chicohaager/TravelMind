@@ -34,11 +34,19 @@ export default function NotificationBell() {
     queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] })
   }
 
-  const markRead = useMutation({ mutationFn: (id) => notificationsService.markRead(id), onSuccess: invalidate })
-  const markAllRead = useMutation({ mutationFn: () => notificationsService.markAllRead(), onSuccess: invalidate })
+  const markRead = useMutation({
+    mutationFn: (id) => notificationsService.markRead(id),
+    onSuccess: invalidate,
+  })
+  const markAllRead = useMutation({
+    mutationFn: () => notificationsService.markAllRead(),
+    onSuccess: invalidate,
+  })
 
   useEffect(() => {
-    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
   }, [])
@@ -97,7 +105,9 @@ export default function NotificationBell() {
                     }`}
                   >
                     <div className="flex items-start gap-2">
-                      {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-primary-500 shrink-0" />}
+                      {!n.is_read && (
+                        <span className="mt-1.5 w-2 h-2 rounded-full bg-primary-500 shrink-0" />
+                      )}
                       <div className="min-w-0">
                         <p className="text-sm text-gray-800 dark:text-gray-200">{message(n)}</p>
                         {n.created_at && (

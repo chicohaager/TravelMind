@@ -6,7 +6,12 @@ import { useTranslation } from 'react-i18next'
 import ColorPicker from './ColorPicker'
 import { routesService } from '../services/api'
 
-export default function RouteBuilder({ tripId, places = [], routes: initialRoutes = [], onRoutesChange }) {
+export default function RouteBuilder({
+  tripId,
+  places = [],
+  routes: initialRoutes = [],
+  onRoutesChange,
+}) {
   const { t } = useTranslation()
   const [routes, setRoutes] = useState(initialRoutes)
   const [editingRoute, setEditingRoute] = useState(null)
@@ -85,14 +90,18 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
       // Update routes list
       if (editingRoute) {
-        setRoutes(routes.map(r => r.id === savedRoute.id ? savedRoute : r))
+        setRoutes(routes.map((r) => (r.id === savedRoute.id ? savedRoute : r)))
       } else {
         setRoutes([...routes, savedRoute])
       }
 
       // Notify parent
       if (onRoutesChange) {
-        onRoutesChange(editingRoute ? routes.map(r => r.id === savedRoute.id ? savedRoute : r) : [...routes, savedRoute])
+        onRoutesChange(
+          editingRoute
+            ? routes.map((r) => (r.id === savedRoute.id ? savedRoute : r))
+            : [...routes, savedRoute]
+        )
       }
 
       // Reset form
@@ -108,7 +117,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
     try {
       await routesService.delete(routeId)
-      const newRoutes = routes.filter(r => r.id !== routeId)
+      const newRoutes = routes.filter((r) => r.id !== routeId)
       setRoutes(newRoutes)
       if (onRoutesChange) {
         onRoutesChange(newRoutes)
@@ -148,9 +157,9 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
     })
   }
 
-  const getPlaceById = (placeId) => places.find(p => p.id === placeId)
+  const getPlaceById = (placeId) => places.find((p) => p.id === placeId)
 
-  const availablePlaces = places.filter(p => !newRoute.place_ids.includes(p.id))
+  const availablePlaces = places.filter((p) => !newRoute.place_ids.includes(p.id))
 
   return (
     <div className="space-y-4">
@@ -172,15 +181,12 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
         {routes.length > 0 && (
           <div className="space-y-2">
-            {routes.map(route => (
+            {routes.map((route) => (
               <div
                 key={route.id}
                 className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg"
               >
-                <div
-                  className="w-1 h-12 rounded-full"
-                  style={{ backgroundColor: route.color }}
-                />
+                <div className="w-1 h-12 rounded-full" style={{ backgroundColor: route.color }} />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium truncate">{route.name}</h4>
                   <p className="text-sm text-gray-500">
@@ -319,7 +325,9 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
               {/* Route Order */}
               <div>
-                <h4 className="font-medium mb-2">{t('routes:routeOrder')} ({newRoute.place_ids.length})</h4>
+                <h4 className="font-medium mb-2">
+                  {t('routes:routeOrder')} ({newRoute.place_ids.length})
+                </h4>
                 <Droppable droppableId="route-places">
                   {(provided) => (
                     <div
@@ -390,10 +398,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                 <Save className="w-4 h-4" />
                 {editingRoute ? t('routes:updateRoute') : t('routes:saveRoute')}
               </button>
-              <button
-                onClick={resetForm}
-                className="btn btn-outline"
-              >
+              <button onClick={resetForm} className="btn btn-outline">
                 {t('routes:cancelRoute')}
               </button>
             </div>

@@ -1,31 +1,31 @@
-import { useState, useEffect } from 'react';
-import { WifiOff, Wifi } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react'
+import { WifiOff, Wifi } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const OfflineIndicator = () => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [showNotification, setShowNotification] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [showNotification, setShowNotification] = useState(false)
 
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true);
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
-    };
+      setIsOnline(true)
+      setShowNotification(true)
+      setTimeout(() => setShowNotification(false), 3000)
+    }
 
     const handleOffline = () => {
-      setIsOnline(false);
-      setShowNotification(true);
-    };
+      setIsOnline(false)
+      setShowNotification(true)
+    }
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   return (
     <AnimatePresence>
@@ -35,9 +35,7 @@ const OfflineIndicator = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
           className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 ${
-            isOnline
-              ? 'bg-green-500 text-white'
-              : 'bg-red-500 text-white'
+            isOnline ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
           }`}
         >
           {isOnline ? (
@@ -62,7 +60,7 @@ const OfflineIndicator = () => {
         </div>
       )}
     </AnimatePresence>
-  );
-};
+  )
+}
 
-export default OfflineIndicator;
+export default OfflineIndicator

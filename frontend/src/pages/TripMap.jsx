@@ -34,7 +34,11 @@ export default function TripMap() {
   })
 
   // Fetch routes
-  const { data: routesData = [], isLoading: routesLoading, refetch: refetchRoutes } = useQuery({
+  const {
+    data: routesData = [],
+    isLoading: routesLoading,
+    refetch: refetchRoutes,
+  } = useQuery({
     queryKey: ['routes', id],
     queryFn: async () => {
       const response = await routesService.getByTrip(id)
@@ -79,10 +83,7 @@ export default function TripMap() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('tripDetail:tripNotFound')}</h2>
           <p className="text-gray-600 mb-4">{t('notFound:subtitle')}</p>
-          <button
-            onClick={() => navigate('/trips')}
-            className="btn btn-primary"
-          >
+          <button onClick={() => navigate('/trips')} className="btn btn-primary">
             {t('tripDetail:backToTrips')}
           </button>
         </div>
@@ -142,20 +143,19 @@ export default function TripMap() {
                   places={places}
                   routes={routes}
                   photos={showPhotos ? geoPhotos : []}
-                  center={trip.latitude && trip.longitude ? [trip.latitude, trip.longitude] : undefined}
+                  center={
+                    trip.latitude && trip.longitude ? [trip.latitude, trip.longitude] : undefined
+                  }
                   zoom={12}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                   <Map className="w-16 h-16 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('map:noPlacesYet')}</h3>
-                  <p className="text-gray-600 mb-4">
-                    {t('map:addPlacesToSeeOnMap')}
-                  </p>
-                  <button
-                    onClick={() => navigate(`/trips/${id}`)}
-                    className="btn btn-primary"
-                  >
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {t('map:noPlacesYet')}
+                  </h3>
+                  <p className="text-gray-600 mb-4">{t('map:addPlacesToSeeOnMap')}</p>
+                  <button onClick={() => navigate(`/trips/${id}`)} className="btn btn-primary">
                     {t('map:addPlaces')}
                   </button>
                 </div>
@@ -177,12 +177,8 @@ export default function TripMap() {
                 <div className="card">
                   <div className="text-center py-8">
                     <Map className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {t('map:createRoutes')}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {t('map:needTwoPlacesForRoute')}
-                    </p>
+                    <h3 className="font-semibold text-gray-900 mb-2">{t('map:createRoutes')}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{t('map:needTwoPlacesForRoute')}</p>
                     <button
                       onClick={() => navigate(`/trips/${id}`)}
                       className="btn btn-primary btn-sm"
@@ -209,7 +205,7 @@ export default function TripMap() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">{t('map:visited')}</span>
                       <span className="font-medium">
-                        {places.filter(p => p.visited).length} / {places.length}
+                        {places.filter((p) => p.visited).length} / {places.length}
                       </span>
                     </div>
                   </div>
@@ -219,9 +215,7 @@ export default function TripMap() {
               {/* Help Section */}
               <div className="card mt-4 bg-indigo-50 border-indigo-200">
                 <h3 className="font-semibold text-indigo-900 mb-2">💡 {t('map:tip')}</h3>
-                <p className="text-sm text-indigo-700">
-                  {t('map:dragPlacesToCreateRoutes')}
-                </p>
+                <p className="text-sm text-indigo-700">{t('map:dragPlacesToCreateRoutes')}</p>
               </div>
             </div>
           </div>

@@ -57,9 +57,7 @@ export default function Navbar({ onMenuClick }) {
               <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">🌍</span>
               </div>
-              <span className="text-xl font-bold text-gradient">
-                TravelMind
-              </span>
+              <span className="text-xl font-bold text-gradient">TravelMind</span>
             </Link>
           </div>
 
@@ -95,16 +93,16 @@ export default function Navbar({ onMenuClick }) {
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <User className="w-5 h-5" />
-                  <span className="hidden sm:inline text-sm font-medium">
-                    {user?.username}
-                  </span>
+                  <span className="hidden sm:inline text-sm font-medium">{user?.username}</span>
                 </button>
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                       <p className="text-sm font-medium">{user?.full_name || user?.username}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {user?.email}
+                      </p>
                       {user?.is_superuser && (
                         <span className="inline-block mt-1 px-2 py-0.5 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded text-xs font-medium">
                           Admin
