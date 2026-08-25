@@ -1,128 +1,20 @@
 import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
+import resourcesToBackend from 'i18next-resources-to-backend'
+import { initReactI18next } from 'react-i18next'
 
-// English namespaces
-import enCommon from './locales/en/common.json'
-import enInterests from './locales/en/interests.json'
-import enNav from './locales/en/nav.json'
-import enAuth from './locales/en/auth.json'
-import enTrips from './locales/en/trips.json'
-import enDiary from './locales/en/diary.json'
-import enNotifications from './locales/en/notifications.json'
-import enGallery from './locales/en/gallery.json'
-import enAnalytics from './locales/en/analytics.json'
-import enPlaces from './locales/en/places.json'
-import enAi from './locales/en/ai.json'
-import enSettings from './locales/en/settings.json'
-import enBudget from './locales/en/budget.json'
-import enTimeline from './locales/en/timeline.json'
-import enErrors from './locales/en/errors.json'
-import enSuccess from './locales/en/success.json'
-import enHome from './locales/en/home.json'
-import enTripDetail from './locales/en/tripDetail.json'
-import enMap from './locales/en/map.json'
-import enRoutes from './locales/en/routes.json'
-import enRecommendations from './locales/en/recommendations.json'
-import enPlaceLists from './locales/en/placeLists.json'
-import enProfile from './locales/en/profile.json'
-import enAdmin from './locales/en/admin.json'
-import enOffline from './locales/en/offline.json'
-import enTranscribe from './locales/en/transcribe.json'
-import enNotFound from './locales/en/notFound.json'
-import enFormat from './locales/en/format.json'
+/**
+ * Übersetzungen werden NACHGELADEN, nicht mitgeliefert.
+ *
+ * Bis 2026-08-25 standen hier 112 statische Importe — alle vier Sprachen mal
+ * 28 Namensräume landeten dadurch im Hauptbündel. Gemessen: 143,9 KiB von
+ * 227,0 KiB, also **63 % des Bündels**, das jeder Besucher lädt, bevor er
+ * überhaupt weiß, welche Sprache er spricht.
+ *
+ * `import()` erzeugt pro Sprache und Namensraum einen eigenen Chunk, den Vite
+ * getrennt ausliefert. Geladen wird nur, was die erkannte Sprache braucht.
+ */
 
-// German namespaces
-import deCommon from './locales/de/common.json'
-import deInterests from './locales/de/interests.json'
-import deNav from './locales/de/nav.json'
-import deAuth from './locales/de/auth.json'
-import deTrips from './locales/de/trips.json'
-import deDiary from './locales/de/diary.json'
-import deNotifications from './locales/de/notifications.json'
-import deGallery from './locales/de/gallery.json'
-import deAnalytics from './locales/de/analytics.json'
-import dePlaces from './locales/de/places.json'
-import deAi from './locales/de/ai.json'
-import deSettings from './locales/de/settings.json'
-import deBudget from './locales/de/budget.json'
-import deTimeline from './locales/de/timeline.json'
-import deErrors from './locales/de/errors.json'
-import deSuccess from './locales/de/success.json'
-import deHome from './locales/de/home.json'
-import deTripDetail from './locales/de/tripDetail.json'
-import deMap from './locales/de/map.json'
-import deRoutes from './locales/de/routes.json'
-import deRecommendations from './locales/de/recommendations.json'
-import dePlaceLists from './locales/de/placeLists.json'
-import deProfile from './locales/de/profile.json'
-import deAdmin from './locales/de/admin.json'
-import deOffline from './locales/de/offline.json'
-import deTranscribe from './locales/de/transcribe.json'
-import deNotFound from './locales/de/notFound.json'
-import deFormat from './locales/de/format.json'
-
-// French namespaces
-import frCommon from './locales/fr/common.json'
-import frInterests from './locales/fr/interests.json'
-import frNav from './locales/fr/nav.json'
-import frAuth from './locales/fr/auth.json'
-import frTrips from './locales/fr/trips.json'
-import frDiary from './locales/fr/diary.json'
-import frNotifications from './locales/fr/notifications.json'
-import frGallery from './locales/fr/gallery.json'
-import frAnalytics from './locales/fr/analytics.json'
-import frPlaces from './locales/fr/places.json'
-import frAi from './locales/fr/ai.json'
-import frSettings from './locales/fr/settings.json'
-import frBudget from './locales/fr/budget.json'
-import frTimeline from './locales/fr/timeline.json'
-import frErrors from './locales/fr/errors.json'
-import frSuccess from './locales/fr/success.json'
-import frHome from './locales/fr/home.json'
-import frTripDetail from './locales/fr/tripDetail.json'
-import frMap from './locales/fr/map.json'
-import frRoutes from './locales/fr/routes.json'
-import frRecommendations from './locales/fr/recommendations.json'
-import frPlaceLists from './locales/fr/placeLists.json'
-import frProfile from './locales/fr/profile.json'
-import frAdmin from './locales/fr/admin.json'
-import frOffline from './locales/fr/offline.json'
-import frTranscribe from './locales/fr/transcribe.json'
-import frNotFound from './locales/fr/notFound.json'
-import frFormat from './locales/fr/format.json'
-
-// Spanish namespaces
-import esCommon from './locales/es/common.json'
-import esInterests from './locales/es/interests.json'
-import esNav from './locales/es/nav.json'
-import esAuth from './locales/es/auth.json'
-import esTrips from './locales/es/trips.json'
-import esDiary from './locales/es/diary.json'
-import esNotifications from './locales/es/notifications.json'
-import esGallery from './locales/es/gallery.json'
-import esAnalytics from './locales/es/analytics.json'
-import esPlaces from './locales/es/places.json'
-import esAi from './locales/es/ai.json'
-import esSettings from './locales/es/settings.json'
-import esBudget from './locales/es/budget.json'
-import esTimeline from './locales/es/timeline.json'
-import esErrors from './locales/es/errors.json'
-import esSuccess from './locales/es/success.json'
-import esHome from './locales/es/home.json'
-import esTripDetail from './locales/es/tripDetail.json'
-import esMap from './locales/es/map.json'
-import esRoutes from './locales/es/routes.json'
-import esRecommendations from './locales/es/recommendations.json'
-import esPlaceLists from './locales/es/placeLists.json'
-import esProfile from './locales/es/profile.json'
-import esAdmin from './locales/es/admin.json'
-import esOffline from './locales/es/offline.json'
-import esTranscribe from './locales/es/transcribe.json'
-import esNotFound from './locales/es/notFound.json'
-import esFormat from './locales/es/format.json'
-
-// All available namespaces
 export const namespaces = [
   'common',
   'interests',
@@ -154,7 +46,6 @@ export const namespaces = [
   'format',
 ]
 
-// Available languages
 export const languages = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
@@ -162,158 +53,50 @@ export const languages = [
   { code: 'es', name: 'Español', flag: '🇪🇸' },
 ]
 
-const resources = {
-  en: {
-    common: enCommon,
-    interests: enInterests,
-    nav: enNav,
-    auth: enAuth,
-    trips: enTrips,
-    diary: enDiary,
-    notifications: enNotifications,
-    gallery: enGallery,
-    analytics: enAnalytics,
-    places: enPlaces,
-    ai: enAi,
-    settings: enSettings,
-    budget: enBudget,
-    timeline: enTimeline,
-    errors: enErrors,
-    success: enSuccess,
-    home: enHome,
-    tripDetail: enTripDetail,
-    map: enMap,
-    routes: enRoutes,
-    recommendations: enRecommendations,
-    placeLists: enPlaceLists,
-    profile: enProfile,
-    admin: enAdmin,
-    offline: enOffline,
-    transcribe: enTranscribe,
-    notFound: enNotFound,
-    format: enFormat,
-  },
-  de: {
-    common: deCommon,
-    interests: deInterests,
-    nav: deNav,
-    auth: deAuth,
-    trips: deTrips,
-    diary: deDiary,
-    notifications: deNotifications,
-    gallery: deGallery,
-    analytics: deAnalytics,
-    places: dePlaces,
-    ai: deAi,
-    settings: deSettings,
-    budget: deBudget,
-    timeline: deTimeline,
-    errors: deErrors,
-    success: deSuccess,
-    home: deHome,
-    tripDetail: deTripDetail,
-    map: deMap,
-    routes: deRoutes,
-    recommendations: deRecommendations,
-    placeLists: dePlaceLists,
-    profile: deProfile,
-    admin: deAdmin,
-    offline: deOffline,
-    transcribe: deTranscribe,
-    notFound: deNotFound,
-    format: deFormat,
-  },
-  fr: {
-    common: frCommon,
-    interests: frInterests,
-    nav: frNav,
-    auth: frAuth,
-    trips: frTrips,
-    diary: frDiary,
-    notifications: frNotifications,
-    gallery: frGallery,
-    analytics: frAnalytics,
-    places: frPlaces,
-    ai: frAi,
-    settings: frSettings,
-    budget: frBudget,
-    timeline: frTimeline,
-    errors: frErrors,
-    success: frSuccess,
-    home: frHome,
-    tripDetail: frTripDetail,
-    map: frMap,
-    routes: frRoutes,
-    recommendations: frRecommendations,
-    placeLists: frPlaceLists,
-    profile: frProfile,
-    admin: frAdmin,
-    offline: frOffline,
-    transcribe: frTranscribe,
-    notFound: frNotFound,
-    format: frFormat,
-  },
-  es: {
-    common: esCommon,
-    interests: esInterests,
-    nav: esNav,
-    auth: esAuth,
-    trips: esTrips,
-    diary: esDiary,
-    notifications: esNotifications,
-    gallery: esGallery,
-    analytics: esAnalytics,
-    places: esPlaces,
-    ai: esAi,
-    settings: esSettings,
-    budget: esBudget,
-    timeline: esTimeline,
-    errors: esErrors,
-    success: esSuccess,
-    home: esHome,
-    tripDetail: esTripDetail,
-    map: esMap,
-    routes: esRoutes,
-    recommendations: esRecommendations,
-    placeLists: esPlaceLists,
-    profile: esProfile,
-    admin: esAdmin,
-    offline: esOffline,
-    transcribe: esTranscribe,
-    notFound: esNotFound,
-    format: esFormat,
-  },
-}
+const unterstuetzt = languages.map((l) => l.code)
 
-i18n
+export const uebersetzungenBereit = i18n
+  .use(
+    resourcesToBackend((sprache, namensraum) => {
+      // Vite kann diesen Ausdruck statisch auflösen, weil das Muster
+      // buchstäblich dasteht — daraus wird pro Datei ein eigener Chunk.
+      // Eine zusammengebaute Zeichenkette könnte es NICHT auflösen; dann
+      // landete wieder alles im Hauptbündel oder gar nichts.
+      return import(`./locales/${sprache}/${namensraum}.json`)
+    })
+  )
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources,
     fallbackLng: 'en',
 
     // KEIN festes `lng` hier.
     //
     // Bis 2026-08-25 stand hier `lng: 'en'`. Sobald i18next eine feste Sprache
-    // bekommt, uebergeht es den LanguageDetector vollstaendig — der war also
+    // bekommt, übergeht es den LanguageDetector vollständig — der war also
     // konfiguriert und ohne jede Wirkung. Folge: JEDER Nutzer sah Englisch,
-    // auch bei `navigator.languages = ['de-DE','de',…]`, und der Wert 'en'
-    // wurde zusaetzlich in localStorage festgeschrieben.
+    // auch bei `navigator.languages = ['de-DE','de',…]`.
     //
-    // supportedLngs + load:'languageOnly' sorgen dafuer, dass 'de-DE' auf 'de'
-    // faellt statt auf den Fallback.
-    supportedLngs: ['en', 'de', 'es', 'fr'],
+    // supportedLngs + load:'languageOnly' sorgen dafür, dass 'de-DE' auf 'de'
+    // fällt statt auf den Fallback.
+    supportedLngs: unterstuetzt,
     load: 'languageOnly',
     debug: false,
 
-    // Default namespace
     defaultNS: 'common',
-
-    // Namespaces to load
     ns: namespaces,
+    partialBundledLanguages: true,
 
     interpolation: {
       escapeValue: false,
+    },
+
+    react: {
+      // Ohne Suspense: die Anwendung rendert sofort und füllt die Texte nach.
+      // Mit Suspense hinge der erste Bildschirm an den Übersetzungen, und ein
+      // fehlgeschlagener Chunk führte zu einer weißen Seite statt zu
+      // englischem Text.
+      useSuspense: false,
     },
 
     detection: {
@@ -324,13 +107,11 @@ i18n
   })
 
 /**
- * `<html lang>` an die tatsaechliche Sprache binden.
+ * `<html lang>` an die tatsächliche Sprache binden.
  *
- * In index.html stand fest `lang="de"`, und niemand hat es je angefasst. Am
- * 2026-08-25 in der Produktion gemessen: die Oberflaeche stand auf Spanisch,
- * das Attribut weiter auf 'de'. Vorlesesoftware waehlt danach ihre Aussprache
- * und haette spanischen Text deutsch vorgelesen; Suchmaschinen und die
- * Silbentrennung des Browsers richten sich ebenfalls danach.
+ * In index.html stand fest `lang="de"`, und niemand hat es je aktualisiert. Am
+ * 2026-08-25 in der Produktion gemessen: die Oberfläche stand auf Spanisch,
+ * das Attribut weiter auf 'de'. Vorlesesoftware wählt danach ihre Aussprache.
  */
 const spracheAmDokumentSetzen = (sprache) => {
   const nurSprache = String(sprache || 'en').split('-')[0]
