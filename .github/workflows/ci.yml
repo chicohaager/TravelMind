@@ -95,6 +95,9 @@ jobs:
         working-directory: frontend
         run: npx vitest run
 
+      - name: nginx-Konfiguration prüfen
+        run: ./frontend/nginx.conf.test.sh
+
       - name: Build
         working-directory: frontend
         run: npm run build
