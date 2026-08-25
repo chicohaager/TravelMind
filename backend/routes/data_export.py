@@ -11,7 +11,7 @@ import zipfile
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from models.database import get_db
 from models.diary import DiaryEntry
@@ -221,7 +221,7 @@ Generated: {timestamp}
 @router.get("/export/info", response_model=DataExportInfo)
 @limiter.limit("30/minute")
 async def get_export_info(
-    request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Get information about available data export options.
@@ -246,7 +246,7 @@ async def get_export_info(
 @router.get("/export/download")
 @limiter.limit("5/hour")
 async def download_data_export(
-    request,
+    request: Request,
     format: str = "zip",
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
@@ -305,7 +305,7 @@ async def download_data_export(
 @router.delete("/account/data")
 @limiter.limit("1/day")
 async def request_data_deletion(
-    request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Request deletion of all user data (GDPR Article 17 - Right to erasure).
