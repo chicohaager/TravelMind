@@ -58,6 +58,18 @@ export default function RouteBuilder({
     setNewRoute({ ...newRoute, place_ids: newPlaceIds })
   }
 
+  // Orte per KLICK zur Route nehmen.
+  //
+  // Bis 2026-08-25 ging das NUR per Ziehen. Auf dem Telefon — dem Geraet, mit
+  // dem man unterwegs eine Route plant — ist Ziehen zwischen zwei scrollenden
+  // Listen unzuverlaessig, und der Speichern-Knopf bleibt stumm deaktiviert.
+  // Das liest sich als "Knopf ohne Funktion", genau so gemeldet.
+  // Ziehen bleibt fuer das Umsortieren.
+  const addPlace = (placeId) => {
+    if (newRoute.place_ids.includes(placeId)) return
+    setNewRoute({ ...newRoute, place_ids: [...newRoute.place_ids, placeId] })
+  }
+
   const handleSaveRoute = async () => {
     if (!newRoute.name) {
       toast.error(t('routes:pleaseEnterRouteName'))
@@ -111,6 +123,14 @@ export default function RouteBuilder({
       toast.error(error.response?.data?.detail || t('routes:errorSavingRoute'))
     }
   }
+
+  // Was noch fehlt, damit gespeichert werden kann — als Liste, damit sie
+  // sowohl den Knopf steuert als auch dem Nutzer angezeigt werden kann. Eine
+  // Bedingung, die nur den Knopf deaktiviert, ist fuer den Nutzer unsichtbar.
+  const fehltZumSpeichern = [
+    !newRoute.name && t('routes:missingRouteName'),
+    newRoute.place_ids.length < 2 && t('routes:missingTwoPlaces'),
+  ].filter(Boolean)
 
   const handleDeleteRoute = async (routeId) => {
     if (!confirm(t('routes:confirmDeleteRoute'))) return
@@ -308,6 +328,15 @@ export default function RouteBuilder({
                                   <p className="text-xs text-gray-500">{place.category}</p>
                                 )}
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => addPlace(place.id)}
+                                title={t('routes:addPlaceToRoute')}
+                                aria-label={`${t('routes:addPlaceToRoute')}: ${place.name}`}
+                                className="shrink-0 p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
                             </div>
                           )}
                         </Draggable>
@@ -366,7 +395,10 @@ export default function RouteBuilder({
                                   )}
                                 </div>
                                 <button
+                                  type="button"
                                   onClick={() => removePlace(index)}
+                                  title={t('routes:removePlaceFromRoute')}
+                                  aria-label={`${t('routes:removePlaceFromRoute')}: ${place.name}`}
                                   className="text-red-500 hover:text-red-700"
                                 >
                                   <Minus className="w-4 h-4" />
@@ -379,7 +411,7 @@ export default function RouteBuilder({
                       {provided.placeholder}
                       {newRoute.place_ids.length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-8">
-                          {t('routes:dragPlacesHere')}
+                          {t('routes:tapOrDragPlacesHere')}
                         </p>
                       )}
                     </div>
@@ -389,11 +421,21 @@ export default function RouteBuilder({
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 mt-6">
+            {/*
+              Ein deaktivierter Knopf ohne Begruendung ist ein kaputter Knopf:
+              der Nutzer sieht, dass nichts passiert, und erfaehrt nicht warum.
+              Deshalb steht darueber, was noch fehlt.
+            */}
+            {fehltZumSpeichern.length > 0 && (
+              <p className="mt-6 text-sm text-amber-700 dark:text-amber-400">
+                {t('routes:whyCantISave')} {fehltZumSpeichern.join(', ')}
+              </p>
+            )}
+            <div className="flex gap-3 mt-3">
               <button
                 onClick={handleSaveRoute}
                 className="btn btn-primary flex items-center gap-2"
-                disabled={!newRoute.name || newRoute.place_ids.length < 2}
+                disabled={fehltZumSpeichern.length > 0}
               >
                 <Save className="w-4 h-4" />
                 {editingRoute ? t('routes:updateRoute') : t('routes:saveRoute')}
