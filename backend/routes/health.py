@@ -11,12 +11,15 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 
 import psutil
+import structlog
 from fastapi import APIRouter, Depends, Request
 from models.database import get_db
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.rate_limits import RateLimits, limiter
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -164,17 +167,32 @@ async def detailed_health_check(request: Request, db: AsyncSession = Depends(get
     - Load balancer health checks
     - Monitoring dashboards
     """
-    # Run all checks concurrently
-    db_check, disk_check, memory_check, uploads_check = await asyncio.gather(
-        check_database(db), check_disk_space(), check_memory(), check_uploads_directory()
+    # Run all checks concurrently.
+    #
+    # `return_exceptions=True` ist hier kein Verschlucken, sondern die
+    # Voraussetzung dafuer, dass die Auskunft ueberhaupt eine ist: ohne das
+    # reisst eine unerwartete Ausnahme in EINER Teilpruefung den ganzen
+    # Endpunkt auf 500 — also genau die Auskunft weg, die sagen soll, WAS
+    # kaputt ist. Der Ausfall wird unten in eine `unhealthy`-Komponente
+    # uebersetzt und faerbt damit den Gesamtstatus; still wird nichts.
+    ergebnisse = await asyncio.gather(
+        check_database(db),
+        check_disk_space(),
+        check_memory(),
+        check_uploads_directory(),
+        return_exceptions=True,
     )
 
-    components = {
-        "database": db_check,
-        "disk": disk_check,
-        "memory": memory_check,
-        "uploads": uploads_check,
-    }
+    namen = ("database", "disk", "memory", "uploads")
+    components = {}
+    for name, ergebnis in zip(namen, ergebnisse):
+        if isinstance(ergebnis, BaseException):
+            logger.error("health_check_failed", component=name, error=str(ergebnis))
+            components[name] = ComponentHealth(
+                status="unhealthy", message=f"Check raised {type(ergebnis).__name__}: {ergebnis}"
+            )
+        else:
+            components[name] = ergebnis
 
     # Determine overall status
     statuses = [c.status for c in components.values()]
