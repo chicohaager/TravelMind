@@ -8,6 +8,7 @@ import {
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }) {
   const { t } = useTranslation()
@@ -221,7 +222,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                               {t('places:visitDateField')}
                             </div>
                             <div className="text-sm">
-                              {new Date(place.visit_date).toLocaleDateString('de-DE', {
+                              {new Date(place.visit_date).toLocaleDateString(aktuelleLocale(), {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',

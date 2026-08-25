@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usersService } from '@/services/api'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function Profile() {
   const { t } = useTranslation()
@@ -68,7 +69,7 @@ export default function Profile() {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
+    return new Date(dateString).toLocaleDateString(aktuelleLocale(), {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

@@ -154,3 +154,41 @@ describe('i18n: <html lang> folgt der Sprache', () => {
     expect(document.documentElement.getAttribute('lang')).toBe('de')
   })
 })
+
+describe('i18n: keine fest verdrahteten Locales im Quelltext', () => {
+  // format.js ist die EINZIGE Stelle, an der eine konkrete Locale stehen darf —
+  // dort steht die Zuordnung Sprache -> Locale. Ueberall sonst ist ein
+  // 'de-DE' oder 'en-US' im Code eine Sprache, die jemand vergessen hat:
+  // Bis 2026-08-25 stand in TripDetail `toLocaleString('de-DE')` und in
+  // Transcribe dasselbe — spanische und franzoesische Nutzer bekamen dort
+  // deutsche Formatierung.
+  const erlaubt = ['utils/format.js', 'utils/format.test.js', 'test/i18n-integrity.test.js']
+  const localeMuster = /['"`][a-z]{2}-[A-Z]{2}['"`]/
+
+  const quellDateien = dateienRekursiv(srcVerzeichnis, ['.jsx', '.js'])
+
+  it('findet überhaupt Quelldateien', () => {
+    expect(quellDateien.length).toBeGreaterThan(20)
+  })
+
+  it('keine Datei ausser format.js nennt eine konkrete Locale', () => {
+    const treffer = []
+    for (const pfad of quellDateien) {
+      const kurz = relative(srcVerzeichnis, pfad)
+      if (erlaubt.some((e) => kurz.endsWith(e))) continue
+      readFileSync(pfad, 'utf8')
+        .split('\n')
+        .forEach((zeile, i) => {
+          // Kommentare zaehlen nicht — dort steht die Begruendung.
+          if (zeile.trim().startsWith('//') || zeile.trim().startsWith('*')) return
+          if (localeMuster.test(zeile)) treffer.push(`${kurz}:${i + 1}: ${zeile.trim()}`)
+        })
+    }
+    expect(treffer).toEqual([])
+  })
+
+  it('Positivkontrolle: der Scanner erkennt eine künstliche Locale', () => {
+    expect(localeMuster.test("new Date().toLocaleString('de-DE')")).toBe(true)
+    expect(localeMuster.test('const x = aktuelleLocale()')).toBe(false)
+  })
+})

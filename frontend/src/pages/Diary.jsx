@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useTranslation } from 'react-i18next'
 import { getThumbUrl, onThumbError } from '@/utils/images'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function Diary() {
   const { t } = useTranslation()
@@ -267,9 +268,9 @@ export default function Diary() {
                   {trip.start_date && trip.end_date && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Calendar className="w-3 h-3" />
-                      {new Date(trip.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
+                      {new Date(trip.start_date).toLocaleDateString(aktuelleLocale(), { day: '2-digit', month: 'short' })}
                       {' - '}
-                      {new Date(trip.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {new Date(trip.end_date).toLocaleDateString(aktuelleLocale(), { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                   )}
                 </div>
@@ -332,7 +333,7 @@ export default function Diary() {
                             <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-4 h-4" />
-                                {new Date(entry.entry_date).toLocaleDateString('de-DE', {
+                                {new Date(entry.entry_date).toLocaleDateString(aktuelleLocale(), {
                                   day: '2-digit',
                                   month: 'long',
                                   year: 'numeric'
@@ -407,7 +408,7 @@ export default function Diary() {
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        {new Date(entry.entry_date).toLocaleDateString('de-DE', {
+                        {new Date(entry.entry_date).toLocaleDateString(aktuelleLocale(), {
                           day: '2-digit',
                           month: 'long',
                           year: 'numeric'

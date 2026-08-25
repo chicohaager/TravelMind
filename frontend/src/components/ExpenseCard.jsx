@@ -1,6 +1,7 @@
 import { Calendar, User, Users, Edit, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 const categoryIcons = {
   food: '🍽️',
@@ -24,7 +25,7 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
   const { t } = useTranslation()
   const formatDate = (dateStr) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('de-DE', {
+    return date.toLocaleDateString(aktuelleLocale(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
