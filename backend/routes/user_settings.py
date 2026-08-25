@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from routes.auth import get_current_active_user
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.encryption import encryption_service
-from utils.rate_limits import limiter
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
 
@@ -52,7 +52,10 @@ class UserSettingsResponse(BaseModel):
 
 # Endpoints
 @router.get("/settings", response_model=UserSettingsResponse)
-async def get_user_settings(current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.USER_PROFILE_READ)
+async def get_user_settings(
+    request: Request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
+):
     """
     Get current user settings including AI configuration
 
@@ -75,7 +78,8 @@ async def get_user_settings(current_user: User = Depends(get_current_active_user
 
 
 @router.get("/settings/ai", response_model=AISettingsResponse)
-async def get_ai_settings(current_user: User = Depends(get_current_active_user)):
+@limiter.limit(RateLimits.USER_PROFILE_READ)
+async def get_ai_settings(request: Request, current_user: User = Depends(get_current_active_user)):
     """
     Get AI provider settings
 

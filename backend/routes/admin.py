@@ -92,7 +92,9 @@ class AuditLogResponse(BaseModel):
 
 # Endpoints
 @router.get("/users", response_model=List[UserListItem])
+@limiter.limit(RateLimits.ADMIN_READ)
 async def list_users(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
@@ -162,7 +164,10 @@ async def list_users(
 
 
 @router.get("/users/{user_id}")
-async def get_user_admin(user_id: int, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.ADMIN_READ)
+async def get_user_admin(
+    request: Request, user_id: int, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
+):
     """
     Get detailed user information (Admin only)
 
@@ -203,6 +208,7 @@ async def get_user_admin(user_id: int, admin: User = Depends(require_admin), db:
 
 
 @router.put("/users/{user_id}")
+@limiter.limit(RateLimits.ADMIN_WRITE)
 async def update_user_admin(
     user_id: int,
     user_update: UserAdminUpdate,
@@ -256,6 +262,7 @@ async def update_user_admin(
 
 
 @router.delete("/users/{user_id}", status_code=204)
+@limiter.limit(RateLimits.ADMIN_DELETE)
 async def delete_user_admin(
     user_id: int, request: Request, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)
 ):
@@ -296,7 +303,8 @@ async def delete_user_admin(
 
 
 @router.get("/stats", response_model=SystemStats)
-async def get_system_stats(admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.ADMIN_READ)
+async def get_system_stats(request: Request, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """
     Get system statistics (Admin only)
 
@@ -356,7 +364,8 @@ class SettingUpdate(BaseModel):
 
 
 @router.get("/settings", response_model=List[SettingResponse])
-async def get_all_settings(db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)):
+@limiter.limit(RateLimits.ADMIN_READ)
+async def get_all_settings(request: Request, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)):
     """
     Get all application settings
     Admin only
@@ -370,7 +379,10 @@ async def get_all_settings(db: AsyncSession = Depends(get_db), admin: User = Dep
 
 
 @router.get("/settings/{key}")
-async def get_setting_by_key(key: str, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)):
+@limiter.limit(RateLimits.ADMIN_READ)
+async def get_setting_by_key(
+    request: Request, key: str, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)
+):
     """
     Get a specific setting by key
     Admin only
@@ -393,6 +405,7 @@ async def get_setting_by_key(key: str, db: AsyncSession = Depends(get_db), admin
 
 
 @router.put("/settings/{key}")
+@limiter.limit(RateLimits.ADMIN_WRITE)
 async def update_setting(
     key: str,
     update: SettingUpdate,
@@ -427,6 +440,7 @@ async def update_setting(
 
 
 @router.post("/settings/registration/toggle")
+@limiter.limit(RateLimits.ADMIN_WRITE)
 async def toggle_registration(
     request: Request, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)
 ):
@@ -455,6 +469,7 @@ async def toggle_registration(
 
 
 @router.post("/users/create")
+@limiter.limit(RateLimits.ADMIN_WRITE)
 async def admin_create_user(
     user_data: UserRegister, request: Request, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)
 ):
@@ -511,8 +526,9 @@ async def admin_create_user(
 
 
 @router.post("/geocode/fix-places")
+@limiter.limit(RateLimits.ADMIN_WRITE)
 async def batch_geocode_places(
-    force_all: bool = False, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)
+    request: Request, force_all: bool = False, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)
 ):
     """
     Batch geocode places with missing or potentially incorrect coordinates
@@ -604,7 +620,9 @@ async def batch_geocode_places(
 
 
 @router.get("/audit-logs", response_model=List[AuditLogResponse])
+@limiter.limit(RateLimits.ADMIN_READ)
 async def get_audit_logs(
+    request: Request,
     skip: int = 0,
     limit: int = 100,
     event_category: Optional[str] = None,
@@ -647,7 +665,8 @@ async def get_audit_logs(
 
 
 @router.get("/audit-logs/stats")
-async def get_audit_stats(admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.ADMIN_READ)
+async def get_audit_stats(request: Request, admin: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """
     Get audit log statistics (Admin only)
 

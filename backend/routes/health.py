@@ -11,11 +11,12 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 
 import psutil
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from models.database import get_db
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
 
@@ -141,7 +142,8 @@ def get_system_resources() -> SystemResources:
 
 
 @router.get("/health", response_model=HealthResponse, tags=["System"])
-async def detailed_health_check(db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def detailed_health_check(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Detailed health check endpoint.
 
@@ -197,7 +199,8 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/health/live", tags=["System"])
-async def liveness_probe():
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def liveness_probe(request: Request):
     """
     Kubernetes liveness probe.
 
@@ -208,7 +211,8 @@ async def liveness_probe():
 
 
 @router.get("/capabilities", tags=["System"])
-async def capabilities():
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def capabilities(request: Request):
     """Server feature flags the frontend adapts to (e.g. HEIC/HEIF support)."""
     from utils.images import heic_supported
 
@@ -216,7 +220,8 @@ async def capabilities():
 
 
 @router.get("/health/ready", tags=["System"])
-async def readiness_probe(db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def readiness_probe(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Kubernetes readiness probe.
 

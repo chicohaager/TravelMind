@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Any, List, Optional
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from models.database import get_db
 from models.expense import Expense
 from models.participant import Participant
@@ -19,6 +19,7 @@ from routes.auth import get_current_active_user
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.access_control import verify_trip_access as shared_verify_trip_access
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -113,7 +114,9 @@ class BudgetSummary(BaseModel):
 
 
 @router.get("/{trip_id}/expenses")
+@limiter.limit(RateLimits.BUDGET_READ)
 async def get_expenses(
+    request: Request,
     trip_id: int,
     skip: int = 0,
     limit: int = 100,
@@ -229,7 +232,9 @@ async def _create_expense_handler(trip_id: int, expense: ExpenseCreate, db: Asyn
 
 
 @router.post("/{trip_id}/expenses", status_code=201)
+@limiter.limit(RateLimits.EXPENSE_CREATE)
 async def create_expense(
+    request: Request,
     trip_id: int,
     expense: ExpenseCreate,
     db: AsyncSession = Depends(get_db),
@@ -239,7 +244,9 @@ async def create_expense(
 
 
 @router.post("/{trip_id}/expenses/", status_code=201)
+@limiter.limit(RateLimits.EXPENSE_CREATE)
 async def create_expense_slash(
+    request: Request,
     trip_id: int,
     expense: ExpenseCreate,
     db: AsyncSession = Depends(get_db),
@@ -249,7 +256,9 @@ async def create_expense_slash(
 
 
 @router.put("/expenses/{expense_id}")
+@limiter.limit(RateLimits.EXPENSE_UPDATE)
 async def update_expense(
+    request: Request,
     expense_id: int,
     expense: ExpenseUpdate,
     db: AsyncSession = Depends(get_db),
@@ -315,8 +324,12 @@ async def update_expense(
 
 
 @router.delete("/expenses/{expense_id}", status_code=204)
+@limiter.limit(RateLimits.EXPENSE_DELETE)
 async def delete_expense(
-    expense_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    expense_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Delete an expense. Requires authentication and trip ownership."""
     result = await db.execute(select(Expense).where(Expense.id == expense_id))
@@ -335,8 +348,12 @@ async def delete_expense(
 
 
 @router.get("/{trip_id}/budget-summary", response_model=BudgetSummary)
+@limiter.limit(RateLimits.BUDGET_READ)
 async def get_budget_summary(
-    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get budget summary with totals and balances. Requires authentication and trip ownership."""
     # Verify access
@@ -387,7 +404,9 @@ async def get_budget_summary(
 
 
 @router.post("/{trip_id}/expenses/split-equally", status_code=201)
+@limiter.limit(RateLimits.EXPENSE_CREATE)
 async def split_expense_equally(
+    request: Request,
     trip_id: int,
     title: str,
     amount: float,

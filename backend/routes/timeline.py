@@ -7,7 +7,7 @@ import math
 from datetime import date, datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from models.database import get_db
 from models.place import Place
 from models.trip import Trip
@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from routes.auth import get_current_active_user
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
 
@@ -70,8 +71,12 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 @router.get("/{trip_id}/timeline", response_model=List[DaySchedule])
+@limiter.limit(RateLimits.TIMELINE_READ)
 async def get_timeline(
-    trip_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    trip_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get timeline for a trip, grouped by day. Requires authentication and trip ownership."""
     # Verify trip exists and user has access
@@ -137,7 +142,9 @@ async def get_timeline(
 
 
 @router.put("/{trip_id}/timeline/{place_id}")
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def update_timeline_entry(
+    request: Request,
     trip_id: int,
     place_id: int,
     update_data: TimelineEntryUpdate,
@@ -185,7 +192,9 @@ class TimelineEntryCreate(BaseModel):
 
 
 @router.post("/{trip_id}/timeline", response_model=TimelineEntryResponse, status_code=201)
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def create_timeline_entry(
+    request: Request,
     trip_id: int,
     entry: TimelineEntryCreate,
     db: AsyncSession = Depends(get_db),
@@ -243,7 +252,9 @@ async def create_timeline_entry(
 
 
 @router.delete("/{trip_id}/timeline/{place_id}")
+@limiter.limit(RateLimits.TRIP_DELETE)
 async def remove_from_timeline(
+    request: Request,
     trip_id: int,
     place_id: int,
     db: AsyncSession = Depends(get_db),
@@ -273,7 +284,9 @@ async def remove_from_timeline(
 
 
 @router.post("/{trip_id}/timeline/reorder")
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def reorder_timeline(
+    request: Request,
     trip_id: int,
     place_ids: List[int],
     db: AsyncSession = Depends(get_db),
@@ -299,7 +312,9 @@ async def reorder_timeline(
 
 
 @router.post("/{trip_id}/timeline/optimize")
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def optimize_timeline(
+    request: Request,
     trip_id: int,
     day_date: date,
     db: AsyncSession = Depends(get_db),

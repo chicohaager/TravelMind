@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import structlog
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from models.database import get_db
 from models.participant import Participant
 from models.trip import Trip
@@ -19,6 +19,7 @@ from routes.auth import get_current_active_user
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.images import process_and_save, validate_image
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -108,7 +109,9 @@ async def save_participant_photo(upload_file: UploadFile, participant_id: int) -
 
 # Endpoints
 @router.get("/{trip_id}/participants", response_model=List[ParticipantResponse])
+@limiter.limit(RateLimits.TRIP_READ)
 async def get_participants(
+    request: Request,
     trip_id: int,
     skip: int = 0,
     limit: int = 100,
@@ -140,7 +143,9 @@ async def get_participants(
 
 
 @router.post("/{trip_id}/participants", response_model=ParticipantResponse, status_code=201)
+@limiter.limit(RateLimits.TRIP_CREATE)
 async def create_participant(
+    request: Request,
     trip_id: int,
     participant: ParticipantCreate,
     db: AsyncSession = Depends(get_db),
@@ -165,7 +170,9 @@ async def create_participant(
 
 
 @router.put("/participants/{participant_id}", response_model=ParticipantResponse)
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def update_participant(
+    request: Request,
     participant_id: int,
     participant: ParticipantUpdate,
     db: AsyncSession = Depends(get_db),
@@ -198,8 +205,12 @@ async def update_participant(
 
 
 @router.delete("/participants/{participant_id}", status_code=204)
+@limiter.limit(RateLimits.TRIP_DELETE)
 async def delete_participant(
-    participant_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
+    request: Request,
+    participant_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Remove a participant from a trip.
@@ -221,7 +232,9 @@ async def delete_participant(
 
 
 @router.post("/participants/{participant_id}/upload-photo", response_model=ParticipantResponse)
+@limiter.limit(RateLimits.TRIP_CREATE)
 async def upload_participant_photo(
+    request: Request,
     participant_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
