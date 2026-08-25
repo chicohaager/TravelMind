@@ -111,7 +111,7 @@ export default function TripMap() {
                   {trip.title} - {t('common:interactiveMap')}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  {places.length} places • {routes.length} routes
+                  {places.length} {t('map:places')} • {routes.length} {t('map:routes')}
                 </p>
               </div>
             </div>

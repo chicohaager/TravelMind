@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Calendar, MapPin, Star, Tag, Smile, Meh, Frown, X, Edit, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
+import { aktuelleLocale } from '@/utils/format'
 
 const moodIcons = {
   happy: { icon: Smile, color: 'text-green-500', label: 'Glücklich' },
@@ -30,7 +31,7 @@ export default function DiaryEntry({ entry, onEdit, onDelete }) {
             {entry.entry_date && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {new Date(entry.entry_date).toLocaleDateString('de-DE', {
+                {new Date(entry.entry_date).toLocaleDateString(aktuelleLocale(), {
                   day: '2-digit',
                   month: 'long',
                   year: 'numeric'

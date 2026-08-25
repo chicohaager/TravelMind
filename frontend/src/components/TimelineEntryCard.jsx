@@ -1,6 +1,7 @@
 import { Clock, Trash2, GripVertical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 const categoryIcons = {
   sight: '🏛️',
@@ -15,7 +16,7 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
   const { t } = useTranslation()
   const formatTime = (timeStr) => {
     if (!timeStr) return null
-    return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString('de-DE', {
+    return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString(aktuelleLocale(), {
       hour: '2-digit',
       minute: '2-digit'
     })

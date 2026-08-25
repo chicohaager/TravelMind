@@ -4,6 +4,7 @@ import { Mic, Upload, FileAudio, Copy, Download, Trash2 } from 'lucide-react'
 import AudioRecorder from '@/components/AudioRecorder'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function Transcribe() {
   const { t } = useTranslation()
@@ -17,7 +18,7 @@ export default function Transcribe() {
     const newEntry = {
       id: Date.now(),
       text: text,
-      timestamp: new Date().toLocaleString('de-DE'),
+      timestamp: new Date().toLocaleString(aktuelleLocale()),
       length: text.length
     }
     setHistory(prev => [newEntry, ...prev])

@@ -1,6 +1,7 @@
 import { MapPin, Star, Check, Calendar, DollarSign, Edit, Trash2, ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 const CATEGORY_ICONS = {
   restaurant: '🍽️',
@@ -97,7 +98,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
           {place.visit_date && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 rounded-full text-xs font-medium">
               <Calendar className="w-3 h-3" />
-              {new Date(place.visit_date).toLocaleDateString('de-DE', {
+              {new Date(place.visit_date).toLocaleDateString(aktuelleLocale(), {
                 day: '2-digit',
                 month: 'short'
               })}

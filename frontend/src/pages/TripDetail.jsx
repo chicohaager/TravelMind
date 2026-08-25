@@ -22,6 +22,7 @@ import PlaceListsSection from '@components/PlaceListsSection'
 import PlaceDetailModal from '@components/PlaceDetailModal'
 import ShareButton from '@components/ShareButton'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale, formatCurrency } from '@/utils/format'
 
 // Fix Leaflet icon issue
 delete L.Icon.Default.prototype._getIconUrl
@@ -473,9 +474,9 @@ export default function TripDetail() {
               <div className="font-semibold">
                 {trip.start_date && trip.end_date ? (
                   <>
-                    {new Date(trip.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
+                    {new Date(trip.start_date).toLocaleDateString(aktuelleLocale(), { day: '2-digit', month: 'short' })}
                     {' - '}
-                    {new Date(trip.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(trip.end_date).toLocaleDateString(aktuelleLocale(), { day: '2-digit', month: 'short', year: 'numeric' })}
                   </>
                 ) : (
                   t('common:notSet')
@@ -493,7 +494,7 @@ export default function TripDetail() {
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400">{t('tripDetail:budget')}</div>
               <div className="font-semibold">
-                {trip.budget ? `${trip.budget.toLocaleString('de-DE')} ${trip.currency}` : t('common:notSet')}
+                {trip.budget ? formatCurrency(trip.budget, trip.currency || 'EUR') : t('common:notSet')}
               </div>
             </div>
           </div>

@@ -1,11 +1,12 @@
 import { Calendar, Clock, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, Reorder, AnimatePresence } from 'framer-motion'
 import TimelineEntryCard from './TimelineEntryCard'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function TimelineDay({ day, onReorder, onDeleteEntry, onOptimize, isExpanded, onToggleExpand }) {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('de-DE', {
+    return date.toLocaleDateString(aktuelleLocale(), {
       weekday: 'long',
       day: '2-digit',
       month: 'long'
