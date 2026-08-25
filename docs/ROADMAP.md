@@ -431,9 +431,62 @@ wieder von Hand gemessen und damit vom Zufall abhängig.
 | --- | --- | --- |
 | 5.1 | Backend-Coverage 53 % → 75 %, zuerst `diary`, `timeline`, `admin`, `ai_service`, `guide_parser` | `pytest --cov` ≥ 75 %, CI bricht darunter |
 | 5.2 | Frontend: die acht wichtigsten Flows als Component-Tests, E2E in **DE-Locale** gegen Postgres | Suite grün; ein eingebauter Fehler wird rot |
-| 5.3 | i18n-Gate: Skript vergleicht die Key-Sets aller Sprachen, die 7 fehlenden es/fr-Keys ergänzen | Skript → Exit 0; ein entfernter Key macht CI rot |
-| 5.4 | Locales nachladen statt statisch importieren | index-Chunk misst < 250 kB |
+| 5.3 | ✅ i18n-Gate: Skript vergleicht die Key-Sets aller Sprachen, die 7 fehlenden es/fr-Keys ergänzen | Skript → Exit 0; ein entfernter Key macht CI rot |
+| 5.4 | ✅ Locales nachladen statt statisch importieren | index-Chunk 227,0 → 103,1 kB; im Browser 2 Anfragen statt 57 |
 | 5.5 | `axe-core` in die E2E-Suite, aria-Lücken schließen | 0 kritische axe-Verstöße auf den 8 Hauptseiten |
+
+#### 5.4 — was gemessen wurde
+
+Vorher lagen **112 Übersetzungsdateien** (4 Sprachen × 28 Namensräume) als
+statische Importe im Hauptbündel: 143,9 KiB von 227,0 KiB, also **63 %** von
+dem, was jeder Besucher lädt, bevor er überhaupt weiß, welche Sprache er
+spricht. Drei Viertel davon konnte er nie brauchen.
+
+| | vorher | nachher |
+| --- | --- | --- |
+| index-Chunk | 227,0 kB | 103,1 kB |
+| JS-Anfragen beim Erstaufruf | 69 | 15 |
+| Übersetzungen übertragen | im Bündel | 39,3 kB in 2 Dateien |
+
+Der Zwischenschritt ist der lehrreiche Teil: `import()` allein erzeugte **eine
+Datei je Namensraum**, und ein deutscher Erstbesuch holte davon **57** — 28 für
+`de` und 28 für `en`, weil i18next die Rückfallsprache mitlädt. Das stand in
+keinem Build-Log; gefunden hat es erst die Messung im Browser
+(`performance.getEntriesByType('resource')`). `manualChunks` fasst jetzt je
+Sprache zusammen.
+
+`main.jsx` wartet auf das Init-Promise, bevor gerendert wird. Ohne das Warten
+liefert `t('trips:title')` so lange den **Schlüssel** zurück — auf dem
+Bildschirm stünde kurz `trips:title`. Schlägt das Laden fehl, wird trotzdem
+gerendert (englischer Rückfall statt weißer Seite) und der Fehler landet laut
+im Protokoll.
+
+Im Browser geprüft: alle vier Sprachen umgeschaltet, `<html lang>` folgt, kein
+roher Schlüssel sichtbar, je Sprache genau eine nachgeladene Datei.
+
+#### Nebenbefund: 25 Beschriftungen liefen nie durch `t()`
+
+Aufgefallen an *einem* Eintrag der Seitenleiste (`name: 'Transcription'`), der
+in **allen vier Sprachen** englisch war, während `transcribe:title` in allen
+vier danebenlag. Der Scan über alle `.jsx` fand 25 weitere Stellen derselben
+Form — darunter drei fest **deutsche** (`label: 'Glücklich'`), die ein
+englischer Nutzer zu sehen bekommen hätte.
+
+Behoben und mit einem vierten Wächter in `i18n-integrity.test.js` abgesichert,
+der die **Form** sucht statt einzelner Wörter. Durch Sabotage am echten
+Repository rot gesehen. Ausnahmen sind enger als die Regel: Markennamen als
+Werte, Testfixtures, und `pages/Home.jsx` — Letzteres hängt an einer eigenen
+Zusicherung, dass `/` weiterhin auf `/trips` umleitet.
+
+#### Nebenbefund: die PWA ist im Betrieb nicht aktiv
+
+Der Build erzeugt einen Service Worker und precacht 157 Dateien (1367 KiB).
+Im Browser gemessen: `window.isSecureContext === false` und
+`'serviceWorker' in navigator === false`. Über einfaches HTTP auf einer
+LAN-Adresse ist der Kontext nicht sicher, also läuft **kein** Service Worker —
+Offline-Betrieb und Installierbarkeit gibt es derzeit nicht. Das ist keine
+Fehlfunktion des Codes, sondern eine Folge des Transports; es braucht TLS.
+Gehört nach Phase 6.
 
 ### Phase 6 — Produktreife · danach
 
