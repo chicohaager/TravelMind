@@ -5,6 +5,7 @@ Manage user preferences including AI provider configuration
 
 from typing import Optional
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from models.database import get_db
 from models.user import AIProvider, User
@@ -13,6 +14,8 @@ from routes.auth import get_current_active_user
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.encryption import encryption_service
 from utils.rate_limits import RateLimits, limiter
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -190,4 +193,21 @@ async def validate_api_key(
         return {"valid": True, "provider": provider_lower, "message": "API key is valid and working"}
 
     except Exception as e:
-        return {"valid": False, "provider": provider_lower, "message": f"API key validation failed: {str(e)}"}
+        # NICHT `str(e)` in die Antwort: Anbieter-Bibliotheken schreiben den
+        # geprueften Schluessel gern in ihre Fehlermeldung ("invalid api key:
+        # gsk_…"). Er stuende dann in der HTTP-Antwort, in den
+        # Entwicklerwerkzeugen des Browsers und im Proxy-Protokoll — genau der
+        # Wert, den dieser Endpunkt schuetzen soll. Dieselbe Ursache wie in
+        # routes/ai.py, am 2026-08-25 an beiden Stellen behoben.
+        logger.warning(
+            "ai_key_validation_failed",
+            provider=provider_lower,
+            user_id=current_user.id,
+            fehler_typ=type(e).__name__,
+            fehler=str(e),
+        )
+        return {
+            "valid": False,
+            "provider": provider_lower,
+            "message": f"Der Schluessel wurde vom Anbieter abgelehnt ({type(e).__name__}).",
+        }

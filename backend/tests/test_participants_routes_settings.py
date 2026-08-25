@@ -289,3 +289,105 @@ async def test_schluessel_loeschen(client: AsyncClient, auth_headers, db_session
 @pytest.mark.asyncio
 async def test_einstellungen_ohne_anmeldung(client: AsyncClient):
     assert (await client.get("/api/user/settings")).status_code == 401
+
+
+# ── Schlüsselprüfung ────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_gueltiger_schluessel_wird_bestaetigt(client: AsyncClient, auth_headers, monkeypatch):
+    import routes.user_settings as us
+
+    class _Anbieter:
+        async def chat(self, prompt, system_prompt=None, max_tokens=2048):
+            return "valid"
+
+    class _Dienst:
+        provider = _Anbieter()
+
+    monkeypatch.setattr("services.ai_service.create_ai_service", lambda p, k: _Dienst())
+    assert us  # der Endpunkt importiert die Fabrik erst zur Laufzeit
+    antwort = await client.post(
+        "/api/user/settings/ai/validate",
+        headers=auth_headers,
+        json={"ai_provider": "groq", "api_key": "gsk_ein_gueltiger_schluessel"},
+    )
+    assert antwort.status_code == 200, antwort.text
+    assert antwort.json() == {
+        "valid": True,
+        "provider": "groq",
+        "message": "API key is valid and working",
+    }
+
+
+@pytest.mark.asyncio
+async def test_abgelehnter_schluessel_steht_NICHT_in_der_antwort(client: AsyncClient, auth_headers, monkeypatch):
+    """Dieselbe Ursache wie in routes/ai.py: die Fehlermeldung des Anbieters
+    enthält oft den geprüften Schlüssel. Hier ist es besonders heikel — der
+    Schlüssel kommt gerade erst mit der Anfrage herein."""
+    geheim = "gsk_dieser_schluessel_darf_nicht_zurueckkommen"
+
+    class _Anbieter:
+        async def chat(self, prompt, system_prompt=None, max_tokens=2048):
+            raise RuntimeError(f"invalid api key: {geheim}")
+
+    class _Dienst:
+        provider = _Anbieter()
+
+    monkeypatch.setattr("services.ai_service.create_ai_service", lambda p, k: _Dienst())
+    antwort = await client.post(
+        "/api/user/settings/ai/validate",
+        headers=auth_headers,
+        json={"ai_provider": "groq", "api_key": geheim},
+    )
+    assert antwort.status_code == 200
+    daten = antwort.json()
+    assert daten["valid"] is False
+    assert geheim not in antwort.text, "Der Schlüssel steht in der Antwort"
+    # Aber die Meldung muss brauchbar bleiben: der Fehlertyp gehört hinein.
+    assert "RuntimeError" in daten["message"]
+
+
+@pytest.mark.asyncio
+async def test_pruefung_mit_unbekanntem_anbieter(client: AsyncClient, auth_headers):
+    antwort = await client.post(
+        "/api/user/settings/ai/validate",
+        headers=auth_headers,
+        json={"ai_provider": "skynet", "api_key": "1234567890"},
+    )
+    assert antwort.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_pruefung_ohne_anmeldung(client: AsyncClient):
+    antwort = await client.post("/api/user/settings/ai/validate", json={"ai_provider": "groq", "api_key": "1234567890"})
+    assert antwort.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_die_pruefung_speichert_nichts(client: AsyncClient, auth_headers, db_session: AsyncSession, test_user):
+    """Der Endpunkt heißt „validate" — er darf den Schlüssel NICHT ablegen."""
+
+    class _Anbieter:
+        async def chat(self, prompt, system_prompt=None, max_tokens=2048):
+            return "valid"
+
+    class _Dienst:
+        provider = _Anbieter()
+
+    import pytest as _pytest  # noqa: F401
+    from services import ai_service
+
+    original = ai_service.create_ai_service
+    ai_service.create_ai_service = lambda p, k: _Dienst()
+    try:
+        await client.post(
+            "/api/user/settings/ai/validate",
+            headers=auth_headers,
+            json={"ai_provider": "groq", "api_key": "gsk_nur_pruefen_nicht_speichern"},
+        )
+    finally:
+        ai_service.create_ai_service = original
+
+    nutzer = (await db_session.execute(select(User).where(User.id == test_user.id))).scalar_one()
+    assert not nutzer.encrypted_api_key, "Die Prüfung hat den Schlüssel gespeichert"

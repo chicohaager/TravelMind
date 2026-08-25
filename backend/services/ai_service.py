@@ -5,6 +5,7 @@ Supports multiple AI providers: Claude (Anthropic), OpenAI, Gemini (Google), and
 
 import asyncio
 import json
+import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -12,6 +13,41 @@ import google.generativeai as genai
 import openai
 from anthropic import Anthropic
 from groq import Groq
+
+# ── Modell-IDs ──────────────────────────────────────────────────────────────
+#
+# Am 2026-08-25 gegen die Herstellerdokumentation geprueft, nicht aus dem
+# Gedaechtnis. Stand davor und was die Doku sagte:
+#
+#   Claude  claude-sonnet-4-6                             -> legacy, aktuell claude-sonnet-5
+#   OpenAI  gpt-5.4                                       -> nicht mehr gelistet
+#   Gemini  gemini-3.5-flash                              -> gelistet, aber als legacy bezeichnet
+#   Groq    meta-llama/llama-4-maverick-17b-128e-instruct -> UEBERHAUPT NICHT MEHR GELISTET
+#
+# Der letzte Fall ist der teure: Groq ist der Standardanbieter (kostenlos),
+# und sein Modell gab es nicht mehr. Jede KI-Anfrage waere fehlgeschlagen.
+#
+# Deshalb stehen die IDs jetzt in der Umgebung: eine Modell-ID ist ein
+# GEMESSENER WERT, kein Vertrag. Der Hersteller nimmt sie aus dem Angebot,
+# wann er will, und dann darf die Reparatur kein neues Image brauchen.
+STANDARD_MODELLE = {
+    "CLAUDE_MODEL": "claude-sonnet-5",
+    "OPENAI_MODEL": "gpt-5.6-terra",
+    "GEMINI_MODEL": "gemini-3.7-flash",
+    "GROQ_MODEL": "llama-3.3-70b-versatile",
+}
+
+
+def modell_id(variable: str) -> str:
+    """Die Modell-ID zur Laufzeit aufloesen, nicht beim Import.
+
+    Beim Import gelesen wuerde eine Aenderung der Umgebung erst nach einem
+    Neustart wirken — und in Tests braeuchte es ein `importlib.reload`, das
+    die Klassenobjekte austauscht und damit jeden `isinstance`-Vergleich in
+    anderen Dateien zerlegt (am 2026-08-25 genau so passiert: 5 fremde Tests
+    fielen).
+    """
+    return os.getenv(variable) or STANDARD_MODELLE[variable]
 
 
 class AIProvider(ABC):
@@ -38,9 +74,11 @@ class AIProvider(ABC):
 class ClaudeProvider(AIProvider):
     """Anthropic Claude provider"""
 
-    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6"):
+    def __init__(self, api_key: str, model: str = None):
+        model = model or modell_id("CLAUDE_MODEL")
         self.client = Anthropic(api_key=api_key)
         self.model = model
+        self.model_id = model
 
     async def chat(
         self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
@@ -62,9 +100,11 @@ class ClaudeProvider(AIProvider):
 class OpenAIProvider(AIProvider):
     """OpenAI GPT provider"""
 
-    def __init__(self, api_key: str, model: str = "gpt-5.4"):
+    def __init__(self, api_key: str, model: str = None):
+        model = model or modell_id("OPENAI_MODEL")
         self.client = openai.OpenAI(api_key=api_key)
         self.model = model
+        self.model_id = model
 
     async def chat(
         self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
@@ -81,7 +121,10 @@ class OpenAIProvider(AIProvider):
             self.client.chat.completions.create,
             model=self.model,
             messages=messages,
-            max_tokens=max_tokens,
+            # `max_tokens` ist laut OpenAI-Doku (geprueft 2026-08-25) zugunsten
+            # von `max_completion_tokens` veraltet und mit den Reasoning-
+            # Modellen nicht mehr vertraeglich.
+            max_completion_tokens=max_tokens,
             temperature=temperature,
         )
 
@@ -93,8 +136,12 @@ class OpenAIProvider(AIProvider):
 class GeminiProvider(AIProvider):
     """Google Gemini provider"""
 
-    def __init__(self, api_key: str, model: str = "gemini-3.5-flash"):
+    def __init__(self, api_key: str, model: str = None):
+        model = model or modell_id("GEMINI_MODEL")
         genai.configure(api_key=api_key)
+        # `self.model` ist hier ein SDK-Objekt, keine Zeichenkette. Ohne
+        # `model_id` laesst sich die benutzte ID nirgends ablesen.
+        self.model_id = model
         self.model = genai.GenerativeModel(model)
 
     async def chat(
@@ -124,9 +171,11 @@ class GeminiProvider(AIProvider):
 class GroqProvider(AIProvider):
     """Groq provider (fast, free inference with Llama models)"""
 
-    def __init__(self, api_key: str, model: str = "meta-llama/llama-4-maverick-17b-128e-instruct"):
+    def __init__(self, api_key: str, model: str = None):
+        model = model or modell_id("GROQ_MODEL")
         self.client = Groq(api_key=api_key)
         self.model = model
+        self.model_id = model
 
     async def chat(
         self, prompt: str, system_prompt: Optional[str] = None, max_tokens: int = 2048, temperature: float = 1.0
