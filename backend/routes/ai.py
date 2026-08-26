@@ -358,7 +358,8 @@ Gib Empfehlungen für Orte, die:
 Antworte AUSSCHLIESSLICH mit einem validen JSON-Array in diesem Format:
 [
   {{
-    "name": "Ortsname",
+    "name": "Nur der Eigenname des Ortes, OHNE Ortsangabe",
+    "ort": "Die Gemeinde/Stadt, in der er liegt",
     "category": "attraction|restaurant|beach|viewpoint|museum|park|shopping|nightlife|other",
     "description": "Kurze, ansprechende Beschreibung warum dieser Ort empfohlen wird (1-2 Sätze)",
     "reason": "Warum passt dieser Ort perfekt zu dieser Reise? (1 Satz)",
@@ -371,6 +372,14 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Array in diesem Format:
 
 Wichtig:
 - Maximal 8 Empfehlungen
+- "name" enthaelt NUR den Eigennamen — kein "in <Ort>", kein "bei <Ort>".
+  Die Gemeinde gehoert ausschliesslich in das Feld "ort".
+  Grund: die Ortsangabe wird nachtraeglich geprueft. Am 2026-08-26 kam
+  "Terme Jezerčica in Popovača" zurueck; das Bad liegt in Donja Stubica,
+  69,2 km entfernt. Steht die Gemeinde im Namen, ist die Behauptung nicht
+  von der Sache zu trennen und der Kartenmarker landet am falschen Ort.
+- Bist du dir bei der Gemeinde nicht sicher, lass "ort" leer. Eine fehlende
+  Angabe ist brauchbar, eine falsche nicht.
 - Nur Orte die wirklich zu den Interessen passen
 - Deutsche Sprache für name, description, reason
 - image_search in ENGLISCH für bessere Bildsuche
@@ -402,7 +411,11 @@ Wichtig:
             rec["image_url"] = photo_urls[i]
 
             # Generate Google Maps search link
-            maps_query = f"{rec['name']} {recommendations_request.destination}"
+            # Die vom Modell genannte Gemeinde ist der bessere Zusatz als das
+            # Reiseziel: das Ziel kann eine Hausadresse sein ("Gornja Jelenska
+            # Kamenica 55"), und die macht jede Kartensuche schlechter.
+            zusatz = rec.get("ort") or recommendations_request.destination
+            maps_query = f"{rec['name']} {zusatz}"
             rec["google_maps_link"] = (
                 f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(maps_query)}"
             )

@@ -82,6 +82,12 @@ class PlaceCreate(BaseModel):
     name: str = Field(..., example="Castelo de São Jorge")
     description: Optional[str] = Field(None, example="Historische Burg mit Aussicht")
     address: Optional[str] = None
+    # Die Ortsangabe, die das KI-Modell zu diesem Ort behauptet hat — getrennt
+    # vom Namen. Sie wird nicht gespeichert, sondern geprueft: liegt die
+    # gefundene Sache weiter als 25 km von diesem Ort entfernt, ist die
+    # Zuordnung widerlegt und steht als Warnung im Protokoll. Am 2026-08-26
+    # war genau das der Fall ("Terme Jezerčica in Popovača", 69,2 km).
+    behaupteter_ort: Optional[str] = Field(None, example="Donja Stubica")
     # PFLICHT — und das bleibt so.
     #
     # `PUT /places/{id}` ersetzt vollstaendig. Waeren die Koordinaten hier
@@ -116,6 +122,7 @@ class PlaceResponse(BaseModel):
     address: Optional[str]
     latitude: Optional[float]
     longitude: Optional[float]
+    position_nur_ort: Optional[bool] = None
     category: Optional[str]
     list_id: Optional[int]
     visit_date: Optional[datetime]
@@ -216,13 +223,15 @@ async def create_place(
     trip = await verify_trip_access(trip_id, current_user, db)
 
     # Geocode if coordinates are missing
-    latitude, longitude = await geocode_if_missing(
+    position = await geocode_if_missing(
         name=place.name,
         latitude=place.latitude,
         longitude=place.longitude,
         address=place.address,
         destination=trip.destination if hasattr(trip, "destination") else None,
+        behaupteter_ort=place.behaupteter_ort,
     )
+    latitude, longitude = position.lat, position.lon
 
     # Get max order for this trip
     result = await db.execute(select(func.max(Place.order)).where(Place.trip_id == trip_id))
@@ -236,6 +245,7 @@ async def create_place(
         address=place.address,
         latitude=latitude,
         longitude=longitude,
+        position_nur_ort=position.nur_ort,
         category=place.category,
         list_id=place.list_id,
         visit_date=place.visit_date,
@@ -910,7 +920,7 @@ async def import_places_bulk(
         # (None, None) zurueck — frueher standen hier 0.0/0.0, und der Ort
         # landete im Atlantik statt als "Position unbekannt" erkennbar zu
         # sein. Deshalb hier auch KEIN `or 0.0` mehr.
-        latitude, longitude = await geocode_if_missing(
+        position = await geocode_if_missing(
             name=place_data.name,
             latitude=place_data.latitude,
             longitude=place_data.longitude,
@@ -918,6 +928,7 @@ async def import_places_bulk(
             destination=ziel,
             anker=anker,
         )
+        latitude, longitude = position.lat, position.lon
         if latitude is None or longitude is None:
             ohne_position.append(place_data.name)
 
@@ -928,6 +939,7 @@ async def import_places_bulk(
             address=place_data.address,
             latitude=latitude,
             longitude=longitude,
+            position_nur_ort=position.nur_ort,
             category=place_data.category,
             list_id=place_data.list_id,
             visit_date=place_data.visit_date,

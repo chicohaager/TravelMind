@@ -18,5 +18,6 @@
   "routes": "Routes",
   "moreRoutes": "+{{count}} more",
   "ohnePosition_one": "{{count}} place without a location — not on the map",
-  "ohnePosition_other": "{{count}} places without a location — not on the map"
+  "ohnePosition_other": "{{count}} places without a location — not on the map",
+  "nurOrtsgenau": "Town-level only — the municipality was found, not this place itself"
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getPhotoUrl } from '@/utils/images'
 
@@ -266,6 +267,17 @@ export default function InteractiveMap({
             <Popup>
               <div className="max-w-xs">
                 <h3 className="font-bold text-lg">{place.name}</h3>
+                {/* Nur ortsgenau: der Geocoder hat die SIEDLUNG gefunden, nicht
+                    die genannte Sache. Am 2026-08-26 waren 9 von 16 Positionen
+                    einer echten Reise so entstanden — und auf der Karte nicht
+                    von einem echten Fund zu unterscheiden. Ein Punkt ohne
+                    Vorbehalt behauptet Genauigkeit, die es nicht gibt. */}
+                {place.position_nur_ort === true && (
+                  <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-500">
+                    <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                    <span>{t('map:nurOrtsgenau')}</span>
+                  </p>
+                )}
                 {place.category && (
                   <span className="inline-block px-2 py-1 text-xs bg-gray-100 rounded-full mt-1">
                     {place.category}

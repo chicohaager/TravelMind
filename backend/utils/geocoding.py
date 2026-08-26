@@ -47,7 +47,7 @@ Zweifel besser sichtbar als still.
 import asyncio
 import math
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import httpx
 import structlog
@@ -66,6 +66,13 @@ MAX_ABSTAND_KM = 150.0
 # Trefferarten, die eine SIEDLUNG bezeichnen und nicht die gesuchte Sache.
 # Landet die Suche hier, ist die Position ortsgenau, nicht objektgenau: der
 # Mittelpunkt von Popovača ist keine Antwort auf "wo liegt Terme Jezerčica".
+# Ab dieser Entfernung gilt eine Ortsangabe des Modells als WIDERLEGT.
+# 25 km ist grosszuegig: eine Gemeinde kann ausgedehnt sein, und "bei X" darf
+# ein Stueck ausserhalb liegen. Am 2026-08-26 gemessen lag der Fehlgriff bei
+# 69,2 km ("Terme Jezerčica in Popovača" -> Donja Stubica), der zulaessige
+# Fall bei unter 5 km.
+WIDERSPRUCH_KM = 25.0
+
 GEMEINDE_TYPEN = {
     "administrative",
     "city",
@@ -318,12 +325,60 @@ def _ist_nur_ort(treffer: Dict[str, Any], name: str, variante: str) -> bool:
     return bool(treffer.get("typ") in GEMEINDE_TYPEN and variante.strip().lower() != name.strip().lower())
 
 
+async def _ortsangabe_pruefen(
+    treffer: Dict[str, Any], name: str, behaupteter_ort: Optional[str]
+) -> Tuple[bool, Optional[float]]:
+    """Liegt der gefundene Ort wirklich dort, wo das Modell behauptet?
+
+    Ein Sprachmodell schreibt Ortszuordnungen mit derselben Sicherheit hin wie
+    Namen — und liegt dabei falsch, ohne dass es jemandem auffaellt. Am
+    2026-08-26 in der Produktion: "Terme Jezerčica in Popovača". Das Bad gibt
+    es, aber in Donja Stubica, **69,2 km** entfernt.
+
+    Die Behauptung ist pruefbar, sobald die Sache SELBST gefunden ist: dann
+    wird der behauptete Ort einzeln aufgeloest und die Entfernung gerechnet.
+    Ueber `WIDERSPRUCH_KM` ist die Zuordnung widerlegt — kein Verdacht,
+    sondern eine Messung.
+
+    Gibt (widerlegt, abstand_km) zurueck. Ohne behauptete Ortsangabe oder
+    ohne auffindbaren Ort gibt es nichts zu widerlegen: (False, None).
+    """
+    if not behaupteter_ort:
+        return (False, None)
+    ortstreffer = await _nominatim(behaupteter_ort, limit=1)
+    if not ortstreffer:
+        return (False, None)
+    abstand = abstand_km((treffer["lat"], treffer["lon"]), (ortstreffer[0]["lat"], ortstreffer[0]["lon"]))
+    if abstand > WIDERSPRUCH_KM:
+        logger.warning(
+            "geocoding_ortsangabe_widerlegt",
+            name=name,
+            behaupteter_ort=behaupteter_ort,
+            gefunden=treffer["name"],
+            abstand_km=round(abstand, 1),
+            schranke_km=WIDERSPRUCH_KM,
+            hinweis="Die Ortszuordnung im Namen ist falsch — die Sache liegt woanders",
+        )
+        return (True, round(abstand, 1))
+    return (False, round(abstand, 1))
+
+
+def _behaupteter_ort_aus_namen(name: str) -> Optional[str]:
+    """Zieht das "Y" aus "X in Y" — fuer Altbestand ohne eigenes Feld."""
+    treffer = _ORTSBEZUG.match(_GATTUNG.sub("", name).strip()) or _ORTSBEZUG.match(name)
+    if not treffer:
+        return None
+    ort = _GATTUNG.sub("", treffer.group(2)).strip()
+    return ort or None
+
+
 async def geocode_place(
     name: str,
     address: Optional[str] = None,
     destination: Optional[str] = None,
     anker: Optional[Tuple[float, float]] = None,
     land: Optional[str] = None,
+    behaupteter_ort: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Sucht die Position eines Ortes. Gibt None zurück, wenn nichts trägt.
@@ -371,7 +426,22 @@ async def geocode_place(
                     typ=treffer.get("typ"),
                     hinweis="Gefunden wurde die SIEDLUNG, nicht die genannte Sache",
                 )
-            return {**treffer, "quelle": "nominatim", "variante": variante, "nur_ort": nur_ort}
+            widerlegt, abweichung = (False, None)
+            if not nur_ort:
+                # Nur pruefbar, wenn die SACHE gefunden wurde. Steckt hinter
+                # dem Treffer ohnehin nur die Gemeinde, gibt es nichts zu
+                # vergleichen — dann ist `nur_ort` die Auskunft.
+                widerlegt, abweichung = await _ortsangabe_pruefen(
+                    treffer, name, behaupteter_ort or _behaupteter_ort_aus_namen(name)
+                )
+            return {
+                **treffer,
+                "quelle": "nominatim",
+                "variante": variante,
+                "nur_ort": nur_ort,
+                "ortsangabe_widerlegt": widerlegt,
+                "abweichung_km": abweichung,
+            }
 
     # Photon ist fehlertoleranter, aber liefert IMMER etwas — ohne Anker also
     # regelmäßig einen Ort im falschen Land. Nur mit Anker sinnvoll.
@@ -404,6 +474,22 @@ async def geocode_place(
     return None
 
 
+class Position(NamedTuple):
+    """Was eine Geokodierung zurueckgibt — samt Vorbehalt.
+
+    Vorher war es ein blosses `(lat, lon)`. Damit ging genau die Auskunft
+    verloren, die den Unterschied macht: ob die Koordinate die SACHE meint
+    oder nur den Ort drumherum. Am 2026-08-26 waren 9 von 16 Positionen einer
+    echten Reise Gemeindemittelpunkte, und niemand konnte es sehen.
+    """
+
+    lat: Optional[float]
+    lon: Optional[float]
+    nur_ort: Optional[bool] = None
+    ortsangabe_widerlegt: bool = False
+    abweichung_km: Optional[float] = None
+
+
 async def geocode_location(
     name: str, address: Optional[str] = None, destination: Optional[str] = None
 ) -> Optional[Tuple[float, float]]:
@@ -420,7 +506,8 @@ async def geocode_if_missing(
     destination: Optional[str] = None,
     anker: Optional[Tuple[float, float]] = None,
     land: Optional[str] = None,
-) -> Tuple[Optional[float], Optional[float]]:
+    behaupteter_ort: Optional[str] = None,
+) -> Position:
     """
     Ergänzt fehlende Koordinaten.
 
@@ -431,12 +518,28 @@ async def geocode_if_missing(
     """
     hat_position = latitude is not None and longitude is not None and not _ist_null_insel(latitude, longitude)
     if hat_position:
-        return (latitude, longitude)
+        # Mitgebrachte Koordinaten: ueber ihre Genauigkeit ist nichts bekannt.
+        # `None` heisst hier "ungeprueft" und nicht "objektgenau" — der
+        # Unterschied entscheidet, ob die Karte etwas kennzeichnen darf.
+        return Position(latitude, longitude)
 
-    treffer = await geocode_place(name=name, address=address, destination=destination, anker=anker, land=land)
+    treffer = await geocode_place(
+        name=name,
+        address=address,
+        destination=destination,
+        anker=anker,
+        land=land,
+        behaupteter_ort=behaupteter_ort,
+    )
     if treffer:
-        return (treffer["lat"], treffer["lon"])
-    return (None, None)
+        return Position(
+            treffer["lat"],
+            treffer["lon"],
+            treffer.get("nur_ort"),
+            bool(treffer.get("ortsangabe_widerlegt")),
+            treffer.get("abweichung_km"),
+        )
+    return Position(None, None)
 
 
 async def batch_geocode_places(places: list, destination: Optional[str] = None) -> list:
@@ -449,12 +552,19 @@ async def batch_geocode_places(places: list, destination: Optional[str] = None) 
     anker = await anker_fuer_ziel(destination) if destination else None
     aktualisiert = []
     for eintrag in places:
-        lat, lon = await geocode_if_missing(
+        position = await geocode_if_missing(
             name=eintrag.get("name", ""),
             latitude=eintrag.get("latitude"),
             longitude=eintrag.get("longitude"),
             address=eintrag.get("address"),
             anker=anker,
         )
-        aktualisiert.append({**eintrag, "latitude": lat, "longitude": lon})
+        aktualisiert.append(
+            {
+                **eintrag,
+                "latitude": position.lat,
+                "longitude": position.lon,
+                "position_nur_ort": position.nur_ort,
+            }
+        )
     return aktualisiert

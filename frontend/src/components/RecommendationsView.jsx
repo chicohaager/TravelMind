@@ -121,6 +121,11 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
       for (const rec of selectedRecs) {
         await placesService.create(tripId, {
           name: rec.name,
+          // Die vom Modell behauptete Gemeinde geht getrennt mit. Sie wird
+          // nicht gespeichert, sondern nach dem Geokodieren geprueft: liegt
+          // der gefundene Ort weiter als 25 km entfernt, ist die Zuordnung
+          // widerlegt und steht als Warnung im Server-Protokoll.
+          behaupteter_ort: rec.ort || null,
           description: rec.description,
           category: rec.category,
           latitude: 0,
@@ -154,6 +159,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
     try {
       await placesService.create(tripId, {
         name: recommendation.name,
+        behaupteter_ort: recommendation.ort || null,
         description: recommendation.description,
         category: recommendation.category,
         latitude: 0,

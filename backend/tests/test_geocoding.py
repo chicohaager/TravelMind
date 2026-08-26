@@ -109,7 +109,11 @@ class TestGeocodeIfMissing:
             raise AssertionError("Geokodierung lief, obwohl eine Position vorlag")
 
         monkeypatch.setattr("utils.geocoding.geocode_place", darf_nicht_laufen)
-        assert await geocode_if_missing("Čigoč", 45.4154, 16.6309) == (45.4154, 16.6309)
+        position = await geocode_if_missing("Čigoč", 45.4154, 16.6309)
+        assert (position.lat, position.lon) == (45.4154, 16.6309)
+        # Über mitgebrachte Koordinaten ist NICHTS bekannt. `None` heißt hier
+        # „ungeprüft"; ein `False` wäre eine Zusicherung ohne Prüfung.
+        assert position.nur_ort is None
 
     @pytest.mark.asyncio
     async def test_fehlschlag_liefert_None_nicht_null_insel(self, monkeypatch):
@@ -123,8 +127,9 @@ class TestGeocodeIfMissing:
             return None
 
         monkeypatch.setattr("utils.geocoding.geocode_place", findet_nichts)
-        assert await geocode_if_missing("Unauffindbarer Ort", None, None) == (None, None)
-        assert await geocode_if_missing("Unauffindbarer Ort", 0.0, 0.0) == (None, None)
+        for lat, lon in ((None, None), (0.0, 0.0)):
+            position = await geocode_if_missing("Unauffindbarer Ort", lat, lon)
+            assert (position.lat, position.lon) == (None, None)
 
     @pytest.mark.asyncio
     async def test_null_insel_wird_neu_gesucht(self, monkeypatch):
@@ -133,7 +138,8 @@ class TestGeocodeIfMissing:
             return {"lat": 45.4154, "lon": 16.6309, "name": "Čigoč"}
 
         monkeypatch.setattr("utils.geocoding.geocode_place", findet)
-        assert await geocode_if_missing("Čigoč", 0.0, 0.0) == (45.4154, 16.6309)
+        position = await geocode_if_missing("Čigoč", 0.0, 0.0)
+        assert (position.lat, position.lon) == (45.4154, 16.6309)
 
     @pytest.mark.asyncio
     async def test_treffer_wird_uebernommen(self, monkeypatch):
@@ -141,7 +147,46 @@ class TestGeocodeIfMissing:
             return {"lat": 45.3609, "lon": 16.8209, "name": "Lonjsko polje"}
 
         monkeypatch.setattr("utils.geocoding.geocode_place", findet)
-        assert await geocode_if_missing("Lonjsko Polje", None, None) == (45.3609, 16.8209)
+        position = await geocode_if_missing("Lonjsko Polje", None, None)
+        assert (position.lat, position.lon) == (45.3609, 16.8209)
+
+    @pytest.mark.asyncio
+    async def test_die_kennzeichnung_wird_durchgereicht(self, monkeypatch):
+        """Ohne diesen Weg bliebe `nur_ort` im Geocoder stecken und käme nie
+        in der Datenbank an — die Karte könnte es dann nicht zeigen."""
+
+        async def findet(**_):
+            return {
+                "lat": 45.4952,
+                "lon": 16.7293,
+                "name": "Repušnica",
+                "typ": "village",
+                "nur_ort": True,
+                "ortsangabe_widerlegt": False,
+                "abweichung_km": None,
+            }
+
+        monkeypatch.setattr("utils.geocoding.geocode_place", findet)
+        position = await geocode_if_missing("Aussichtspunkt Repušnica", None, None)
+        assert position.nur_ort is True
+
+    @pytest.mark.asyncio
+    async def test_eine_widerlegte_ortsangabe_wird_durchgereicht(self, monkeypatch):
+        async def findet(**_):
+            return {
+                "lat": 45.9819,
+                "lon": 15.9566,
+                "name": "Terme Jezerčica, Donja Stubica",
+                "typ": "amenity",
+                "nur_ort": False,
+                "ortsangabe_widerlegt": True,
+                "abweichung_km": 69.2,
+            }
+
+        monkeypatch.setattr("utils.geocoding.geocode_place", findet)
+        position = await geocode_if_missing("Terme Jezerčica in Popovača", None, None)
+        assert position.ortsangabe_widerlegt is True
+        assert position.abweichung_km == 69.2
 
 
 class TestLandbevorzugung:
@@ -315,3 +360,85 @@ class TestOrtsgenauStattObjektgenau:
 
         for funktion in (geocoding._nominatim, geocoding._photon):
             assert '"typ"' in inspect.getsource(funktion), f"{funktion.__name__} liefert die Trefferart nicht mehr"
+
+
+class TestOrtsangabeWiderlegen:
+    """
+    Die Ortszuordnung des Modells ist PRÜFBAR, sobald die Sache selbst
+    gefunden ist.
+
+    Am 2026-08-26 in der Produktion: „Terme Jezerčica in Popovača". Das Bad
+    gibt es — in Donja Stubica, **69,2 km** entfernt. Die Behauptung war die
+    ganze Zeit widerlegbar, es hat nur niemand gerechnet.
+
+    Diese Klasse ist entstanden, weil eine Sabotage grün blieb: das Abschalten
+    der Schranke (`if abstand > WIDERSPRUCH_KM` → `if False`) ließ alle 30
+    Tests durchlaufen. Ein Mechanismus ohne roten Test ist eine Zusicherung
+    ohne Prüfung.
+    """
+
+    @staticmethod
+    def _antwort(lat, lon):
+        async def _nominatim(query, limit=5):
+            return [{"lat": lat, "lon": lon, "name": query, "land": "hr", "typ": "town"}]
+
+        return _nominatim
+
+    @pytest.mark.asyncio
+    async def test_der_echte_fall_wird_widerlegt(self, monkeypatch):
+        from utils import geocoding
+
+        # Popovača — der behauptete Ort.
+        monkeypatch.setattr(geocoding, "_nominatim", self._antwort(45.5710472, 16.6271435))
+        # Terme Jezerčica — wo die Sache wirklich liegt.
+        gefunden = {"lat": 45.981931, "lon": 15.9565892, "name": "Terme Jezerčica, Donja Stubica"}
+
+        widerlegt, abstand = await geocoding._ortsangabe_pruefen(gefunden, "Terme Jezerčica in Popovača", "Popovača")
+        assert widerlegt is True
+        assert 68 < abstand < 71, abstand  # gemessen: 69,2 km
+
+    @pytest.mark.asyncio
+    async def test_eine_stimmige_zuordnung_wird_nicht_widerlegt(self, monkeypatch):
+        """Gegenkontrolle: eine Prüfung, die immer anschlägt, prüft nichts."""
+        from utils import geocoding
+
+        monkeypatch.setattr(geocoding, "_nominatim", self._antwort(45.4831, 16.7756))  # Kutina
+        gefunden = {"lat": 45.4850, "lon": 16.7790, "name": "Kloster in Kutina"}
+
+        widerlegt, abstand = await geocoding._ortsangabe_pruefen(gefunden, "Kloster in Kutina", "Kutina")
+        assert widerlegt is False
+        assert abstand is not None and abstand < 1
+
+    @pytest.mark.asyncio
+    async def test_ohne_ortsangabe_gibt_es_nichts_zu_widerlegen(self):
+        from utils import geocoding
+
+        assert await geocoding._ortsangabe_pruefen({"lat": 45.0, "lon": 16.0}, "Irgendwas", None) == (False, None)
+
+    @pytest.mark.asyncio
+    async def test_ein_unauffindbarer_ort_erzeugt_keinen_verdacht(self, monkeypatch):
+        """Wer den behaupteten Ort nicht findet, hat nichts gemessen — und
+        darf deshalb auch nichts behaupten."""
+        from utils import geocoding
+
+        async def findet_nichts(query, limit=5):
+            return []
+
+        monkeypatch.setattr(geocoding, "_nominatim", findet_nichts)
+        assert await geocoding._ortsangabe_pruefen({"lat": 45.0, "lon": 16.0}, "X in Y", "Y") == (False, None)
+
+    def test_die_ortsangabe_wird_auch_aus_dem_namen_gelesen(self):
+        """Für den Altbestand: dort steht die Gemeinde noch IM Namen, es gibt
+        kein eigenes Feld."""
+        from utils.geocoding import _behaupteter_ort_aus_namen
+
+        assert _behaupteter_ort_aus_namen("Terme Jezerčica in Popovača") == "Popovača"
+        assert _behaupteter_ort_aus_namen("Kupa Fluss Aussichtspunkt bei Sisak") == "Sisak"
+        assert _behaupteter_ort_aus_namen("Restaurant Purger") is None
+
+    def test_die_schranke_ist_nicht_null(self):
+        """Ohne diese Zeile wäre alles oben auch bei WIDERSPRUCH_KM = 0 grün —
+        dann würde jede Zuordnung als widerlegt gelten."""
+        from utils.geocoding import WIDERSPRUCH_KM
+
+        assert 5 <= WIDERSPRUCH_KM <= 50
