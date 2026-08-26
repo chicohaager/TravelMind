@@ -585,7 +585,7 @@ async def batch_geocode_places(
 
         # Geocode the place
         try:
-            new_lat, new_lon = await geocode_if_missing(
+            position = await geocode_if_missing(
                 name=place.name,
                 latitude=place.latitude,
                 longitude=place.longitude,
@@ -593,14 +593,20 @@ async def batch_geocode_places(
                 destination=destination,
             )
 
-            # Check if coordinates actually changed
-            if abs(new_lat) > 0.001 or abs(new_lon) > 0.001:
-                place.latitude = new_lat
-                place.longitude = new_lon
+            # `abs(new_lat)` stand hier bis zum 2026-08-26 — und stuerzt ab,
+            # seit die Suche bei Misserfolg (None, None) zurueckgibt statt
+            # 0.0/0.0: `abs(None)` wirft TypeError. Der Fehler landete im
+            # `except` darunter und erschien dem Verwalter als Grund
+            # "unsupported operand", also als Eigenschaft des ORTES statt als
+            # Fehlschlag der Suche.
+            if position.lat is None or position.lon is None:
+                failed_places.append({"id": place.id, "name": place.name, "reason": "Keine Position gefunden"})
+            else:
+                place.latitude = position.lat
+                place.longitude = position.lon
+                place.position_nur_ort = position.nur_ort
                 place.updated_at = datetime.now()
                 fixed_count += 1
-            else:
-                failed_places.append({"id": place.id, "name": place.name, "reason": "Geocoding returned 0,0"})
 
         except Exception as e:
             failed_places.append({"id": place.id, "name": place.name, "reason": str(e)})

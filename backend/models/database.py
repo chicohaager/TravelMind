@@ -109,6 +109,7 @@ async def run_migrations(conn):
         place_columns = [row[0] for row in result.fetchall()]
 
         migrations = [
+            ("position_nur_ort", "ALTER TABLE places ADD COLUMN position_nur_ort BOOLEAN"),
             ("color", "ALTER TABLE places ADD COLUMN color VARCHAR(7) DEFAULT '#6366F1'"),
             ("icon_type", "ALTER TABLE places ADD COLUMN icon_type VARCHAR(50) DEFAULT 'location'"),
             ("image_url", "ALTER TABLE places ADD COLUMN image_url VARCHAR(1000)"),

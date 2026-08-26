@@ -26,6 +26,11 @@ class Place(Base):
     # nicht wie ein fehlender Wert. Siehe utils/geocoding.py.
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    # NULL = ungeprueft, True = nur ortsgenau (Gemeindemittelpunkt),
+    # False = objektgenau. Am 2026-08-26 gemessen: 9 von 16 Positionen einer
+    # echten Reise waren Gemeindemittelpunkte und auf der Karte nicht von
+    # einem echten Fund zu unterscheiden. Siehe utils/geocoding.py.
+    position_nur_ort = Column(Boolean, nullable=True)
 
     # Category
     category = Column(String(50), nullable=True)  # e.g., "restaurant", "hotel", "sight", "activity"

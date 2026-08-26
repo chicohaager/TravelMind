@@ -18,5 +18,6 @@
   "routes": "Routen",
   "moreRoutes": "+{{count}} weitere",
   "ohnePosition_one": "{{count}} Ort ohne Position — nicht auf der Karte",
-  "ohnePosition_other": "{{count}} Orte ohne Position — nicht auf der Karte"
+  "ohnePosition_other": "{{count}} Orte ohne Position — nicht auf der Karte",
+  "nurOrtsgenau": "Nur ortsgenau — gefunden wurde die Gemeinde, nicht dieser Ort selbst"
 }
