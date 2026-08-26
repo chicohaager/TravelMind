@@ -30,11 +30,49 @@ wieder genau da, wo dieses Skript herkommt.
 """
 
 import asyncio
+import os
 import sys
 
-from models.database import AsyncSessionLocal
-from models.user import User
-from sqlalchemy import func, select
+# Auch ueber stdin lauffaehig (`docker exec -i … python3 - < skript.py`):
+# das Container-Dateisystem ist read-only, hineinkopieren geht nicht, und
+# ohne Datei gibt es kein `__file__`.
+_wurzel = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if "__file__" in globals() else os.getcwd()
+sys.path.insert(0, _wurzel)
+
+# ALLE Modelle importieren, nicht nur `user`.
+#
+# SQLAlchemy loest Beziehungen ueber KLASSENNAMEN auf, erst beim ersten
+# Zugriff. `Trip` verweist auf `Route`; ist `Route` nicht registriert,
+# scheitert schon `select(User)` mit
+#
+#   InvalidRequestError: When initializing mapper Mapper[Trip(trips)],
+#   expression 'Route' failed to locate a name ('Route')
+#
+# — obwohl die Abfrage `Trip` gar nicht anfasst. Am 2026-08-26 beim ersten
+# Lauf gegen die Produktion genau so passiert. Im Test blieb es unsichtbar,
+# weil `tests/conftest.py` denselben Nebenwirkungs-Import schon fuehrt: die
+# Testwelt hatte die Registrierung, die Produktion nicht. Deshalb steht in
+# `test_verwalter_skript.py` zusaetzlich ein Lauf in einem FRISCHEN
+# Interpreter — nur der misst diesen Unterschied.
+#
+# Siehe CLAUDE.md, "Nebenwirkungs-Importe".
+from models import (  # noqa: E402,F401
+    audit_log,
+    diary,
+    expense,
+    media,
+    notification,
+    participant,
+    place,
+    place_list,
+    route,
+    settings,
+    trip,
+    user,
+)
+from models.database import AsyncSessionLocal  # noqa: E402
+from models.user import User  # noqa: E402
+from sqlalchemy import func, select  # noqa: E402
 
 
 async def _benutzer(db, benutzername: str) -> User:
