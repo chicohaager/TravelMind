@@ -53,19 +53,39 @@ def test_eine_einzelne_klammer_in_der_vorrede_zerlegt_nichts():
 
 def test_ohne_json_wird_LAUT_gescheitert():
     """Kein leerer Rückfall: der Aufrufer soll den Unterschied zwischen
-    'nichts gefunden' und 'Antwort unlesbar' sehen können."""
-    with pytest.raises(json.JSONDecodeError):
-        _parse_ai_json("Dazu kann ich nichts sagen.")
+    'nichts gefunden' und 'Antwort unlesbar' sehen können.
+
+    Seit 2026-08-26 ist es ein ValueError statt eines JSONDecodeError — die
+    Meldung trägt jetzt Vorgang und Rohtext, damit im Server-Protokoll steht,
+    WAS das Modell stattdessen gesagt hat. JSONDecodeError bleibt eine
+    Unterklasse von ValueError, alte `except`-Zweige greifen also weiter."""
+    with pytest.raises(ValueError) as fehler:
+        _parse_ai_json("Dazu kann ich nichts sagen.", vorgang="Vorschläge")
+    meldung = str(fehler.value)
+    assert "Vorschläge" in meldung
+    assert "Dazu kann ich nichts sagen." in meldung  # der Rohtext ist der Zweck
 
 
 def test_leere_antwort_scheitert_ebenfalls_laut():
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(ValueError):
         _parse_ai_json("")
 
 
 def test_None_scheitert_ebenfalls_laut():
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(ValueError):
         _parse_ai_json(None)
+
+
+def test_der_rohtext_wird_gekuerzt():
+    """Gegenkontrolle: eine ausufernde Modellantwort darf das Protokoll nicht
+    fluten — aber der Anfang muss drinstehen."""
+    from utils.ki_antwort import ROHTEXT_IM_FEHLER
+
+    lang = "Nein. " * 500
+    with pytest.raises(ValueError) as fehler:
+        _parse_ai_json(lang)
+    assert len(str(fehler.value)) < ROHTEXT_IM_FEHLER + 200
+    assert "Nein." in str(fehler.value)
 
 
 # ── Ohne konfigurierte KI ───────────────────────────────────────────────────

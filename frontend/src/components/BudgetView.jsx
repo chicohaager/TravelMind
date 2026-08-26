@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, Euro, TrendingUp, TrendingDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '../utils/errorHandler'
@@ -223,7 +223,7 @@ export default function BudgetView({ tripId, participants }) {
         <div className="card">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <DollarSign className="w-6 h-6" />
+              <Euro className="w-6 h-6" />
               {t('budget:expenses')}
             </h2>
             <button
@@ -240,7 +240,7 @@ export default function BudgetView({ tripId, participants }) {
 
           {expenses.length === 0 ? (
             <div className="text-center py-12">
-              <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+              <Euro className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p className="text-gray-600 dark:text-gray-400 mb-4">{t('budget:noExpensesYet')}</p>
               <button
                 onClick={() => {

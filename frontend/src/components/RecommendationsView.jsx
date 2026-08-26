@@ -5,7 +5,7 @@ import {
   Sparkles,
   MapPin,
   Clock,
-  DollarSign,
+  Euro,
   Plus,
   Loader,
   AlertCircle,
@@ -341,7 +341,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                     )}
                     {rec.estimated_cost > 0 && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300 rounded-full text-xs font-medium">
-                        <DollarSign className="w-3 h-3" />~{rec.estimated_cost}{' '}
+                        <Euro className="w-3 h-3" />~{rec.estimated_cost}{' '}
                         {trip.currency || 'EUR'}
                       </span>
                     )}

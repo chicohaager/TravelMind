@@ -9,7 +9,7 @@ import {
   Globe,
   ExternalLink,
   Calendar,
-  DollarSign,
+  Euro,
   Info,
   Image as ImageIcon,
   Plus,
@@ -211,7 +211,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.cost && (
                         <div className="flex items-start gap-3">
-                          <DollarSign className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Euro className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:costField')}

@@ -4,7 +4,7 @@ import {
   MapPin,
   Star,
   Calendar,
-  DollarSign,
+  Euro,
   Sparkles,
   Lightbulb,
   Image,
@@ -514,7 +514,7 @@ export default function PlaceModal({
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      <DollarSign className="w-4 h-4 inline mr-1" />
+                      <Euro className="w-4 h-4 inline mr-1" />
                       {t('places:costLabel')}
                     </label>
                     <input

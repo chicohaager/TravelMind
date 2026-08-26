@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  DollarSign,
+  Euro,
   TrendingUp,
   TrendingDown,
   MapPin,
@@ -54,7 +54,7 @@ export default function Budget() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <Euro className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">{t('trips:noTrips')}</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('budget:createTripToManageExpenses')}

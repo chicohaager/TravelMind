@@ -5,21 +5,24 @@ import {
   Sparkles,
   BookOpen,
   X,
-  DollarSign,
+  Euro,
   ChevronDown,
   ChevronRight,
   Mic,
   GalleryThumbnails,
   CalendarClock,
   BarChart3,
+  ShieldCheck,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation()
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [openMenus, setOpenMenus] = useState({})
 
   const navigation = [
@@ -32,13 +35,27 @@ export default function Sidebar({ open, onClose }) {
         { name: t('nav:ai'), href: '/ai', icon: Sparkles },
       ],
     },
-    { name: t('budget:title'), href: '/budget', icon: DollarSign },
+    { name: t('budget:title'), href: '/budget', icon: Euro },
     { name: t('nav:diary'), href: '/diary', icon: BookOpen },
     { name: t('nav:gallery'), href: '/gallery', icon: GalleryThumbnails },
     { name: t('nav:timeline'), href: '/timeline', icon: CalendarClock },
     { name: t('nav:analytics'), href: '/analytics', icon: BarChart3 },
     { name: t('nav:transcribe'), href: '/transcribe', icon: Mic },
   ]
+
+  // Die Benutzerverwaltung ist nur fuer Verwalter sichtbar — und war bis zum
+  // 2026-08-26 UEBERHAUPT nicht erreichbar: die Seite und ihre API gab es
+  // vollstaendig, verlinkt war sie aber nur im Benutzermenue der Navbar, und
+  // in der Datenbank hatte niemand das Verwalterrecht. Ein fertiges Feature,
+  // das niemand findet, ist kein Feature.
+  //
+  // `is_superuser` entscheidet hier NUR ueber die Sichtbarkeit. Die Rechte
+  // haengen nicht daran: `require_admin` im Backend prueft jede einzelne
+  // Anfrage erneut (routes/admin.py) — wer den Pfad von Hand eingibt,
+  // bekommt 403.
+  if (user?.is_superuser) {
+    navigation.push({ name: t('admin:title'), href: '/admin', icon: ShieldCheck })
+  }
 
   const toggleMenu = (itemName) => {
     setOpenMenus((prev) => ({

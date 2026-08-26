@@ -4,7 +4,6 @@ Supports multiple AI providers: Claude (Anthropic), OpenAI, Gemini (Google), and
 """
 
 import asyncio
-import json
 import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
@@ -13,6 +12,7 @@ import google.generativeai as genai
 import openai
 from anthropic import Anthropic
 from groq import Groq
+from utils.ki_antwort import nur_objekte, parse_ai_json
 
 # ── Modell-IDs ──────────────────────────────────────────────────────────────
 #
@@ -336,18 +336,7 @@ Ausgabe als JSON:
 }}"""
 
         response = await self.provider.chat(prompt, max_tokens=2048)
-
-        # Try to extract JSON from response
-        try:
-            start = response.find("{")
-            end = response.rfind("}") + 1
-            if start >= 0 and end > start:
-                json_content = response[start:end]
-                return json.loads(json_content)
-            else:
-                return {"destinations": [], "raw_response": response}
-        except json.JSONDecodeError:
-            return {"destinations": [], "raw_response": response}
+        return parse_ai_json(response, erwartet=dict, vorgang="Reiseziel-Vorschlaege")
 
     async def plan_trip(
         self, destination: str, duration: int, interests: List[str], accommodation_type: Optional[str] = None
@@ -392,18 +381,12 @@ Ausgabe als strukturiertes JSON:
     "total_estimated_cost": "..."
 }}"""
 
-        response = await self.provider.chat(prompt, max_tokens=2048)
-
-        try:
-            start = response.find("{")
-            end = response.rfind("}") + 1
-            if start >= 0 and end > start:
-                json_content = response[start:end]
-                return json.loads(json_content)
-            else:
-                return {"days": [], "raw_response": response}
-        except json.JSONDecodeError:
-            return {"days": [], "raw_response": response}
+        # Mehr Platz als bei den anderen Anfragen: hier entsteht ein Plan mit
+        # Morgen/Mittag/Abend JE TAG plus Tipps. Bei 2048 Token reicht das ab
+        # etwa drei Tagen nicht mehr — und seit dem Abbruch-Waechter faellt
+        # das als lauter Fehler auf statt als halber Plan.
+        response = await self.provider.chat(prompt, max_tokens=4096)
+        return parse_ai_json(response, erwartet=dict, vorgang="Reiseplan")
 
     async def describe_destination(self, destination: str) -> str:
         """Generate a poetic, atmospheric description of a destination"""
@@ -469,18 +452,9 @@ Ausgabe als JSON Array:
     }}
 ]"""
 
-        response = await self.provider.chat(prompt, max_tokens=2048)
-
-        try:
-            start = response.find("[")
-            end = response.rfind("]") + 1
-            if start >= 0 and end > start:
-                json_content = response[start:end]
-                return json.loads(json_content)
-            else:
-                return []
-        except json.JSONDecodeError:
-            return []
+        # Zehn Tipps mit je sieben Feldern — 2048 Token sind dafuer knapp.
+        response = await self.provider.chat(prompt, max_tokens=4096)
+        return nur_objekte(parse_ai_json(response, erwartet=list, vorgang="Geheimtipps"), "Geheimtipps")
 
 
 def create_ai_service(provider_name: str, api_key: str) -> UnifiedAIService:
