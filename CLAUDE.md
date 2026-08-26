@@ -37,6 +37,7 @@ cd backend && pytest tests -q --cov=. --cov-fail-under=75
 cd frontend && npx eslint .                            # muss 0 Fehler melden
 cd frontend && npx vitest run
 cd frontend && npm run build
+bash frontend/nginx.conf.test.sh                       # Exit 0
 ```
 
 Bei UI-Änderungen zusätzlich: **im Browser durchklicken, in DE.** Ein HTTP 200
@@ -70,6 +71,8 @@ etwas Plausibles, statt laut zu scheitern.**
 | **`login` erwartet Formulardaten** | `OAuth2PasswordRequestForm`, nicht JSON. `curl -d 'username=…&password=…'`, kein `-H 'Content-Type: application/json'`. |
 | **Datumsfelder nehmen auch ein Datum ohne Uhrzeit** | Korrigiert am 2026-08-25: die Zeile behauptete hier das Gegenteil. An allen fünf Modellen mit Datumsfeld gemessen (Reise, Tagebuch, Ort, Zeitplanung, Ausgabe) — Pydantic v2 nimmt `2026-09-01` an und ergänzt Mitternacht. Festgehalten in `tests/test_trips_crud.py`. |
 | **`/health` gibt es zweimal** | Einmal ohne Präfix und einmal als `/api/health*`. Beide antworten. |
+| **Claude teilt `max_tokens` zwischen Denken und Text** | `claude-sonnet-5` denkt adaptiv, ohne dass man es einschaltet. Mit 2048 ging das ganze Budget ans Denken; die Antwort kam gar nicht oder halb. Am 2026-08-26 erzeugte das drei ganz verschieden aussehende Fehler (`keinen Textblock (Blockarten: ['thinking'])`, `JSONDecodeError`, `'str' object has no attribute 'get'`). `CLAUDE_DENK_RESERVE` legt das Denk-Budget obendrauf; `stop_reason == "max_tokens"` scheitert jetzt laut. |
+| **Ein abgeschnittenes JSON-Array verkleidet sich als Objekt** | Ohne `]` greift der Notfall-Zweig von `_parse_ai_json` auf `{…}` zu und liefert ein `dict`. Das Iterieren gibt dann Schlüssel (`str`), und der Fehler zeigt auf den Zugriff statt auf das Token-Limit. Deshalb nimmt `_parse_ai_json` die erwartete Form entgegen. |
 
 ### Betrieb
 
@@ -80,6 +83,7 @@ etwas Plausibles, statt laut zu scheitern.**
 | **`localhost` in Healthchecks** | Kann in schlanken Images auf `::1` auflösen, während der Dienst nur IPv4 bindet — der Container meldet dann fälschlich `unhealthy`. Immer `127.0.0.1`. |
 | **`docker compose` auf .143** | Das Plugin wird nicht gefunden. Direkt aufrufen: `/usr/lib/docker/cli-plugins/docker-compose`. |
 | **Kein `build:` in der Produktion** | Gebaut wird außerhalb, ausgeliefert werden Images mit dem Commit-SHA als Tag. Nur so gibt es einen Rückweg. |
+| **KI-Aufrufe brauchen an ZWEI Stellen mehr Zeit** | Eine Empfehlungsanfrage misst 33,4 s (am 2026-08-26 aus `rt=` im nginx-Protokoll abgelesen). Die axios-Instanz erlaubte 30 s, nginx 60 s — der Browser legte auf, im Protokoll stand `499 0 rt=30.001`, und im Browser die leere Ansicht. `KI_ZEITLIMIT_MS` und `location /api/ai/` müssen beide 180 s haben; der kürzere entscheidet. |
 
 ---
 
