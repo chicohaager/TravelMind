@@ -16,5 +16,7 @@
   "places": "Lugares",
   "routes": "Rutas",
   "moreRoutes": "+{{count}} más",
-  "showPhotos": "Mostrar fotos en el mapa"
+  "showPhotos": "Mostrar fotos en el mapa",
+  "ohnePosition_one": "{{count}} lugar sin ubicación — no aparece en el mapa",
+  "ohnePosition_other": "{{count}} lugares sin ubicación — no aparecen en el mapa"
 }

@@ -56,9 +56,37 @@ const createPhotoIcon = (thumbSrc) => {
   })
 }
 
-// True only for places that have usable numeric coordinates.
-const hasValidCoords = (p) =>
-  p && Number.isFinite(Number(p.latitude)) && Number.isFinite(Number(p.longitude))
+/**
+ * Wahr nur für Orte mit einer BRAUCHBAREN Position.
+ *
+ * Zwei Fallen stecken hier drin, beide am 2026-08-26 aufgefallen:
+ *
+ * 1. `Number(null)` ist **0**, nicht NaN — `Number.isFinite` sagt also `true`
+ *    für einen Ort ganz ohne Koordinaten. Seit die Spalten NULL erlauben,
+ *    wäre die alte Prüfung genau falsch herum sicher gewesen.
+ * 2. `0/0` ist die Null-Insel im Golf von Guinea. Kein Reiseort liegt dort;
+ *    steht es in den Daten, ist eine Geokodierung fehlgeschlagen und wurde
+ *    als Erfolg gespeichert. Acht kroatische Orte lagen so im Atlantik, alle
+ *    exakt übereinander — auf dem Bildschirm ein einziger Marker auf
+ *    einfarbig blauem Grund, was wie ein Kartenfehler aussah.
+ *
+ * Deshalb: ausdrücklich auf null/undefined prüfen, den Nullpunkt ausschließen
+ * und den gültigen Wertebereich verlangen.
+ */
+export const NULL_INSEL_SCHRANKE = 0.001 // ~111 m, wie im Backend
+
+export const hatPosition = (p) => {
+  if (!p) return false
+  const { latitude: lat, longitude: lng } = p
+  if (lat === null || lat === undefined || lng === null || lng === undefined) return false
+  const y = Number(lat)
+  const x = Number(lng)
+  if (!Number.isFinite(y) || !Number.isFinite(x)) return false
+  if (Math.abs(y) < NULL_INSEL_SCHRANKE && Math.abs(x) < NULL_INSEL_SCHRANKE) return false
+  return y >= -90 && y <= 90 && x >= -180 && x <= 180
+}
+
+const hasValidCoords = hatPosition
 
 // Component to center map on places. Only fits bounds when the actual set of
 // place IDs changes, so a manual pan is not overridden on every re-render.
@@ -309,6 +337,22 @@ export default function InteractiveMap({
                     </span>
                   ))}
               </div>
+              {/*
+                Orte ohne Position NENNEN, nicht verschwinden lassen.
+
+                Sie von der Karte zu nehmen ist richtig — sie stillschweigend
+                wegzulassen wäre nur die andere Hälfte desselben Fehlers: die
+                Zählung oben sagt "8 Orte", die Karte zeigt drei, und niemand
+                erfährt warum. Vorher lagen genau diese Orte unsichtbar
+                übereinander im Atlantik.
+              */}
+              {places.length - places.filter(hatPosition).length > 0 && (
+                <div className="mt-2 text-xs text-amber-700 dark:text-amber-500">
+                  {t('map:ohnePosition', {
+                    count: places.length - places.filter(hatPosition).length,
+                  })}
+                </div>
+              )}
             </div>
           )}
 

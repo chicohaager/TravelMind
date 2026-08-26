@@ -16,5 +16,7 @@
   "legend": "Legende",
   "places": "Orte",
   "routes": "Routen",
-  "moreRoutes": "+{{count}} weitere"
+  "moreRoutes": "+{{count}} weitere",
+  "ohnePosition_one": "{{count}} Ort ohne Position — nicht auf der Karte",
+  "ohnePosition_other": "{{count}} Orte ohne Position — nicht auf der Karte"
 }
