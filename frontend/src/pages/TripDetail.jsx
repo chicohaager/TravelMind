@@ -17,6 +17,7 @@ import {
   Sparkles,
   Check,
   X,
+  AlertTriangle,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -855,6 +856,18 @@ export default function TripDetail() {
                           <Popup>
                             <div className="min-w-[200px]">
                               <h3 className="font-bold mb-1">{place.name}</h3>
+                              {/* Derselbe Vorbehalt wie in InteractiveMap.jsx. Diese
+                                  Karte hier ist die, die der Nutzer auf der Reiseseite
+                                  tatsaechlich sieht — am 2026-08-26 habe ich den Hinweis
+                                  zuerst nur in InteractiveMap eingebaut, und im Browser
+                                  fehlte er trotzdem: das ist eine ANDERE Komponente,
+                                  lazy geladen und auf dieser Seite gar nicht aktiv. */}
+                              {place.position_unsicher === true && (
+                                <p className="mb-1 flex items-start gap-1 text-xs text-amber-700">
+                                  <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                                  <span>{t('map:positionUnsicher')}</span>
+                                </p>
+                              )}
                               {place.category && (
                                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                                   {place.category}
