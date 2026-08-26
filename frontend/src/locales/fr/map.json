@@ -19,5 +19,5 @@
   "showPhotos": "Afficher les photos sur la carte",
   "ohnePosition_one": "{{count}} lieu sans position — absent de la carte",
   "ohnePosition_other": "{{count}} lieux sans position — absents de la carte",
-  "nurOrtsgenau": "Précision communale seulement — la commune a été trouvée, pas ce lieu même"
+  "positionUnsicher": "Position approximative — pas certainement ce lieu"
 }

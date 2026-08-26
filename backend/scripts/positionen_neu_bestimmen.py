@@ -11,7 +11,8 @@ sahen sie aus wie ein echter Fund.
 Seit dem 2026-08-26 kann die Kette zweierlei mehr:
   * sie fragt nach dem KERN allein ("Terme Jezerčica" statt nur
     "Terme Jezerčica in Popovača" und "Popovača"), und
-  * sie merkt sich, ob der Treffer eine SIEDLUNG war (`position_nur_ort`).
+  * sie merkt sich, ob die Position nicht nachweislich zur gesuchten Sache
+    gehoert (`position_unsicher`).
 
 Beides wirkt nur auf neu bestimmte Positionen. Der Altbestand braucht diesen
 Lauf.
@@ -103,7 +104,7 @@ async def main() -> int:
             bewegung = _pfeil((ort.latitude, ort.longitude), neu)
             marken = []
             if treffer.get("nur_ort"):
-                marken.append("NUR ORTSGENAU")
+                marken.append("POSITION UNSICHER")
                 nur_ort += 1
             if treffer.get("ortsangabe_widerlegt"):
                 marken.append(f"ORTSANGABE WIDERLEGT ({treffer['abweichung_km']} km)")
@@ -120,11 +121,11 @@ async def main() -> int:
 
             if argumente.schreiben:
                 ort.latitude, ort.longitude = neu
-                ort.position_nur_ort = bool(treffer.get("nur_ort"))
+                ort.position_unsicher = bool(treffer.get("nur_ort"))
 
         print(
             f"\n{len(orte)} Orte geprueft · {geaendert} Positionen wuerden sich aendern · "
-            f"{nur_ort} nur ortsgenau · {widerlegt} Ortsangaben widerlegt · {ohne} ohne Treffer"
+            f"{nur_ort} unsichere Positionen · {widerlegt} Ortsangaben widerlegt · {ohne} ohne Treffer"
         )
         if argumente.schreiben:
             await db.commit()

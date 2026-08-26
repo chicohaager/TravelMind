@@ -604,7 +604,7 @@ async def batch_geocode_places(
             else:
                 place.latitude = position.lat
                 place.longitude = position.lon
-                place.position_nur_ort = position.nur_ort
+                place.position_unsicher = position.nur_ort
                 place.updated_at = datetime.now()
                 fixed_count += 1
 

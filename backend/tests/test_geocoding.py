@@ -346,10 +346,44 @@ class TestOrtsgenauStattObjektgenau:
 
     def test_ohne_typ_wird_nicht_markiert(self):
         """Ein fehlendes Feld darf keine Warnung erfinden — sonst wäre jeder
-        Dienst ohne Typangabe pauschal verdächtig."""
+        Dienst ohne Typangabe pauschal verdächtig.
+
+        Der gefundene Name trägt hier das Kennwort, damit wirklich nur die
+        fehlende Typangabe geprüft wird und nicht nebenbei die Namensprüfung.
+        Ohne diese Trennung maß der Test zwei Dinge gleichzeitig — und wurde
+        rot, als die zweite Regel dazukam."""
         from utils.geocoding import _ist_nur_ort
 
-        assert _ist_nur_ort({"lat": 1, "lon": 1, "name": "x"}, "Irgendwas in Ort", "Ort") is False
+        treffer = {"lat": 1, "lon": 1, "name": "Jezerčica, Donja Stubica"}
+        assert _ist_nur_ort(treffer, "Jezerčica in Popovača", "Jezerčica") is False
+
+    def test_ein_treffer_ohne_gemeinsames_kennwort_wird_markiert(self):
+        """Der zweite Weg. Am 2026-08-26 gemessen: die Suche nach dem
+        „Franziskanerkloster und Museum Moslavina in Kutina" landete auf einem
+        FLUSS namens Kutina — keine Gemeinde, also von der Typregel nicht
+        erfasst, und trotzdem falsch."""
+        from utils.geocoding import _ist_nur_ort
+
+        treffer = {"lat": 45.5, "lon": 16.8, "name": "Kutina, Grad Kutina", "typ": "river"}
+        assert _ist_nur_ort(treffer, "Franziskanerkloster und Museum Moslavina in Kutina", "Kutina") is True
+
+    def test_der_behauptete_ort_zaehlt_nicht_als_kennwort(self):
+        """Gegenkontrolle zur Zeile darüber — und der Grund, warum der erste
+        Entwurf genau falsch herum lief: stand „kutina" in den Kennwörtern,
+        trug der Rückfalltreffer „Kutina" es immer, und der Fehlgriff blieb
+        unmarkiert."""
+        from utils.geocoding import _kennwoerter
+
+        assert "kutina" in _kennwoerter("Franziskanerkloster und Museum Moslavina in Kutina")
+        # …und wird in `_ist_nur_ort` abgezogen, siehe Test darüber.
+
+    def test_alle_kennwoerter_muessen_vorkommen_nicht_nur_eines(self):
+        """„Mil burger & Milčinkica Sisak" trägt „sisak" und ist trotzdem
+        keine Festung. Ein `any` statt `all` hätte das durchgelassen."""
+        from utils.geocoding import _ist_nur_ort
+
+        treffer = {"lat": 45.48, "lon": 16.37, "name": "Mil burger & Milčinkica Sisak", "typ": "pastry"}
+        assert _ist_nur_ort(treffer, "Festung Sisak Stari Grad", "Sisak Stari Grad") is True
 
     def test_der_abruf_reicht_die_trefferart_durch(self):
         """Ohne dieses Feld kann `_ist_nur_ort` nichts entscheiden — und

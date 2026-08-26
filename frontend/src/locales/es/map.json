@@ -19,5 +19,5 @@
   "showPhotos": "Mostrar fotos en el mapa",
   "ohnePosition_one": "{{count}} lugar sin ubicación — no aparece en el mapa",
   "ohnePosition_other": "{{count}} lugares sin ubicación — no aparecen en el mapa",
-  "nurOrtsgenau": "Solo a nivel de municipio — se encontró la localidad, no este lugar en sí"
+  "positionUnsicher": "Posición aproximada — no con certeza este lugar"
 }

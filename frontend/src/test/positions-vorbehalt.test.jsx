@@ -24,30 +24,30 @@ const karte = readFileSync(join(hier, '..', 'components', 'InteractiveMap.jsx'),
 const SPRACHEN = ['de', 'en', 'es', 'fr']
 
 describe('Vorbehalt bei ortsgenauen Positionen', () => {
-  it('die Karte wertet position_nur_ort aus', () => {
-    expect(karte).toMatch(/place\.position_nur_ort/)
+  it('die Karte wertet position_unsicher aus', () => {
+    expect(karte).toMatch(/place\.position_unsicher/)
   })
 
   it('nur ein ausdrückliches true löst den Hinweis aus', () => {
-    // `position_nur_ort` ist DREIWERTIG: null heißt „ungeprüft". Ein
-    // wahrheitswertiger Test (`place.position_nur_ort &&`) wäre für null
+    // `position_unsicher` ist DREIWERTIG: null heißt „ungeprüft". Ein
+    // wahrheitswertiger Test (`place.position_unsicher &&`) wäre für null
     // ebenfalls falsch — richtig, aber aus Versehen. Der strikte Vergleich
     // hält fest, dass die Dreiwertigkeit gemeint ist.
-    expect(karte).toMatch(/place\.position_nur_ort === true/)
+    expect(karte).toMatch(/place\.position_unsicher === true/)
   })
 
   it('der Hinweis ist übersetzt und nicht fest verdrahtet', () => {
-    expect(karte).toMatch(/t\('map:nurOrtsgenau'\)/)
+    expect(karte).toMatch(/t\('map:positionUnsicher'\)/)
   })
 
-  it.each(SPRACHEN)('%s kennt den Schlüssel nurOrtsgenau', (sprache) => {
+  it.each(SPRACHEN)('%s kennt den Schlüssel positionUnsicher', (sprache) => {
     const datei = join(hier, '..', 'locales', sprache, 'map.json')
     const texte = JSON.parse(readFileSync(datei, 'utf8'))
-    expect(texte.nurOrtsgenau, `map.json fehlt der Schlüssel in ${sprache}`).toBeTruthy()
+    expect(texte.positionUnsicher, `map.json fehlt der Schlüssel in ${sprache}`).toBeTruthy()
     // Gegenkontrolle: kein durchgereichter deutscher Text in den anderen drei.
     if (sprache !== 'de') {
       const de = JSON.parse(readFileSync(join(hier, '..', 'locales', 'de', 'map.json'), 'utf8'))
-      expect(texte.nurOrtsgenau).not.toBe(de.nurOrtsgenau)
+      expect(texte.positionUnsicher).not.toBe(de.positionUnsicher)
     }
   })
 })

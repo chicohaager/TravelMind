@@ -272,10 +272,10 @@ export default function InteractiveMap({
                     einer echten Reise so entstanden — und auf der Karte nicht
                     von einem echten Fund zu unterscheiden. Ein Punkt ohne
                     Vorbehalt behauptet Genauigkeit, die es nicht gibt. */}
-                {place.position_nur_ort === true && (
+                {place.position_unsicher === true && (
                   <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-500">
                     <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
-                    <span>{t('map:nurOrtsgenau')}</span>
+                    <span>{t('map:positionUnsicher')}</span>
                   </p>
                 )}
                 {place.category && (

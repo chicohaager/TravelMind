@@ -47,6 +47,7 @@ Zweifel besser sichtbar als still.
 import asyncio
 import math
 import re
+import unicodedata
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import httpx
@@ -75,12 +76,16 @@ WIDERSPRUCH_KM = 25.0
 
 GEMEINDE_TYPEN = {
     "administrative",
+    "borough",
     "city",
+    "city_district",
     "county",
     "hamlet",
     "municipality",
     "postcode",
     "state",
+    "neighbourhood",
+    "quarter",
     "suburb",
     "town",
     "village",
@@ -306,23 +311,92 @@ async def anker_fuer_ziel(destination: Optional[str]) -> Optional[Tuple[float, f
     return None
 
 
+# Woerter, die keinen Ort unterscheiden. Bewusst kurz gehalten: die Liste soll
+# Gattungsbegriffe wegnehmen, nicht Eigennamen erraten.
+_ALLERWELTSWOERTER = {
+    "altstadt",
+    "aussichtspunkt",
+    "burg",
+    "dorf",
+    "ethno",
+    "etno",
+    "festung",
+    "fluss",
+    "grad",
+    "kirche",
+    "kloster",
+    "konoba",
+    "museum",
+    "nationalpark",
+    "naturpark",
+    "park",
+    "restaurant",
+    "schloss",
+    "stadt",
+    "wanderweg",
+}
+
+
+def _entkleidet(text: str) -> str:
+    """Kleinbuchstaben ohne diakritische Zeichen — 'Jezerčica' und 'Jezercica'
+    sollen dasselbe Wort sein."""
+    zerlegt = unicodedata.normalize("NFKD", text.lower())
+    return "".join(z for z in zerlegt if not unicodedata.combining(z))
+
+
+def _kennwoerter(name: str) -> List[str]:
+    """Die Woerter, die diesen Ort von anderen unterscheiden."""
+    roh = re.split(r"[^0-9a-zA-ZÀ-ÿčćđšžČĆĐŠŽ]+", _entkleidet(name))
+    return [w for w in roh if len(w) >= 4 and w not in _ALLERWELTSWOERTER]
+
+
 def _ist_nur_ort(treffer: Dict[str, Any], name: str, variante: str) -> bool:
-    """Ist die Position die einer SIEDLUNG statt die der gesuchten Sache?
+    """Gehoert diese Position nachweislich zur gesuchten Sache — oder nicht?
 
-    Am 2026-08-26 an den 16 Orten einer echten Reise gemessen: **9** Positionen
-    stammten aus einem Siedlungstreffer. Für ein Dorf ("Ethno-Dorf Čigoč") ist
-    das die richtige Antwort; für ein Thermalbad, einen Aussichtspunkt oder ein
-    Kloster ist es der Mittelpunkt des Ortes drumherum — und sah bis dahin
-    genauso aus wie eine echte Fundstelle.
+    Am 2026-08-26 an den 16 Orten einer echten Reise gemessen. Erst kannte
+    diese Pruefung nur SIEDLUNGSTREFFER; der Trockenlauf zeigte, dass das zu
+    eng ist. Die Kette lieferte ausserdem:
 
-    Zwei Bedingungen, beide nötig:
-      * der Treffer IST eine Siedlung (dafür wird `typ` überhaupt erst
-        durchgereicht — vorher warf `_nominatim` ihn weg), und
-      * gewonnen hat eine ABKÜRZUNG des Namens, nicht der Name selbst. Wer
-        nach "Popovača" sucht und Popovača bekommt, hat gefunden, was er
-        wollte.
+        "Franziskanerkloster … in Kutina"   -> typ=river   (ein Fluss)
+        "Altstadt Sisak mit Festung …"      -> typ=pastry  (eine Baeckerei)
+        "Etno-Restaurant Zeleni Vir"        -> typ=valley  (ein Tal)
+
+    Alle drei waren unmarkiert, weil sie keine Gemeinde sind — und alle drei
+    sind genauso falsch. Deshalb zwei Wege, und einer genuegt:
+
+    1. **Siedlungstreffer ueber eine Abkuerzung.** Wer nach "Popovača" sucht
+       und Popovača bekommt, hat gefunden was er wollte; wer nach
+       "Terme Jezerčica in Popovača" sucht und Popovača bekommt, nicht.
+
+    2. **Kein gemeinsames Kennwort.** Traegt der gefundene Eintrag keines der
+       unterscheidenden Woerter des gesuchten Namens, ist es etwas anderes.
+       "Gostionica Purger" traegt "purger" — passt. "Kutina" traegt weder
+       "franziskanerkloster" noch "moslavina" — passt nicht.
+
+    **Was das NICHT faengt:** einen Treffer, der zufaellig denselben Namen
+    traegt. "Schloss Erdödy in Jastrebarsko" findet eine *Pizzeria Erdody* —
+    Kennwort vorhanden, Sache falsch. Diese Pruefung macht das Offensichtliche
+    sichtbar, nicht das Subtile.
     """
-    return bool(treffer.get("typ") in GEMEINDE_TYPEN and variante.strip().lower() != name.strip().lower())
+    if treffer.get("typ") in GEMEINDE_TYPEN and variante.strip().lower() != name.strip().lower():
+        return True
+
+    # Der behauptete Ort zaehlt hier NICHT mit. Erster Versuch tat es, und das
+    # Kriterium ging genau falsch herum: bei "Franziskanerkloster … in Kutina"
+    # stand "kutina" in den Kennwoertern, der Rueckfalltreffer hiess "Kutina",
+    # also fand sich immer eine Ueberschneidung — der Fehlgriff blieb
+    # unmarkiert. Ob die Ortsangabe stimmt, klaert `_ortsangabe_pruefen`;
+    # hier geht es allein um die SACHE.
+    ohne = set(_kennwoerter(_behaupteter_ort_aus_namen(name) or ""))
+    kennwoerter = [w for w in _kennwoerter(name) if w not in ohne]
+    if not kennwoerter:
+        # Ohne unterscheidendes Wort laesst sich nichts sagen — dann wird auch
+        # nichts behauptet. Ein Verdacht ohne Messung ist keiner.
+        return False
+    gefunden = _entkleidet(treffer.get("name") or "")
+    # ALLE, nicht irgendeines: "Mil burger & Milčinkica Sisak" traegt "sisak"
+    # und ist trotzdem keine Festung.
+    return not all(w in gefunden for w in kennwoerter)
 
 
 async def _ortsangabe_pruefen(
@@ -564,7 +638,7 @@ async def batch_geocode_places(places: list, destination: Optional[str] = None) 
                 **eintrag,
                 "latitude": position.lat,
                 "longitude": position.lon,
-                "position_nur_ort": position.nur_ort,
+                "position_unsicher": position.nur_ort,
             }
         )
     return aktualisiert
