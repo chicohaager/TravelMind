@@ -142,3 +142,52 @@ class TestGeocodeIfMissing:
 
         monkeypatch.setattr("utils.geocoding.geocode_place", findet)
         assert await geocode_if_missing("Lonjsko Polje", None, None) == (45.3609, 16.8209)
+
+
+class TestLandbevorzugung:
+    """
+    Die Entfernung allein reicht nicht.
+
+    "Etno-Restaurant Zeleni Vir" fand ein Zeleni vir bei Banja Luka: 107 km
+    entfernt, also innerhalb der 150-km-Schranke — aber in Bosnien, während
+    die Reise in Kroatien stattfindet. Der Treffer sah wie ein Ergebnis aus
+    und war einer im falschen Staat.
+    """
+
+    ANKER = (45.6151843, 16.6985547)  # Gornja Jelenska, Kroatien
+
+    def _kandidaten(self):
+        return [
+            {"lat": 44.7411, "lon": 17.2791, "name": "Zeleni vir, Banja Luka", "land": "ba"},
+            {"lat": 45.7281, "lon": 15.3178, "name": "Zeleni vir, Ozalj", "land": "hr"},
+        ]
+
+    def test_gleiches_land_gewinnt_auch_wenn_weiter_weg(self):
+        from utils.geocoding import _naechster, abstand_km
+
+        naeher, ferner = self._kandidaten()
+        # Der bosnische Treffer ist tatsächlich der nähere — sonst prüft der
+        # Test nicht, was er zu prüfen vorgibt.
+        assert abstand_km(self.ANKER, (naeher["lat"], naeher["lon"])) < abstand_km(
+            self.ANKER, (ferner["lat"], ferner["lon"])
+        )
+
+        treffer = _naechster(self._kandidaten(), self.ANKER, 150.0, land="hr")
+        assert treffer["land"] == "hr"
+        assert treffer["fremdes_land"] is False
+
+    def test_ohne_landangabe_entscheidet_die_entfernung(self):
+        from utils.geocoding import _naechster
+
+        treffer = _naechster(self._kandidaten(), self.ANKER, 150.0, land=None)
+        assert treffer["land"] == "ba"  # der nähere
+
+    def test_fremdes_land_wird_genommen_wenn_es_nichts_anderes_gibt(self):
+        # Ein Tagesausflug über die Grenze ist ein normaler Reisewunsch —
+        # nachgeordnet, nicht ausgeschlossen.
+        from utils.geocoding import _naechster
+
+        nur_bosnien = [self._kandidaten()[0]]
+        treffer = _naechster(nur_bosnien, self.ANKER, 150.0, land="hr")
+        assert treffer is not None
+        assert treffer["fremdes_land"] is True
