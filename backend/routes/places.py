@@ -122,7 +122,7 @@ class PlaceResponse(BaseModel):
     address: Optional[str]
     latitude: Optional[float]
     longitude: Optional[float]
-    position_nur_ort: Optional[bool] = None
+    position_unsicher: Optional[bool] = None
     category: Optional[str]
     list_id: Optional[int]
     visit_date: Optional[datetime]
@@ -245,7 +245,7 @@ async def create_place(
         address=place.address,
         latitude=latitude,
         longitude=longitude,
-        position_nur_ort=position.nur_ort,
+        position_unsicher=position.nur_ort,
         category=place.category,
         list_id=place.list_id,
         visit_date=place.visit_date,
@@ -939,7 +939,7 @@ async def import_places_bulk(
             address=place_data.address,
             latitude=latitude,
             longitude=longitude,
-            position_nur_ort=position.nur_ort,
+            position_unsicher=position.nur_ort,
             category=place_data.category,
             list_id=place_data.list_id,
             visit_date=place_data.visit_date,
