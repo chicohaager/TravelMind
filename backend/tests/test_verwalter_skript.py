@@ -14,6 +14,8 @@ weigert sich beim letzten. Ohne die zweite wäre man mit einem Aufruf wieder in
 derselben Sackgasse.
 """
 
+import os
+
 import pytest
 from models.user import User
 from sqlalchemy import select
@@ -109,3 +111,51 @@ async def test_zeigen_warnt_wenn_niemand_verwalter_ist(sitzungsfabrik, db_sessio
     ausgabe = capsys.readouterr().out
     assert "0 Verwalter" in ausgabe
     assert "erreichbar" in ausgabe  # der Warnhinweis, nicht nur die Zahl
+
+
+# ── Der Lauf in einem FRISCHEN Interpreter ──────────────────────────────────
+#
+# Die Tests oben liefen alle grün, während das Skript in der Produktion beim
+# ersten Aufruf mit
+#
+#   InvalidRequestError: When initializing mapper Mapper[Trip(trips)],
+#   expression 'Route' failed to locate a name ('Route')
+#
+# abstürzte — und zwar bei `select(User)`, einer Abfrage, die `Trip` nicht
+# einmal anfasst. SQLAlchemy löst Beziehungen über Klassennamen auf, und
+# `conftest.py` importiert alle Modelle: die TESTWELT hatte die Registrierung,
+# die Produktion nicht. Genau die Eigenschaft, an der es zerbrach, war in den
+# Fixtures wegvereinfacht.
+#
+# Dieser Test startet deshalb einen eigenen Prozess. Nur dort ist die
+# Registrierung so leer wie im Container.
+
+
+def test_das_skript_laeuft_in_einem_frischen_interpreter(tmp_path):
+    import subprocess
+    import sys as _sys
+    from pathlib import Path
+
+    backend = Path(__file__).resolve().parent.parent
+    datenbank = tmp_path / "verwalter.db"
+
+    umgebung = {
+        **os.environ,
+        "DATABASE_URL": f"sqlite+aiosqlite:///{datenbank}",
+        "PYTHONPATH": str(backend),
+    }
+    lauf = subprocess.run(
+        [_sys.executable, "scripts/verwalter.py", "zeigen"],
+        cwd=backend,
+        env=umgebung,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    # Erwartet wird KEIN Erfolg der Abfrage — die Datenbank ist leer und hat
+    # nicht einmal Tabellen. Erwartet wird, dass die MAPPER sich auflösen
+    # lassen: der Registrierungsfehler darf nicht auftreten.
+    gesamt = lauf.stdout + lauf.stderr
+    assert "failed to locate a name" not in gesamt, gesamt
+    assert "InvalidRequestError" not in gesamt, gesamt
