@@ -16,5 +16,7 @@
   "places": "Lieux",
   "routes": "Itinéraires",
   "moreRoutes": "+{{count}} autres",
-  "showPhotos": "Afficher les photos sur la carte"
+  "showPhotos": "Afficher les photos sur la carte",
+  "ohnePosition_one": "{{count}} lieu sans position — absent de la carte",
+  "ohnePosition_other": "{{count}} lieux sans position — absents de la carte"
 }

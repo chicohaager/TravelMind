@@ -17,8 +17,15 @@ class Place(Base):
 
     # Location data
     address = Column(String(500), nullable=True)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
+    # NULL bedeutet "Position unbekannt".
+    #
+    # Bis 2026-08-26 waren diese Spalten NOT NULL. "Unbekannt" liess sich
+    # dadurch gar nicht ausdruecken, und fehlgeschlagene Geokodierungen
+    # landeten als 0.0/0.0 in der Datenbank — der Null-Insel im Golf von
+    # Guinea. Auf der Karte sah das aus wie ein gueltiger Ort im Atlantik,
+    # nicht wie ein fehlender Wert. Siehe utils/geocoding.py.
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
 
     # Category
     category = Column(String(50), nullable=True)  # e.g., "restaurant", "hotel", "sight", "activity"

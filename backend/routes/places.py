@@ -23,7 +23,7 @@ from services.guide_parser import guide_parser_service
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from utils.geocoding import geocode_if_missing
+from utils.geocoding import anker_fuer_ziel, geocode_if_missing
 from utils.images import delete_upload_file, derive_thumb_url, process_and_save, validate_image
 from utils.rate_limits import RateLimits, limiter
 
@@ -82,6 +82,13 @@ class PlaceCreate(BaseModel):
     name: str = Field(..., example="Castelo de São Jorge")
     description: Optional[str] = Field(None, example="Historische Burg mit Aussicht")
     address: Optional[str] = None
+    # PFLICHT — und das bleibt so.
+    #
+    # `PUT /places/{id}` ersetzt vollstaendig. Waeren die Koordinaten hier
+    # optional, verloere ein Teil-Update sie STILL; genau davor schuetzt
+    # tests/test_places_lists.py::test_put_ohne_koordinaten_wird_abgewiesen.
+    # Der Massenimport, bei dem Koordinaten legitim fehlen, benutzt deshalb
+    # ein eigenes Schema (PlaceImport) statt dieses aufzuweichen.
     latitude: float = Field(..., example=38.7139, ge=-90, le=90)
     longitude: float = Field(..., example=-9.1334, ge=-180, le=180)
     category: Optional[str] = Field(None, example="sight")
@@ -107,8 +114,8 @@ class PlaceResponse(BaseModel):
     name: str
     description: Optional[str]
     address: Optional[str]
-    latitude: float
-    longitude: float
+    latitude: Optional[float]
+    longitude: Optional[float]
     category: Optional[str]
     list_id: Optional[int]
     visit_date: Optional[datetime]
@@ -649,8 +656,26 @@ class GuideSearchResponse(BaseModel):
     errors: Optional[List[str]] = None
 
 
+class PlaceImport(PlaceCreate):
+    """
+    Ort aus einer Quelle, die keine Koordinaten liefert.
+
+    KI-Ortsvorschlaege und geparste Reisefuehrer nennen Namen, keine
+    Positionen. Hier duerfen die Koordinaten deshalb fehlen und werden
+    nachgeschlagen (utils/geocoding.py). Findet die Suche nichts, bleibt der
+    Ort OHNE Position — bis 2026-08-26 wurden stattdessen 0/0 gespeichert,
+    und acht kroatische Orte lagen auf der Karte im Golf von Guinea.
+
+    Bewusst ein eigenes Schema und keine Lockerung von PlaceCreate: dort
+    haengt der Schutz vor stillem Koordinatenverlust beim PUT dran.
+    """
+
+    latitude: Optional[float] = Field(None, example=38.7139, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, example=-9.1334, ge=-180, le=180)
+
+
 class BulkPlaceImport(BaseModel):
-    places: List[PlaceCreate]
+    places: List[PlaceImport]
 
 
 # Guide Import Endpoints
@@ -873,15 +898,28 @@ async def import_places_bulk(
 
     imported_places = []
 
+    # Das Reiseziel EINMAL zum Bezugspunkt aufloesen, nicht je Ort: das spart
+    # bei acht Orten sieben Anfragen an einen Dienst, der eine pro Sekunde
+    # erlaubt — und alle Orte werden gegen denselben Anker geprueft.
+    ziel = trip.destination if hasattr(trip, "destination") else None
+    anker = await anker_fuer_ziel(ziel)
+    ohne_position = []
+
     for idx, place_data in enumerate(import_data.places):
-        # Geocode if coordinates are missing
+        # Fehlende Koordinaten ergaenzen. Findet die Suche nichts, kommt
+        # (None, None) zurueck — frueher standen hier 0.0/0.0, und der Ort
+        # landete im Atlantik statt als "Position unbekannt" erkennbar zu
+        # sein. Deshalb hier auch KEIN `or 0.0` mehr.
         latitude, longitude = await geocode_if_missing(
             name=place_data.name,
-            latitude=place_data.latitude or 0.0,
-            longitude=place_data.longitude or 0.0,
+            latitude=place_data.latitude,
+            longitude=place_data.longitude,
             address=place_data.address,
-            destination=trip.destination if hasattr(trip, "destination") else None,
+            destination=ziel,
+            anker=anker,
         )
+        if latitude is None or longitude is None:
+            ohne_position.append(place_data.name)
 
         new_place = Place(
             trip_id=trip_id,
@@ -915,6 +953,18 @@ async def import_places_bulk(
         if photos:
             await _create_place_media(place.id, trip_id, photos, current_user.id, db)
     await db.commit()
+
+    # Was keine Position bekam, wird LAUT vermerkt. Frueher war das der
+    # stillste Teil des Fehlers: die Orte wurden angelegt, sahen vollstaendig
+    # aus und lagen im Golf von Guinea.
+    if ohne_position:
+        logger.warning(
+            "import_orte_ohne_position",
+            trip_id=trip_id,
+            anzahl=len(ohne_position),
+            von=len(import_data.places),
+            namen=ohne_position,
+        )
 
     # Reload with media for the response.
     return [await _load_place_with_media(place.id, db) for place, _ in imported_places]
