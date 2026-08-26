@@ -71,5 +71,8 @@
     }
   },
   "changeLanguage": "Sprache wechseln",
-  "toggleDarkMode": "Dunkelmodus umschalten"
+  "toggleDarkMode": "Dunkelmodus umschalten",
+  "showCustomColor": "Eigene Farbe wählen",
+  "hideCustomColor": "Eigene Farbe ausblenden",
+  "selectedColor": "Gewählt:"
 }

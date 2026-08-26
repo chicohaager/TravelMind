@@ -92,6 +92,30 @@ describe('Gestaltung: Farbwerte kommen aus den Token', () => {
     expect(treffer).toEqual([])
   })
 
+  it('kein Verlauf umgeht die Palette', () => {
+    // Gefunden am 2026-08-26 beim Design-Sync: der Tages-Kopf der Zeitplanung
+    // trug `from-blue-500 to-purple-600` — die ALTE Palette, mitten in einer
+    // ansonsten teal-farbenen Anwendung. Der Test darüber sah es nicht: er
+    // sucht `indigo-*` und #6366F1, nicht andere Farbfamilien.
+    const verlauf = /\b(from|via|to)-(blue|purple|violet|fuchsia|pink|indigo|sky|cyan|emerald|teal)-\d{2,3}\b/
+    const treffer = []
+    for (const datei of quellen) {
+      readFileSync(datei, 'utf8')
+        .split('\n')
+        .forEach((zeile, i) => {
+          if (verlauf.test(zeile)) treffer.push(`${basename(datei)}:${i + 1}`)
+        })
+    }
+    expect(treffer).toEqual([])
+  })
+
+  it('Positivkontrolle: der Verlaufs-Scanner erkennt den echten Fall', () => {
+    const verlauf = /\b(from|via|to)-(blue|purple|violet|fuchsia|pink|indigo|sky|cyan|emerald|teal)-\d{2,3}\b/
+    expect(verlauf.test('bg-gradient-to-r from-blue-500 to-purple-600')).toBe(true)
+    // Gegenkontrolle: die Token-Schreibweise löst NICHT aus.
+    expect(verlauf.test('bg-gradient-to-br from-primary-600 to-primary-400')).toBe(false)
+  })
+
   it('Positivkontrolle: der Scanner erkennt einen künstlichen Verstoß', () => {
     expect(/\bindigo-\d{2,3}\b/.test('className="bg-indigo-500"')).toBe(true)
     expect(/#6366f1/i.test('color: #6366F1')).toBe(true)

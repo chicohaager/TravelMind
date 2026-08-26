@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 
 const PRESET_COLORS = [
@@ -17,6 +18,7 @@ const PRESET_COLORS = [
 ]
 
 export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Color' }) {
+  const { t } = useTranslation()
   const [showCustom, setShowCustom] = useState(false)
 
   const handleColorChange = (color) => {
@@ -55,7 +57,7 @@ export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Colo
           onClick={() => setShowCustom(!showCustom)}
           className="text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
-          {showCustom ? 'Hide' : 'Choose'} custom color
+          {showCustom ? t('common:hideCustomColor') : t('common:showCustomColor')}
         </button>
       </div>
 
@@ -80,7 +82,7 @@ export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Colo
 
       {/* Current Color Display */}
       <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-        <span>Selected:</span>
+        <span>{t('common:selectedColor')}</span>
         <div
           className="w-6 h-6 rounded border border-gray-300"
           style={{ backgroundColor: value }}

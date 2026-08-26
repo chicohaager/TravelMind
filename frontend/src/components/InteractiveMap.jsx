@@ -86,21 +86,31 @@ function MapCenterController({ places, photos = [] }) {
   return null
 }
 
-// Category colors for legend
+// Kategorienskala der Palette „Adria" (2026-08-26).
+//
+// Verschiedene Farbtoene sind hier RICHTIG — auf einer Karte muss man
+// Kategorien unterscheiden koennen. Vorher standen hier aber die
+// Tailwind-Vorgaben (#ef4444, #8b5cf6, #a855f7 …), die mit dem restlichen
+// System nichts zu tun haben: neben teal-farbenen Nadeln und einer orangen
+// Route sahen die Abzeichen aus wie aus einer anderen Anwendung.
+//
+// Jetzt eine Familie: aehnliche Saettigung und Helligkeit, Farbtoene ueber
+// den Kreis verteilt, verankert auf primary-500 (#1F7A7D) fuer die haeufigste
+// Kategorie und secondary-500 (#D2612F) fuer Aktivitaeten.
 const categoryColors = {
-  restaurant: '#ef4444',
-  attraction: '#8b5cf6',
-  hotel: '#3b82f6',
-  museum: '#f59e0b',
-  park: '#22c55e',
-  beach: '#06b6d4',
-  shopping: '#ec4899',
-  viewpoint: '#1F7A7D',
-  nightlife: '#a855f7',
-  other: '#6b7280',
-  sight: '#8b5cf6',
-  activity: '#f97316',
-  transport: '#64748b',
+  restaurant: '#C2543B',
+  attraction: '#1F7A7D',
+  hotel: '#3C6E9F',
+  museum: '#8A6BA8',
+  park: '#4E8B5A',
+  beach: '#3E9DA8',
+  shopping: '#B0567F',
+  viewpoint: '#B87F26',
+  nightlife: '#6C5B9E',
+  other: '#7A8788',
+  sight: '#2E8F86',
+  activity: '#D2612F',
+  transport: '#5E7A86',
 }
 
 export default function InteractiveMap({

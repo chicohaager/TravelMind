@@ -36,7 +36,7 @@ export default function TimelineDay({
     >
       {/* Day Header */}
       <div
-        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 cursor-pointer"
+        className="bg-gradient-to-r from-primary-600 to-primary-400 text-white p-4 cursor-pointer"
         onClick={onToggleExpand}
       >
         <div className="flex items-center justify-between">
