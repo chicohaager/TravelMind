@@ -329,7 +329,7 @@ vom 26. Juni.
 #### Nebenbei repariert
 
 Beim Absichern von `.env` (0600 root) hatte ich mir selbst den Deploy-Weg
-verbaut — des Betreibers Konto konnte die Compose nicht mehr starten. Jetzt `640
+verbaut — das Betreiberkonto konnte die Compose nicht mehr starten. Jetzt `640
 root:samba`: strenger als vorher (644), und der Betrieb läuft.
 
 ### Was der Wiederaufbau ans Licht gebracht hat

@@ -14,7 +14,25 @@
 #
 set -euo pipefail
 
-HOST="${TRAVELMIND_HOST:-<benutzer>@<host>}"
+# Das Ausrollziel steht NICHT im Repo — es ist eine private Adresse, und
+# dieses Repo ist oeffentlich. Bis 2026-08-26 stand hier ein Vorgabewert mit
+# echtem Benutzernamen und echter LAN-Adresse; das ist Benutzername plus Host
+# in einer Zeile, also die halbe Anmeldung, fuer jeden lesbar.
+#
+# Reihenfolge: Umgebungsvariable, sonst deploy/ziel.conf (nicht getrackt).
+ZIEL_DATEI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ziel.conf"
+HOST="${TRAVELMIND_HOST:-}"
+if [[ -z "$HOST" && -r "$ZIEL_DATEI" ]]; then
+  # shellcheck source=/dev/null
+  source "$ZIEL_DATEI"
+  HOST="${TRAVELMIND_HOST:-}"
+fi
+if [[ -z "$HOST" ]]; then
+  printf '\n\033[31m✗ Kein Ausrollziel.\033[0m\n' >&2
+  printf '  Entweder:  TRAVELMIND_HOST=<benutzer>@<host> %s\n' "$0" >&2
+  printf '  oder:      echo "TRAVELMIND_HOST=<benutzer>@<host>" > %s\n\n' "$ZIEL_DATEI" >&2
+  exit 1
+fi
 FERN="${TRAVELMIND_REMOTE_DIR:-/DATA/AppData/travelmind}"
 COMPOSE="${TRAVELMIND_COMPOSE:-/usr/lib/docker/cli-plugins/docker-compose}"
 WURZEL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

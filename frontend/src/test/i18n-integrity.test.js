@@ -141,7 +141,7 @@ describe('i18n: Namensräume werden mit Doppelpunkt angesprochen', () => {
 
 describe('i18n: kein Namensraum mit Punkt, auch nicht in einer Variablen', () => {
   /*
-   * Erweiterung vom 2026-08-25, nachdem der Betreiber drei Bildschirmfotos mit rohen
+   * Erweiterung vom 2026-08-25, nachdem drei Bildschirmfotos mit rohen
    * Schlüsseln geschickt hat: `diary.moodHappy` im Stimmungswähler,
    * `budget.categories.other` in der Kategorieliste.
    *

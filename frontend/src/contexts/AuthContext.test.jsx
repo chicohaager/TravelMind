@@ -54,8 +54,8 @@ describe('AuthContext: der Zwischenspeicher gehört zum Konto', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
-    authService.getCurrentUser.mockResolvedValue({ data: { id: 2, username: 'der Betreiber' } })
-    authService.login.mockResolvedValue({ data: { access_token: 'token-fuer-Holgi' } })
+    authService.getCurrentUser.mockResolvedValue({ data: { id: 2, username: 'testnutzer' } })
+    authService.login.mockResolvedValue({ data: { access_token: 'token-fuer-a' } })
     authService.register.mockResolvedValue({ data: { access_token: 'token-fuer-neu' } })
     authService.logout.mockResolvedValue({})
   })
@@ -86,7 +86,7 @@ describe('AuthContext: der Zwischenspeicher gehört zum Konto', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper })
     await act(async () => {
-      await result.current.login('der Betreiber', 'geheim')
+      await result.current.login('testnutzer', 'geheim')
     })
 
     expect(queryClient.getQueryData(['trips'])).toBeUndefined()
@@ -134,9 +134,9 @@ describe('AuthContext: der Zwischenspeicher gehört zum Konto', () => {
     const { wrapper } = bauen()
     const { result } = renderHook(() => useAuth(), { wrapper })
     await act(async () => {
-      await result.current.login('der Betreiber', 'geheim')
+      await result.current.login('testnutzer', 'geheim')
     })
-    await waitFor(() => expect(result.current.user?.username).toBe('der Betreiber'))
-    expect(localStorage.setItem).toHaveBeenCalledWith('token', 'token-fuer-Holgi')
+    await waitFor(() => expect(result.current.user?.username).toBe('testnutzer'))
+    expect(localStorage.setItem).toHaveBeenCalledWith('token', 'token-fuer-a')
   })
 })

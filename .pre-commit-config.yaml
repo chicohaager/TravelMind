@@ -109,3 +109,20 @@ repos:
     hooks:
       - id: markdownlint
         args: [--fix, --config, .markdownlint.json]
+
+  # Keine privaten Daten in einem OEFFENTLICHEN Repo.
+  #
+  # `detect-secrets` oben sucht Schluessel nach Entropie und hat am 2026-08-26
+  # `<benutzer>@<lan-ip>` in deploy/ausrollen.sh durchgelassen — konnte es auch:
+  # ein Kontoname und eine LAN-Adresse haben keine Entropie und sind trotzdem
+  # die halbe Anmeldung. Dieser Hook prueft die andere Haelfte.
+  #
+  # Selbsttest (beide Richtungen, 37 Faelle):
+  #   python3 scripts/keine-privaten-daten.py --selbsttest
+  - repo: local
+    hooks:
+      - id: keine-privaten-daten
+        name: keine privaten Daten (Repo ist oeffentlich)
+        entry: python3 scripts/keine-privaten-daten.py
+        language: system
+        pass_filenames: true
