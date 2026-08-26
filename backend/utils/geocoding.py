@@ -63,6 +63,22 @@ RATE_LIMIT_DELAY = 1.0  # Nominatim erlaubt eine Anfrage je Sekunde
 # Tagesausflug ab; darüber hinaus ist ein Namenstreffer eher Zufall als Ort.
 MAX_ABSTAND_KM = 150.0
 
+# Trefferarten, die eine SIEDLUNG bezeichnen und nicht die gesuchte Sache.
+# Landet die Suche hier, ist die Position ortsgenau, nicht objektgenau: der
+# Mittelpunkt von Popovača ist keine Antwort auf "wo liegt Terme Jezerčica".
+GEMEINDE_TYPEN = {
+    "administrative",
+    "city",
+    "county",
+    "hamlet",
+    "municipality",
+    "postcode",
+    "state",
+    "suburb",
+    "town",
+    "village",
+}
+
 # Gattungswörter, die ein Geocoder nicht als Namensbestandteil kennt. Bei
 # KI-erzeugten Namen stehen sie fast immer vorn.
 _GATTUNG = re.compile(r"""(?ix) ^\s*(?:
@@ -105,6 +121,18 @@ def suchvarianten(name: str) -> List[str]:
             ort = _GATTUNG.sub("", treffer.group(2)).strip()
             if kern and ort:
                 dazu(f"{kern}, {ort}")
+                # Der KERN ALLEIN. Diese Frage fehlte bis zum 2026-08-26, und
+                # sie ist die einzige, die eine falsche Ortsangabe des Modells
+                # aufdecken kann: "Terme Jezerčica in Popovača" liefert unter
+                # den ersten beiden Varianten NICHTS (gemessen), unter dem
+                # blossen Kern aber den echten Ort in Donja Stubica —
+                # 69,2 km von Popovača entfernt.
+                #
+                # Ein Kern allein kann daneben greifen ("Erdödy" findet ein
+                # Erdody in der Slowakei, 346,8 km). Das faengt die
+                # 150-km-Schranke in `_naechster` ab; der Ortsname bleibt
+                # deshalb als letzte Variante stehen.
+                dazu(kern)
             dazu(ort)  # notfalls wenigstens der Ort selbst
 
     dazu(_ANHANG.sub("", ohne_gattung or name).strip())
@@ -150,6 +178,11 @@ async def _nominatim(query: str, limit: int = 5) -> List[Dict[str, Any]]:
                 # in Bosnien gewinnt gegen den kroatischen, weil er naeher am
                 # Anker liegt.
                 "land": ((e.get("address") or {}).get("country_code") or "").lower() or None,
+                # Die ART des Treffers. Ohne sie kann niemand merken, dass die
+                # Suche nach einem Thermalbad eine GEMEINDE gefunden hat —
+                # genau so kam am 2026-08-26 der Stadtmittelpunkt von Popovača
+                # als Position von "Terme Jezerčica" in die Datenbank.
+                "typ": e.get("addresstype") or e.get("type"),
             }
             for e in ergebnisse
         ]
@@ -182,6 +215,7 @@ async def _photon(query: str, anker: Optional[Tuple[float, float]] = None) -> Li
                     "lon": float(koordinaten[0]),
                     "name": eigenschaften.get("name", ""),
                     "land": (eigenschaften.get("countrycode") or "").lower() or None,
+                    "typ": eigenschaften.get("osm_value") or eigenschaften.get("type"),
                 }
             )
         return aus
@@ -265,6 +299,25 @@ async def anker_fuer_ziel(destination: Optional[str]) -> Optional[Tuple[float, f
     return None
 
 
+def _ist_nur_ort(treffer: Dict[str, Any], name: str, variante: str) -> bool:
+    """Ist die Position die einer SIEDLUNG statt die der gesuchten Sache?
+
+    Am 2026-08-26 an den 16 Orten einer echten Reise gemessen: **9** Positionen
+    stammten aus einem Siedlungstreffer. Für ein Dorf ("Ethno-Dorf Čigoč") ist
+    das die richtige Antwort; für ein Thermalbad, einen Aussichtspunkt oder ein
+    Kloster ist es der Mittelpunkt des Ortes drumherum — und sah bis dahin
+    genauso aus wie eine echte Fundstelle.
+
+    Zwei Bedingungen, beide nötig:
+      * der Treffer IST eine Siedlung (dafür wird `typ` überhaupt erst
+        durchgereicht — vorher warf `_nominatim` ihn weg), und
+      * gewonnen hat eine ABKÜRZUNG des Namens, nicht der Name selbst. Wer
+        nach "Popovača" sucht und Popovača bekommt, hat gefunden, was er
+        wollte.
+    """
+    return bool(treffer.get("typ") in GEMEINDE_TYPEN and variante.strip().lower() != name.strip().lower())
+
+
 async def geocode_place(
     name: str,
     address: Optional[str] = None,
@@ -297,16 +350,28 @@ async def geocode_place(
         anfrage = f"{variante}, {land}" if land else variante
         treffer = _naechster(await _nominatim(anfrage), anker, MAX_ABSTAND_KM, anker_land)
         if treffer:
+            nur_ort = _ist_nur_ort(treffer, name, variante)
             logger.info(
                 "geocoding_treffer",
                 name=name,
                 quelle="nominatim",
                 variante=variante,
                 gefunden=treffer["name"],
+                typ=treffer.get("typ"),
+                nur_ort=nur_ort,
                 abstand_km=treffer.get("abstand_km"),
                 fremdes_land=treffer.get("fremdes_land"),
             )
-            return {**treffer, "quelle": "nominatim", "variante": variante}
+            if nur_ort:
+                logger.warning(
+                    "geocoding_nur_ortsgenau",
+                    name=name,
+                    variante=variante,
+                    gefunden=treffer["name"],
+                    typ=treffer.get("typ"),
+                    hinweis="Gefunden wurde die SIEDLUNG, nicht die genannte Sache",
+                )
+            return {**treffer, "quelle": "nominatim", "variante": variante, "nur_ort": nur_ort}
 
     # Photon ist fehlertoleranter, aber liefert IMMER etwas — ohne Anker also
     # regelmäßig einen Ort im falschen Land. Nur mit Anker sinnvoll.
@@ -322,7 +387,12 @@ async def geocode_place(
                     gefunden=treffer["name"],
                     abstand_km=treffer.get("abstand_km"),
                 )
-                return {**treffer, "quelle": "photon", "variante": variante}
+                return {
+                    **treffer,
+                    "quelle": "photon",
+                    "variante": variante,
+                    "nur_ort": _ist_nur_ort(treffer, name, variante),
+                }
 
     logger.warning(
         "geocoding_ohne_treffer",
