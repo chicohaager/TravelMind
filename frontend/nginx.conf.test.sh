@@ -28,6 +28,20 @@ pruefe "SPA-Rueckfall auf index.html"                        'try_files.*index\.
 pruefe "echte Client-IP hinter dem Proxy"                     'real_ip_header\s+X-Forwarded-For'
 pruefe "Vertrauen nur fuer private Netze"                    'set_real_ip_from\s+192\.168\.0\.0/16'
 pruefe "Protokoll zeigt die Weiterleitungskette"             'log_format\s+mit_proxy'
+pruefe "eigener Block fuer /api/ai/"                          '^\s*location\s+/api/ai/\s*\{'
+
+# Die KI-Endpunkte brauchen mehr als die 60 s von /api/. Geprueft wird die
+# ZAHL, nicht das Vorhandensein der Direktive: `proxy_read_timeout 60s;` im
+# ai-Block waere vorhanden und trotzdem zu kurz. Am 2026-08-26 gemessen —
+# eine Empfehlungsanfrage brach nach 30,001 s mit 499 ab.
+ai_block="$(awk '/location \/api\/ai\/ *\{/,/^        \}/' "$CONF")"
+ai_lesezeit="$(printf '%s' "$ai_block" | grep -oE 'proxy_read_timeout[[:space:]]+[0-9]+' | grep -oE '[0-9]+$' || true)"
+if [[ -n "$ai_lesezeit" && "$ai_lesezeit" -ge 120 ]]; then
+  printf '  ok    /api/ai/ darf %ss lesen (mehr als die 60s von /api/)\n' "$ai_lesezeit"
+else
+  printf '  FEHLT /api/ai/ proxy_read_timeout >= 120s (gefunden: %s)\n' "${ai_lesezeit:-nichts}"; fehler=1
+fi
+
 
 # Gegenkontrolle: kein OEFFENTLICHES Netz darf vertraut werden — sonst kann
 # jeder von aussen seine Adresse faelschen und die Ratenbegrenzung umgehen.

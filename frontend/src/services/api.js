@@ -99,15 +99,37 @@ api.interceptors.response.use(
 )
 
 // AI Services
+// Eine KI-Anfrage ist kein normaler Aufruf: das Modell denkt erst und
+// schreibt dann. Die 30 s oben reichen dafuer nicht.
+//
+// Am 2026-08-26 gegen die laufende Instanz gemessen (nginx-Zugriffsprotokoll
+// des Frontend-Containers): die Empfehlungen brachen mit
+//
+//   "POST /api/ai/personalized-recommendations" 499 0 rt=30.001
+//
+// ab — 499 heisst, der Browser hat aufgelegt, und die 30,001 s sind exakt das
+// Limit dieser Datei. Das Backend rechnete danach ungestoert weiter (die
+// Bildsuche lief noch Sekunden spaeter), nur sah das niemand mehr: im
+// Browser stand die leere Ansicht, so als haette die KI nichts gefunden.
+//
+// nginx bekommt dasselbe Limit fuer `location /api/ai/` (siehe
+// frontend/nginx.conf) — beide Sprungpunkte muessen es haben, sonst schneidet
+// der jeweils kuerzere ab.
+export const KI_ZEITLIMIT_MS = 180000
+
+const kiOptionen = { timeout: KI_ZEITLIMIT_MS }
+
 export const aiService = {
-  suggest: (data) => api.post('/ai/suggest', data),
-  plan: (data) => api.post('/ai/plan', data),
-  describe: (destination) => api.post('/ai/describe', { destination }),
-  chat: (message, context) => api.post('/ai/chat', { message, context }),
+  suggest: (data) => api.post('/ai/suggest', data, kiOptionen),
+  plan: (data) => api.post('/ai/plan', data, kiOptionen),
+  describe: (destination) => api.post('/ai/describe', { destination }, kiOptionen),
+  chat: (message, context) => api.post('/ai/chat', { message, context }, kiOptionen),
   localTips: (destination, category = 'all') =>
-    api.post('/ai/local-tips', { destination, category }),
-  getTripSuggestions: (destination) => api.post('/ai/trip-suggestions', { destination }),
-  getPersonalizedRecommendations: (data) => api.post('/ai/personalized-recommendations', data),
+    api.post('/ai/local-tips', { destination, category }, kiOptionen),
+  getTripSuggestions: (destination) =>
+    api.post('/ai/trip-suggestions', { destination }, kiOptionen),
+  getPersonalizedRecommendations: (data) =>
+    api.post('/ai/personalized-recommendations', data, kiOptionen),
 }
 
 // Trips Services
