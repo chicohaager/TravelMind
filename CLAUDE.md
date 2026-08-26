@@ -73,6 +73,8 @@ etwas Plausibles, statt laut zu scheitern.**
 | **`/health` gibt es zweimal** | Einmal ohne Präfix und einmal als `/api/health*`. Beide antworten. |
 | **Claude teilt `max_tokens` zwischen Denken und Text** | `claude-sonnet-5` denkt adaptiv, ohne dass man es einschaltet. Mit 2048 ging das ganze Budget ans Denken; die Antwort kam gar nicht oder halb. Am 2026-08-26 erzeugte das drei ganz verschieden aussehende Fehler (`keinen Textblock (Blockarten: ['thinking'])`, `JSONDecodeError`, `'str' object has no attribute 'get'`). `CLAUDE_DENK_RESERVE` legt das Denk-Budget obendrauf; `stop_reason == "max_tokens"` scheitert jetzt laut. |
 | **Ein abgeschnittenes JSON-Array verkleidet sich als Objekt** | Ohne `]` greift der Notfall-Zweig von `_parse_ai_json` auf `{…}` zu und liefert ein `dict`. Das Iterieren gibt dann Schlüssel (`str`), und der Fehler zeigt auf den Zugriff statt auf das Token-Limit. Deshalb nimmt `_parse_ai_json` die erwartete Form entgegen. |
+| **KI-Antworten werden an EINER Stelle ausgewertet** | `utils/ki_antwort.py`. Bis zum 2026-08-26 lagen vier Fassungen im Code, drei davon mit stillem `[]` bei unlesbarer Antwort. Wer eine neue KI-Auswertung schreibt, benutzt `parse_ai_json(text, erwartet=…, vorgang=…)` — nichts Eigenes. |
+| **Ein Skript, das die Datenbank anfasst, braucht ALLE Modelle** | `select(User)` scheitert an `expression 'Route' failed to locate a name` — SQLAlchemy löst Beziehungen über Klassennamen auf, und `Trip` verweist auf `Route`. Im Test unsichtbar, weil `conftest.py` den Sammelimport führt. Vorlage: der Importblock in `scripts/positionen_nachtragen.py`, und ein Test, der das Skript in einem **frischen Interpreter** startet. |
 
 ### Betrieb
 
@@ -84,6 +86,7 @@ etwas Plausibles, statt laut zu scheitern.**
 | **`docker compose` auf .143** | Das Plugin wird nicht gefunden. Direkt aufrufen: `/usr/lib/docker/cli-plugins/docker-compose`. |
 | **Kein `build:` in der Produktion** | Gebaut wird außerhalb, ausgeliefert werden Images mit dem Commit-SHA als Tag. Nur so gibt es einen Rückweg. |
 | **KI-Aufrufe brauchen an ZWEI Stellen mehr Zeit** | Eine Empfehlungsanfrage misst 33,4 s (am 2026-08-26 aus `rt=` im nginx-Protokoll abgelesen). Die axios-Instanz erlaubte 30 s, nginx 60 s — der Browser legte auf, im Protokoll stand `499 0 rt=30.001`, und im Browser die leere Ansicht. `KI_ZEITLIMIT_MS` und `location /api/ai/` müssen beide 180 s haben; der kürzere entscheidet. |
+| **Ohne Verwalter ist /admin für niemanden erreichbar** | Das Recht vergibt nur die Verwaltung, hinein kommt nur, wer es hat. Auflösen von außen: `docker exec travelmind-backend python3 scripts/verwalter.py {zeigen,setzen,entziehen}`. Absichtlich kein Selbstheilungszweig in der App. `entziehen` weigert sich beim letzten Verwalter. |
 
 ---
 
