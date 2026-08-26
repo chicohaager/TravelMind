@@ -3,21 +3,22 @@ Users Router
 User profile management
 """
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
-import uuid
-import magic
+from typing import Optional
 
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from models.database import get_db
 from models.user import User
+from pydantic import BaseModel, EmailStr, Field
 from routes.auth import get_current_active_user
 from services.audit_service import audit_service
-from utils.rate_limits import limiter, RateLimits
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.images import process_and_save, validate_image
+from utils.password_policy import MINDESTLAENGE, passwort_pruefen
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
 
@@ -25,29 +26,27 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/avatars")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-
-
-def validate_image_file(contents: bytes, filename: str) -> bool:
-    """
-    Validate image file by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
 
 
 class UserProfile(BaseModel):
     id: int
     username: str
     email: EmailStr
+    full_name: Optional[str]
+    avatar_url: Optional[str]
+    bio: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PublicUserProfile(BaseModel):
+    """Public-facing profile exposed to other authenticated users (no email)."""
+
+    id: int
+    username: str
     full_name: Optional[str]
     avatar_url: Optional[str]
     bio: Optional[str]
@@ -66,7 +65,7 @@ class UserUpdate(BaseModel):
 
 class PasswordChange(BaseModel):
     current_password: str
-    new_password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=MINDESTLAENGE)
 
 
 @router.get("/profile", response_model=UserProfile)
@@ -86,7 +85,7 @@ async def update_profile(
     request: Request,
     profile: UserUpdate,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update user profile
@@ -118,7 +117,7 @@ async def update_profile(
         user_id=current_user.id,
         username=current_user.username,
         request=request,
-        details={"updated_fields": list(update_data.keys())}
+        details={"updated_fields": list(update_data.keys())},
     )
 
     return current_user
@@ -130,7 +129,7 @@ async def change_password(
     request: Request,
     passwords: PasswordChange,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Change user password
@@ -147,9 +146,15 @@ async def change_password(
             username=current_user.username,
             request=request,
             status="failure",
-            details={"reason": "invalid_current_password"}
+            details={"reason": "invalid_current_password"},
         )
         raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Dieselben Regeln wie bei der Registrierung — sonst haette man ein
+    # geleaktes Passwort zwar nicht anlegen, aber nachtraeglich setzen koennen.
+    pruefung = await passwort_pruefen(passwords.new_password)
+    if not pruefung.gueltig:
+        raise HTTPException(status_code=400, detail=pruefung.grund)
 
     # Update password
     current_user.hashed_password = User.hash_password(passwords.new_password)
@@ -159,23 +164,24 @@ async def change_password(
 
     # Audit log: successful password change
     await audit_service.log_auth_event(
-        db=db,
-        event="password_change",
-        user_id=current_user.id,
-        username=current_user.username,
-        request=request
+        db=db, event="password_change", user_id=current_user.id, username=current_user.username, request=request
     )
 
     return {"message": "Password changed successfully"}
 
 
-@router.get("/{user_id}", response_model=UserProfile)
+@router.get("/{user_id}", response_model=PublicUserProfile)
 @limiter.limit(RateLimits.USER_PROFILE_READ)
-async def get_user(request: Request, user_id: int, db: AsyncSession = Depends(get_db)):
+async def get_user(
+    request: Request,
+    user_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
     """
-    Get user profile by ID
+    Get the public profile of a user by ID.
 
-    Returns public profile information of any user.
+    Requires authentication. Returns only public fields (no email).
     """
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -189,9 +195,7 @@ async def get_user(request: Request, user_id: int, db: AsyncSession = Depends(ge
 @router.delete("/account", status_code=204)
 @limiter.limit(RateLimits.USER_DELETE)
 async def delete_account(
-    request: Request,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Delete user account
@@ -217,7 +221,7 @@ async def delete_account(
         user_id=user_id,
         username=username,
         request=request,
-        details={"email": email, "self_deletion": True}
+        details={"email": email, "self_deletion": True},
     )
 
     return None
@@ -229,7 +233,7 @@ async def upload_avatar(
     request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Upload user avatar
@@ -241,29 +245,25 @@ async def upload_avatar(
 
     # Validate file size
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024)}MB"
-        )
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024)}MB")
 
     # Validate file type using MIME detection (not just extension)
-    if not validate_image_file(contents, file.filename):
+    if not validate_image(contents, file.filename):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid file type. Only these image types are allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            detail=f"Invalid file type. Only these image types are allowed: {', '.join(ALLOWED_EXTENSIONS)}",
         )
 
-    # Generate unique filename
-    extension = file.filename.split(".")[-1].lower()
-    unique_filename = f"user_{current_user.id}_{uuid.uuid4()}.{extension}"
-    file_path = UPLOAD_DIR / unique_filename
-
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    # Normalize, auto-orient and compress. Avatars stay small; no thumbnail needed.
+    try:
+        processed = await asyncio.to_thread(
+            process_and_save, contents, UPLOAD_DIR, "/uploads/avatars", make_thumb=False, full_max_edge=512
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 
     # Update user avatar URL
-    current_user.avatar_url = f"/uploads/avatars/{unique_filename}"
+    current_user.avatar_url = processed.url
     current_user.updated_at = datetime.now(timezone.utc)
 
     await db.commit()

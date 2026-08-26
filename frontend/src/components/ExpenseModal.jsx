@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react'
-import { X, DollarSign, Calendar, User, Users } from 'lucide-react'
+import { X, Euro, Calendar, User, Users } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 
 const categories = [
-  { value: 'food', labelKey: 'budget.categories.food', icon: '🍽️' },
-  { value: 'transport', labelKey: 'budget.categories.transport', icon: '🚗' },
-  { value: 'accommodation', labelKey: 'budget.categories.accommodation', icon: '🏨' },
-  { value: 'activities', labelKey: 'budget.categories.activities', icon: '🎯' },
-  { value: 'shopping', labelKey: 'budget.categories.shopping', icon: '🛍️' },
-  { value: 'other', labelKey: 'budget.categories.other', icon: '📝' }
+  { value: 'food', labelKey: 'budget:categories.food', icon: '🍽️' },
+  { value: 'transport', labelKey: 'budget:categories.transport', icon: '🚗' },
+  { value: 'accommodation', labelKey: 'budget:categories.accommodation', icon: '🏨' },
+  { value: 'activities', labelKey: 'budget:categories.activities', icon: '🎯' },
+  { value: 'shopping', labelKey: 'budget:categories.shopping', icon: '🛍️' },
+  { value: 'other', labelKey: 'budget:categories.other', icon: '📝' },
 ]
 
-export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = null, participants = [] }) {
+export default function ExpenseModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData = null,
+  participants = [],
+}) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState({
     title: '',
@@ -22,7 +28,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
     date: new Date().toISOString().split('T')[0],
     paid_by: '',
     notes: '',
-    splits: []
+    splits: [],
   })
 
   const [splitMode, setSplitMode] = useState('equal') // 'equal' or 'custom'
@@ -34,10 +40,12 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
         amount: initialData.amount || '',
         currency: initialData.currency || 'EUR',
         category: initialData.category || 'other',
-        date: initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        date: initialData.date
+          ? new Date(initialData.date).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
         paid_by: initialData.paid_by || '',
         notes: initialData.notes || '',
-        splits: initialData.splits || []
+        splits: initialData.splits || [],
       })
       setSplitMode(initialData.splits && initialData.splits.length > 0 ? 'custom' : 'equal')
     } else if (!isOpen) {
@@ -50,7 +58,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
         date: new Date().toISOString().split('T')[0],
         paid_by: participants.length > 0 ? participants[0].id : '',
         notes: '',
-        splits: []
+        splits: [],
       })
       setSplitMode('equal')
     }
@@ -73,9 +81,10 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
     const splits = participants.map((p, i) => ({
       participant_id: p.id,
       // Last participant gets remainder to handle rounding
-      amount: i === participants.length - 1
-        ? totalAmount - (splitAmount * (participants.length - 1))
-        : splitAmount
+      amount:
+        i === participants.length - 1
+          ? totalAmount - splitAmount * (participants.length - 1)
+          : splitAmount,
     }))
 
     setFormData((prev) => ({ ...prev, splits }))
@@ -90,7 +99,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
       // Custom mode - initialize with zeros
       const splits = participants.map((p) => ({
         participant_id: p.id,
-        amount: 0
+        amount: 0,
       }))
       setFormData((prev) => ({ ...prev, splits }))
     }
@@ -98,9 +107,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
 
   const handleSplitChange = (participantId, amount) => {
     const newSplits = formData.splits.map((split) =>
-      split.participant_id === participantId
-        ? { ...split, amount: parseFloat(amount) || 0 }
-        : split
+      split.participant_id === participantId ? { ...split, amount: parseFloat(amount) || 0 } : split
     )
     setFormData((prev) => ({ ...prev, splits: newSplits }))
   }
@@ -115,11 +122,13 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
     const totalAmount = parseFloat(formData.amount)
     const totalSplits = getTotalSplits()
 
-    // Validate splits
-    if (Math.abs(totalSplits - totalAmount) > 0.01) {
-      alert(t('budget:splitSumError')
-        .replace('{splitSum}', totalSplits.toFixed(2))
-        .replace('{totalAmount}', totalAmount.toFixed(2)))
+    // Validate splits only when the expense is actually split among participants.
+    if (formData.splits.length > 0 && Math.abs(totalSplits - totalAmount) > 0.01) {
+      alert(
+        t('budget:splitSumError')
+          .replace('{splitSum}', totalSplits.toFixed(2))
+          .replace('{totalAmount}', totalAmount.toFixed(2))
+      )
       return
     }
 
@@ -129,12 +138,12 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
       currency: formData.currency,
       category: formData.category,
       date: formData.date,
-      paid_by: parseInt(formData.paid_by),
+      paid_by: formData.paid_by ? parseInt(formData.paid_by) : null,
       notes: formData.notes || null,
       splits: formData.splits.map((split) => ({
         participant_id: split.participant_id,
-        amount: parseFloat(split.amount)
-      }))
+        amount: parseFloat(split.amount),
+      })),
     }
 
     await onSubmit(expenseData)
@@ -144,7 +153,8 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
 
   const totalSplits = getTotalSplits()
   const totalAmount = parseFloat(formData.amount) || 0
-  const isValid = Math.abs(totalSplits - totalAmount) <= 0.01
+  // Solo trips have no participants to split among, so there is nothing to balance.
+  const isValid = participants.length === 0 || Math.abs(totalSplits - totalAmount) <= 0.01
 
   return (
     <AnimatePresence>
@@ -185,7 +195,9 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                 {/* Title & Category */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('budget:titleLabel')} *</label>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('budget:titleLabel')} *
+                    </label>
                     <input
                       type="text"
                       name="title"
@@ -197,8 +209,15 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('budget:categoryLabel')}</label>
-                    <select name="category" value={formData.category} onChange={handleChange} className="input">
+                    <label className="block text-sm font-medium mb-2">
+                      {t('budget:categoryLabel')}
+                    </label>
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="input"
+                    >
                       {categories.map((cat) => (
                         <option key={cat.value} value={cat.value}>
                           {cat.icon} {t(cat.labelKey)}
@@ -212,7 +231,7 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
                     <label className="block text-sm font-medium mb-2">
-                      <DollarSign className="w-4 h-4 inline mr-1" />
+                      <Euro className="w-4 h-4 inline mr-1" />
                       {t('budget:amountLabel')} *
                     </label>
                     <input
@@ -228,8 +247,15 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('budget:currencyLabel')}</label>
-                    <select name="currency" value={formData.currency} onChange={handleChange} className="input">
+                    <label className="block text-sm font-medium mb-2">
+                      {t('budget:currencyLabel')}
+                    </label>
+                    <select
+                      name="currency"
+                      value={formData.currency}
+                      onChange={handleChange}
+                      className="input"
+                    >
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
                       <option value="GBP">GBP (£)</option>
@@ -253,20 +279,28 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                       className="input"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      <User className="w-4 h-4 inline mr-1" />
-                      {t('budget:paidByLabel')} *
-                    </label>
-                    <select name="paid_by" value={formData.paid_by} onChange={handleChange} required className="input">
-                      <option value="">{t('budget:paidByPlaceholder')}</option>
-                      {participants.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {participants.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        <User className="w-4 h-4 inline mr-1" />
+                        {t('budget:paidByLabel')} *
+                      </label>
+                      <select
+                        name="paid_by"
+                        value={formData.paid_by}
+                        onChange={handleChange}
+                        required
+                        className="input"
+                      >
+                        <option value="">{t('budget:paidByPlaceholder')}</option>
+                        {participants.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Notes */}
@@ -282,83 +316,100 @@ export default function ExpenseModal({ isOpen, onClose, onSubmit, initialData = 
                   />
                 </div>
 
-                {/* Split Mode */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    <Users className="w-4 h-4 inline mr-1" />
-                    {t('budget:splitLabel')}
-                  </label>
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => handleSplitModeChange('equal')}
-                      className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
-                        splitMode === 'equal'
-                          ? 'bg-primary-500 text-white border-primary-500'
-                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-                      }`}
-                    >
-                      {t('budget:splitEqual')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSplitModeChange('custom')}
-                      className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
-                        splitMode === 'custom'
-                          ? 'bg-primary-500 text-white border-primary-500'
-                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-                      }`}
-                    >
-                      {t('budget:splitCustom')}
-                    </button>
-                  </div>
-
-                  {/* Split Breakdown */}
-                  <div className="space-y-2">
-                    {formData.splits.map((split) => {
-                      const participant = participants.find((p) => p.id === split.participant_id)
-                      return (
-                        <div key={split.participant_id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                          <div className="flex-1 font-medium">{participant?.name || t('budget:unknown')}</div>
-                          <input
-                            type="number"
-                            value={split.amount}
-                            onChange={(e) => handleSplitChange(split.participant_id, e.target.value)}
-                            disabled={splitMode === 'equal'}
-                            step="0.01"
-                            min="0"
-                            className="input w-32"
-                          />
-                          <span className="text-sm text-gray-500">{formData.currency}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Validation */}
-                  <div className={`mt-3 p-3 rounded-lg text-sm ${isValid ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}>
-                    <div className="flex justify-between">
-                      <span>{t('budget:totalSplit')}</span>
-                      <strong>{totalSplits.toFixed(2)} {formData.currency}</strong>
+                {/* Split Mode — only when there are participants to split among */}
+                {participants.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      <Users className="w-4 h-4 inline mr-1" />
+                      {t('budget:splitLabel')}
+                    </label>
+                    <div className="flex gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSplitModeChange('equal')}
+                        className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
+                          splitMode === 'equal'
+                            ? 'bg-primary-500 text-white border-primary-500'
+                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                        }`}
+                      >
+                        {t('budget:splitEqual')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSplitModeChange('custom')}
+                        className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
+                          splitMode === 'custom'
+                            ? 'bg-primary-500 text-white border-primary-500'
+                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                        }`}
+                      >
+                        {t('budget:splitCustom')}
+                      </button>
                     </div>
-                    <div className="flex justify-between">
-                      <span>{t('budget:totalAmount')}</span>
-                      <strong>{totalAmount.toFixed(2)} {formData.currency}</strong>
+
+                    {/* Split Breakdown */}
+                    <div className="space-y-2">
+                      {formData.splits.map((split) => {
+                        const participant = participants.find((p) => p.id === split.participant_id)
+                        return (
+                          <div
+                            key={split.participant_id}
+                            className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3"
+                          >
+                            <div className="flex-1 font-medium">
+                              {participant?.name || t('budget:unknown')}
+                            </div>
+                            <input
+                              type="number"
+                              value={split.amount}
+                              onChange={(e) =>
+                                handleSplitChange(split.participant_id, e.target.value)
+                              }
+                              disabled={splitMode === 'equal'}
+                              step="0.01"
+                              min="0"
+                              className="input w-32"
+                            />
+                            <span className="text-sm text-gray-500">{formData.currency}</span>
+                          </div>
+                        )
+                      })}
                     </div>
-                    {!isValid && (
-                      <div className="mt-2 font-medium">
-                        {t('budget:splitValidationError')}
+
+                    {/* Validation */}
+                    <div
+                      className={`mt-3 p-3 rounded-lg text-sm ${isValid ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'}`}
+                    >
+                      <div className="flex justify-between">
+                        <span>{t('budget:totalSplit')}</span>
+                        <strong>
+                          {totalSplits.toFixed(2)} {formData.currency}
+                        </strong>
                       </div>
-                    )}
+                      <div className="flex justify-between">
+                        <span>{t('budget:totalAmount')}</span>
+                        <strong>
+                          {totalAmount.toFixed(2)} {formData.currency}
+                        </strong>
+                      </div>
+                      {!isValid && (
+                        <div className="mt-2 font-medium">{t('budget:splitValidationError')}</div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
                     {t('common:cancel')}
                   </button>
-                  <button type="submit" disabled={!isValid} className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button
+                    type="submit"
+                    disabled={!isValid}
+                    className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     {initialData ? t('budget:saveButton') : t('budget:addButton')}
                   </button>
                 </div>

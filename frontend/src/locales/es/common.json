@@ -51,6 +51,28 @@
     "copyFailed": "Error al copiar",
     "email": "Correo",
     "tripTo": "Mi viaje a {{destination}}",
-    "checkOutTrip": "¡Mira mi viaje!"
-  }
+    "checkOutTrip": "¡Mira mi viaje!",
+    "public": {
+      "title": "Compartir públicamente",
+      "hint": "Crea un enlace de solo lectura a este diario de viaje. Cualquiera con el enlace puede leerlo sin cuenta.",
+      "enabled": "Público: cualquiera con el enlace puede leer el diario",
+      "disabled": "Privado: solo tú y tus compañeros de viaje",
+      "toggle": "Hacer público el diario",
+      "regenerate": "Generar nuevo enlace",
+      "regenerateHint": "El enlace anterior deja de funcionar de inmediato.",
+      "linkLabel": "Enlace público",
+      "pageFooter": "Hecho con TravelMind",
+      "notFound": "Este diario de viaje ya no está disponible públicamente.",
+      "loading": "Cargando diario…",
+      "empty": "Este viaje aún no tiene entradas de diario."
+    }
+  },
+  "clear": "Limpiar",
+  "noResults": "Sin resultados",
+  "searchPlaceholder": "Viajes, entradas, lugares…",
+  "changeLanguage": "Cambiar idioma",
+  "toggleDarkMode": "Alternar modo oscuro",
+  "showCustomColor": "Elegir color propio",
+  "hideCustomColor": "Ocultar color propio",
+  "selectedColor": "Seleccionado:"
 }

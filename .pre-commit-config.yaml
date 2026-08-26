@@ -5,7 +5,7 @@
 repos:
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
@@ -20,24 +20,35 @@ repos:
 
   # Python - Black formatter
   - repo: https://github.com/psf/black
-    rev: 23.12.1
+    rev: 26.5.1
     hooks:
       - id: black
-        language_version: python3.11
+        # Kein language_version-Pin: die black-VERSION oben ist gepinnt, das
+        # genuegt fuer reproduzierbare Formatierung. Ein Pin auf python3.11
+        # liess den Hook auf jeder Maschine ohne genau diese Version scheitern
+        # (gemessen 2026-08-25: "failed to find interpreter for python3.11").
         args: [--line-length=120]
         files: ^backend/
 
   # Python - Flake8 linter
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
+    rev: 7.3.0
     hooks:
       - id: flake8
-        args: [--max-line-length=120, --ignore=E203 W503]
+        # KEINE args: flake8 liest setup.cfg. Vorher standen die Werte hier
+        # doppelt — und abweichend: `--ignore` ERSETZT die Standardliste
+        # (dadurch schlug E226 an, das normalerweise darin steht), waehrend
+        # setup.cfg `extend-ignore` benutzt. Zwei Konfigurationen, die sich
+        # widersprechen, sind schlimmer als eine strenge.
         files: ^backend/
+        # Alembic-Migrationen sind erzeugt und enthalten langes SQL. setup.cfg
+        # schliesst sie aus; pre-commit uebergibt Dateinamen aber ausdruecklich,
+        # und dann greift `exclude` aus der Konfiguration nicht mehr.
+        exclude: ^backend/alembic/versions/
 
   # Python - isort import sorting
   - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+    rev: 8.0.1
     hooks:
       - id: isort
         args: [--profile=black, --line-length=120]
@@ -45,35 +56,41 @@ repos:
 
   # Python - security check
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.6
+    rev: 1.9.4
     hooks:
       - id: bandit
         args: [-c, pyproject.toml, -r, backend/]
         files: ^backend/
 
-  # JavaScript/TypeScript - Prettier
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        files: \.(js|jsx|ts|tsx|json|css|md)$
-        exclude: ^backend/
-
-  # JavaScript/TypeScript - ESLint
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.0.0-alpha.0
+  # JavaScript - eslint und prettier des PROJEKTS, nicht eine zweite Fassung.
+  #
+  # Vorher zogen die Spiegel-Repositories eslint 8 und prettier 4-alpha als
+  # eigene Abhaengigkeiten herbei. Das Projekt nutzt aber eslint 9 mit
+  # Flat-Config — der Hook haette also etwas anderes geprueft als CI, und genau
+  # solche Doppelgaenger sind der Grund, warum ein Gate und die Wirklichkeit
+  # auseinanderlaufen. Jetzt laeuft in beiden Faellen dasselbe Werkzeug aus
+  # frontend/node_modules, mit frontend/.prettierrc.
+  - repo: local
     hooks:
       - id: eslint
-        files: \.(js|jsx|ts|tsx)$
-        args: [--fix]
-        additional_dependencies:
-          - eslint@^8.0.0
-          - eslint-config-prettier@^9.0.0
-        exclude: ^backend/
+        name: eslint (Fassung des Projekts)
+        # --config ausdruecklich: der Hook laeuft im Wurzelverzeichnis, dort
+        # findet eslint 9 seine Flat-Config nicht von allein.
+        entry: npx --prefix frontend eslint --config frontend/eslint.config.js --fix
+        language: system
+        files: ^frontend/src/.*\.(js|jsx)$
+        pass_filenames: true
+
+      - id: prettier
+        name: prettier (Fassung des Projekts)
+        entry: npx --prefix frontend prettier --write
+        language: system
+        files: ^frontend/src/.*\.(js|jsx|css)$
+        pass_filenames: true
 
   # Secrets detection
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
@@ -81,14 +98,31 @@ repos:
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: v2.15.1
     hooks:
       - id: hadolint-docker
         args: [--ignore, DL3008, --ignore, DL3013]
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.38.0
+    rev: v0.49.1
     hooks:
       - id: markdownlint
-        args: [--fix]
+        args: [--fix, --config, .markdownlint.json]
+
+  # Keine privaten Daten in einem OEFFENTLICHEN Repo.
+  #
+  # `detect-secrets` oben sucht Schluessel nach Entropie und hat am 2026-08-26
+  # `<benutzer>@<lan-ip>` in deploy/ausrollen.sh durchgelassen — konnte es auch:
+  # ein Kontoname und eine LAN-Adresse haben keine Entropie und sind trotzdem
+  # die halbe Anmeldung. Dieser Hook prueft die andere Haelfte.
+  #
+  # Selbsttest (beide Richtungen, 37 Faelle):
+  #   python3 scripts/keine-privaten-daten.py --selbsttest
+  - repo: local
+    hooks:
+      - id: keine-privaten-daten
+        name: keine privaten Daten (Repo ist oeffentlich)
+        entry: python3 scripts/keine-privaten-daten.py
+        language: system
+        pass_filenames: true

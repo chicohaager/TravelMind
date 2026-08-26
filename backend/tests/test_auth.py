@@ -4,7 +4,6 @@ Tests for authentication endpoints
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.asyncio
@@ -16,8 +15,8 @@ async def test_register_success(client: AsyncClient):
             "username": "newuser",
             "email": "newuser@example.com",
             "password": "securepass123",
-            "full_name": "New User"
-        }
+            "full_name": "New User",
+        },
     )
     assert response.status_code == 201
     data = response.json()
@@ -30,11 +29,7 @@ async def test_register_duplicate_username(client: AsyncClient, test_user):
     """Test registration with duplicate username"""
     response = await client.post(
         "/api/auth/register",
-        json={
-            "username": "testuser",  # Already exists
-            "email": "different@example.com",
-            "password": "securepass123"
-        }
+        json={"username": "testuser", "email": "different@example.com", "password": "securepass123"},  # Already exists
     )
     assert response.status_code == 400
     assert "username already registered" in response.json()["detail"].lower()
@@ -45,11 +40,7 @@ async def test_register_duplicate_email(client: AsyncClient, test_user):
     """Test registration with duplicate email"""
     response = await client.post(
         "/api/auth/register",
-        json={
-            "username": "differentuser",
-            "email": "test@example.com",  # Already exists
-            "password": "securepass123"
-        }
+        json={"username": "differentuser", "email": "test@example.com", "password": "securepass123"},  # Already exists
     )
     assert response.status_code == 400
     assert "email already registered" in response.json()["detail"].lower()
@@ -60,11 +51,7 @@ async def test_register_weak_password(client: AsyncClient):
     """Test registration with weak password"""
     response = await client.post(
         "/api/auth/register",
-        json={
-            "username": "newuser",
-            "email": "newuser@example.com",
-            "password": "short"  # Too short
-        }
+        json={"username": "newuser", "email": "newuser@example.com", "password": "short"},  # Too short
     )
     assert response.status_code == 422  # Validation error
 
@@ -75,7 +62,7 @@ async def test_login_success(client: AsyncClient, test_user):
     response = await client.post(
         "/api/auth/login",
         data={"username": "testuser", "password": "testpass123"},
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -89,7 +76,7 @@ async def test_login_wrong_password(client: AsyncClient, test_user):
     response = await client.post(
         "/api/auth/login",
         data={"username": "testuser", "password": "wrongpassword"},
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     assert response.status_code == 401
 
@@ -100,7 +87,7 @@ async def test_login_nonexistent_user(client: AsyncClient):
     response = await client.post(
         "/api/auth/login",
         data={"username": "nonexistent", "password": "password123"},
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     assert response.status_code == 401
 

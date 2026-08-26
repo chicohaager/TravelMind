@@ -4,9 +4,9 @@ Audit Log Model
 Records security-relevant events for compliance and debugging.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
-from sqlalchemy.sql import func
 from models.database import Base
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.sql import func
 
 
 class AuditLog(Base):
@@ -20,6 +20,7 @@ class AuditLog(Base):
     - Admin Actions: settings_change, user_role_change
     - Security: login_failed, permission_denied, rate_limited
     """
+
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)

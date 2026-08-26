@@ -12,7 +12,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY package*.json ./
+# .npmrc gehoert mit dazu: sie setzt legacy-peer-deps, ohne das `npm ci`
+# den Baum nicht aufloest (Begruendung steht in der Datei).
+COPY package*.json .npmrc ./
 
 # Install dependencies (including dev dependencies for build)
 RUN npm ci
@@ -52,16 +54,21 @@ RUN mkdir -p /var/cache/nginx /var/run && \
 # Remove default nginx config
 RUN rm -f /etc/nginx/conf.d/default.conf
 
-# Switch to non-root user (nginx will still bind to port 80 via capability)
-# For full non-root, use port 8080 and update nginx.conf
-USER travelmind
+# Switch to non-root user. nginx.conf hoert deshalb auf 8080 (Ports < 1024 sind
+# einem unprivilegierten Prozess verwehrt) und schreibt seine PID nach /tmp.
+# Numerisch, nicht als Name — siehe backend/Dockerfile.prod.
+USER 1001:1001
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
-# Health check
+# Shell-Form ist hier noetig: der HEALTHCHECK verkettet mit "||" bzw. nutzt
+# eine Shell-Auswertung. In JSON-Notation gaebe es keine Verkettung.
+# Health check — use 127.0.0.1 (nginx listens IPv4-only; "localhost" resolves to
+# IPv6 ::1 in this image and would false-fail) with busybox-compatible wget flags.
+# hadolint ignore=DL3025
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+    CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,12 +1,14 @@
 """
 Create an admin user for TravelMind
 """
+
 import asyncio
 import sys
-from sqlalchemy import select
+
 from models.database import AsyncSessionLocal, init_db
 from models.user import User
 from passlib.context import CryptContext
+from sqlalchemy import select
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -19,9 +21,7 @@ async def create_admin_user(username: str, email: str, password: str, full_name:
 
     async with AsyncSessionLocal() as session:
         # Check if user already exists
-        result = await session.execute(
-            select(User).where(User.username == username)
-        )
+        result = await session.execute(select(User).where(User.username == username))
         existing_user = result.scalar_one_or_none()
 
         if existing_user:
@@ -29,7 +29,7 @@ async def create_admin_user(username: str, email: str, password: str, full_name:
 
             # Ask if we should make them admin
             make_admin = input(f"Make '{username}' an admin? (y/n): ").lower()
-            if make_admin == 'y':
+            if make_admin == "y":
                 existing_user.is_superuser = True
                 await session.commit()
                 print(f"✅ User '{username}' is now an admin!")
@@ -45,19 +45,19 @@ async def create_admin_user(username: str, email: str, password: str, full_name:
             hashed_password=hashed_password,
             full_name=full_name or username,
             is_active=True,
-            is_superuser=True
+            is_superuser=True,
         )
 
         session.add(admin_user)
         await session.commit()
         await session.refresh(admin_user)
 
-        print(f"✅ Admin user created successfully!")
+        print("✅ Admin user created successfully!")
         print(f"   Username: {admin_user.username}")
         print(f"   Email: {admin_user.email}")
         print(f"   Full Name: {admin_user.full_name}")
         print(f"   Admin: {admin_user.is_superuser}")
-        print(f"\n🔑 You can now login with these credentials.")
+        print("\n🔑 You can now login with these credentials.")
 
 
 async def main():
@@ -89,5 +89,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

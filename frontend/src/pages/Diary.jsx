@@ -4,21 +4,26 @@ import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { diaryService, tripsService } from '@services/api'
 import toast from 'react-hot-toast'
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import DiaryModal from '@components/DiaryModal'
+import Lightbox from '@components/Lightbox'
+import SharePanel from '@components/SharePanel'
+import { useAuth } from '@/contexts/AuthContext'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useTranslation } from 'react-i18next'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getThumbUrl, onThumbError } from '@/utils/images'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function Diary() {
   const { t } = useTranslation()
   const { tripId } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedEntry, setSelectedEntry] = useState(null)
   const [editingEntry, setEditingEntry] = useState(null)
   const [expandedEntries, setExpandedEntries] = useState(new Set())
-  const [lightbox, setLightbox] = useState({ open: false, photos: [], index: 0 })
+  const [lightbox, setLightbox] = useState({ open: false, items: [], index: 0 })
 
   // Fetch all trips
   const { data: trips = [], isLoading: isLoadingTrips } = useQuery({
@@ -26,11 +31,13 @@ export default function Diary() {
     queryFn: async () => {
       const response = await tripsService.getAll()
       return response.data
-    }
+    },
   })
 
+  const currentTrip = tripId ? trips.find((tr) => tr.id === Number(tripId)) : null
+
   // Fetch diary entries from API (if tripId is provided)
-  const { data: entries = [], isLoading: isLoadingEntries, error } = useQuery({
+  const { data: entries = [], isLoading: isLoadingEntries } = useQuery({
     queryKey: ['diary', tripId],
     queryFn: async () => {
       const response = await diaryService.getEntries(tripId)
@@ -40,7 +47,7 @@ export default function Diary() {
     onError: (error) => {
       console.error('Error loading diary entries:', error)
       toast.error(t('diary:errorLoadingEntries'))
-    }
+    },
   })
 
   // Fetch all diary entries for all trips (when no tripId)
@@ -53,23 +60,23 @@ export default function Diary() {
           const response = await diaryService.getEntries(trip.id)
           return {
             trip,
-            entries: response.data
+            entries: response.data,
           }
-        } catch (error) {
+        } catch {
           return {
             trip,
-            entries: []
+            entries: [],
           }
         }
       })
       const results = await Promise.all(entriesPromises)
       // Filter out trips with no entries
-      return results.filter(r => r.entries.length > 0)
+      return results.filter((r) => r.entries.length > 0)
     },
-    enabled: !tripId && trips.length > 0
+    enabled: !tripId && trips.length > 0,
   })
 
-  const isLoading = tripId ? isLoadingEntries : (isLoadingTrips || isLoadingAllEntries)
+  const isLoading = tripId ? isLoadingEntries : isLoadingTrips || isLoadingAllEntries
 
   // Mutation for creating diary entries
   const createEntryMutation = useMutation({
@@ -86,7 +93,7 @@ export default function Diary() {
     onError: (error) => {
       console.error('Error creating diary entry:', error)
       toast.error(t('tripDetail:addError'))
-    }
+    },
   })
 
   const handleCreateEntry = async (data) => {
@@ -109,7 +116,7 @@ export default function Diary() {
     onError: (error) => {
       console.error('Error updating diary entry:', error)
       toast.error(t('diary:updateError'))
-    }
+    },
   })
 
   // Mutation for deleting diary entries
@@ -125,7 +132,7 @@ export default function Diary() {
     onError: (error) => {
       console.error('Error deleting diary entry:', error)
       toast.error(t('diary:deleteError'))
-    }
+    },
   })
 
   const handleUpdateEntry = async (data) => {
@@ -149,15 +156,15 @@ export default function Diary() {
   }
 
   const moodEmojis = {
-    'excited': '🤩',
-    'happy': '😊',
-    'relaxed': '😌',
-    'adventurous': '🤠',
-    'tired': '😴'
+    excited: '🤩',
+    happy: '😊',
+    relaxed: '😌',
+    adventurous: '🤠',
+    tired: '😴',
   }
 
   const toggleExpand = (entryId) => {
-    setExpandedEntries(prev => {
+    setExpandedEntries((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(entryId)) {
         newSet.delete(entryId)
@@ -168,49 +175,41 @@ export default function Diary() {
     })
   }
 
-  const openEntryModal = (entry) => {
-    setSelectedEntry(entry)
-    setIsModalOpen(true)
-  }
-
-  const openLightbox = (photos, index) => {
-    setLightbox({ open: true, photos, index })
+  const openLightbox = (items, index) => {
+    setLightbox({ open: true, items, index })
   }
 
   const closeLightbox = () => {
-    setLightbox({ open: false, photos: [], index: 0 })
+    setLightbox({ open: false, items: [], index: 0 })
   }
 
-  const nextPhoto = () => {
-    setLightbox(prev => ({
-      ...prev,
-      index: (prev.index + 1) % prev.photos.length
-    }))
+  const onCaptionSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
+    queryClient.invalidateQueries({ queryKey: ['allDiaryEntries'] })
   }
 
-  const prevPhoto = () => {
-    setLightbox(prev => ({
-      ...prev,
-      index: (prev.index - 1 + prev.photos.length) % prev.photos.length
-    }))
+  const reorderMutation = useMutation({
+    mutationFn: ({ entryId, mediaIds }) => diaryService.reorderPhotos(entryId, mediaIds),
+    onError: () => {
+      toast.error(t('common:error', 'Fehler'))
+      // Revert the optimistic reorder from the server's truth.
+      queryClient.invalidateQueries({ queryKey: ['diary', tripId] })
+    },
+  })
+
+  const handlePhotoDragEnd = (entry) => (result) => {
+    if (!result.destination || result.destination.index === result.source.index) return
+    const media = Array.from(entry.media)
+    const [moved] = media.splice(result.source.index, 1)
+    media.splice(result.destination.index, 0, moved)
+    // Optimistically reflect the new order, then persist it.
+    queryClient.setQueryData(['diary', tripId], (old) =>
+      old?.map((e) => (e.id === entry.id ? { ...e, media } : e))
+    )
+    reorderMutation.mutate({ entryId: entry.id, mediaIds: media.map((m) => m.id) })
   }
 
-  const getPhotoUrl = (photo) => {
-    return photo.startsWith('http') ? photo : `${import.meta.env.VITE_API_URL}${photo}`
-  }
-
-  // Keyboard navigation for lightbox
-  const handleKeyDown = useCallback((e) => {
-    if (!lightbox.open) return
-    if (e.key === 'Escape') closeLightbox()
-    if (e.key === 'ArrowLeft') prevPhoto()
-    if (e.key === 'ArrowRight') nextPhoto()
-  }, [lightbox.open])
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
+  const canEdit = currentTrip && user?.id === currentTrip.owner_id
 
   return (
     <div className="space-y-6">
@@ -223,15 +222,17 @@ export default function Diary() {
           </p>
         </div>
         {tripId && (
-          <button
-            className="btn btn-primary"
-            onClick={() => setIsModalOpen(true)}
-          >
+          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
             <Plus className="w-5 h-5" />
             {t('diary:newEntry')}
           </button>
         )}
       </div>
+
+      {/* Public sharing (owner of the selected trip only) */}
+      {tripId && currentTrip && user?.id === currentTrip.owner_id && (
+        <SharePanel trip={currentTrip} />
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -264,9 +265,16 @@ export default function Diary() {
                   {trip.start_date && trip.end_date && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Calendar className="w-3 h-3" />
-                      {new Date(trip.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })}
+                      {new Date(trip.start_date).toLocaleDateString(aktuelleLocale(), {
+                        day: '2-digit',
+                        month: 'short',
+                      })}
                       {' - '}
-                      {new Date(trip.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {new Date(trip.end_date).toLocaleDateString(aktuelleLocale(), {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
                     </div>
                   )}
                 </div>
@@ -329,10 +337,10 @@ export default function Diary() {
                             <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-4 h-4" />
-                                {new Date(entry.entry_date).toLocaleDateString('de-DE', {
+                                {new Date(entry.entry_date).toLocaleDateString(aktuelleLocale(), {
                                   day: '2-digit',
                                   month: 'long',
-                                  year: 'numeric'
+                                  year: 'numeric',
                                 })}
                               </div>
                               {entry.location_name && (
@@ -346,10 +354,7 @@ export default function Diary() {
                           {entry.rating && (
                             <div className="flex items-center gap-1">
                               {[...Array(entry.rating)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                                />
+                                <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                               ))}
                             </div>
                           )}
@@ -374,128 +379,172 @@ export default function Diary() {
 
       {/* Timeline for specific trip */}
       {tripId && !isLoading && (
-      <div className="space-y-6">
-        {entries.map((entry, index) => (
-          <motion.div
-            key={entry.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-            className="relative"
-          >
-            {/* Timeline Line */}
-            {index < entries.length - 1 && (
-              <div className="absolute left-6 top-16 w-0.5 h-full bg-gradient-to-b from-primary-500 to-secondary-500" />
-            )}
+        <div className="space-y-6">
+          {entries.map((entry, index) => (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className="relative"
+            >
+              {/* Timeline Line */}
+              {index < entries.length - 1 && (
+                <div className="absolute left-6 top-16 w-0.5 h-full bg-gradient-to-b from-primary-500 to-secondary-500" />
+              )}
 
-            <div className="flex gap-4">
-              {/* Timeline Dot */}
-              <div className="relative z-10">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
-                  {moodEmojis[entry.mood] || '📝'}
+              <div className="flex gap-4">
+                {/* Timeline Dot */}
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+                    {moodEmojis[entry.mood] || '📝'}
+                  </div>
                 </div>
-              </div>
 
-              {/* Content */}
-              <div className="flex-1 card hover:shadow-lg transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-xl font-bold mb-1">{entry.title}</h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(entry.entry_date).toLocaleDateString('de-DE', {
-                          day: '2-digit',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
-                      </div>
-                      {entry.location_name && (
+                {/* Content */}
+                <div className="flex-1 card hover:shadow-lg transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-xl font-bold mb-1">{entry.title}</h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {entry.location_name}
+                          <Calendar className="w-4 h-4" />
+                          {new Date(entry.entry_date).toLocaleDateString(aktuelleLocale(), {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </div>
+                        {entry.location_name && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {entry.location_name}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {entry.rating && (
+                        <div className="flex items-center gap-1 mr-2">
+                          {[...Array(entry.rating)].map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          ))}
                         </div>
                       )}
+                      <button
+                        onClick={() => openEditModal(entry)}
+                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        title={t('common:edit')}
+                      >
+                        <Edit2 className="w-4 h-4 text-gray-500" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEntry(entry.id)}
+                        className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                        title={t('common:delete')}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {entry.rating && (
-                      <div className="flex items-center gap-1 mr-2">
-                        {[...Array(entry.rating)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className="w-4 h-4 fill-yellow-400 text-yellow-400"
+
+                  {/* Content - expandable */}
+                  <p
+                    className={`text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap ${expandedEntries.has(entry.id) ? '' : 'line-clamp-3'}`}
+                  >
+                    {entry.content}
+                  </p>
+
+                  {/* Photos */}
+                  {entry.media &&
+                    entry.media.length > 0 &&
+                    (expandedEntries.has(entry.id) && canEdit && entry.media.length > 1 ? (
+                      /* Expanded + editable: drag to reorder (click still opens the lightbox). */
+                      <DragDropContext onDragEnd={handlePhotoDragEnd(entry)}>
+                        <Droppable droppableId={`media-${entry.id}`} direction="horizontal">
+                          {(dropProvided) => (
+                            <div
+                              ref={dropProvided.innerRef}
+                              {...dropProvided.droppableProps}
+                              className="flex flex-wrap gap-2 mb-3"
+                            >
+                              {entry.media.map((m, i) => (
+                                <Draggable key={m.id} draggableId={`media-${m.id}`} index={i}>
+                                  {(dragProvided, snapshot) => (
+                                    <img
+                                      ref={dragProvided.innerRef}
+                                      {...dragProvided.draggableProps}
+                                      {...dragProvided.dragHandleProps}
+                                      src={getThumbUrl(m.url)}
+                                      onError={onThumbError(m.url)}
+                                      loading="lazy"
+                                      alt={m.caption || `Photo ${i + 1}`}
+                                      title={m.caption || undefined}
+                                      onClick={() => openLightbox(entry.media, i)}
+                                      className={`w-32 h-32 object-cover rounded-lg cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity ${snapshot.isDragging ? 'ring-2 ring-primary-500 opacity-90' : ''}`}
+                                    />
+                                  )}
+                                </Draggable>
+                              ))}
+                              {dropProvided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
+                    ) : (
+                      <div className={`flex flex-wrap gap-2 mb-3`}>
+                        {(expandedEntries.has(entry.id)
+                          ? entry.media
+                          : entry.media.slice(0, 3)
+                        ).map((m, i) => (
+                          <img
+                            key={m.id ?? i}
+                            src={getThumbUrl(m.url)}
+                            onError={onThumbError(m.url)}
+                            loading="lazy"
+                            alt={m.caption || `Photo ${i + 1}`}
+                            title={m.caption || undefined}
+                            onClick={() => openLightbox(entry.media, i)}
+                            className={`${expandedEntries.has(entry.id) ? 'w-32 h-32' : 'w-20 h-20'} object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
                           />
                         ))}
+                        {!expandedEntries.has(entry.id) && entry.media.length > 3 && (
+                          <div
+                            onClick={() => openLightbox(entry.media, 3)}
+                            className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-sm text-gray-500 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            +{entry.media.length - 3}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <button
-                      onClick={() => openEditModal(entry)}
-                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      title={t('common:edit')}
-                    >
-                      <Edit2 className="w-4 h-4 text-gray-500" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteEntry(entry.id)}
-                      className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                      title={t('common:delete')}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  </div>
+                    ))}
+
+                  {/* Tags */}
+                  {expandedEntries.has(entry.id) && entry.tags && entry.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {entry.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-xs"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => toggleExpand(entry.id)}
+                    className="text-sm text-primary-500 hover:text-primary-600 font-medium cursor-pointer"
+                  >
+                    {expandedEntries.has(entry.id) ? t('diary:showLess') : t('diary:readMore')}{' '}
+                    {expandedEntries.has(entry.id) ? '↑' : '→'}
+                  </button>
                 </div>
-
-                {/* Content - expandable */}
-                <p className={`text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap ${expandedEntries.has(entry.id) ? '' : 'line-clamp-3'}`}>
-                  {entry.content}
-                </p>
-
-                {/* Photos */}
-                {entry.photos && entry.photos.length > 0 && (
-                  <div className={`flex flex-wrap gap-2 mb-3`}>
-                    {(expandedEntries.has(entry.id) ? entry.photos : entry.photos.slice(0, 3)).map((photo, i) => (
-                      <img
-                        key={i}
-                        src={getPhotoUrl(photo)}
-                        alt={`Photo ${i + 1}`}
-                        onClick={() => openLightbox(entry.photos, i)}
-                        className={`${expandedEntries.has(entry.id) ? 'w-32 h-32' : 'w-20 h-20'} object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity`}
-                      />
-                    ))}
-                    {!expandedEntries.has(entry.id) && entry.photos.length > 3 && (
-                      <div
-                        onClick={() => openLightbox(entry.photos, 3)}
-                        className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-sm text-gray-500 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        +{entry.photos.length - 3}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tags */}
-                {expandedEntries.has(entry.id) && entry.tags && entry.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {entry.tags.map((tag, i) => (
-                      <span key={i} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <button
-                  onClick={() => toggleExpand(entry.id)}
-                  className="text-sm text-primary-500 hover:text-primary-600 font-medium cursor-pointer"
-                >
-                  {expandedEntries.has(entry.id) ? t('diary:showLess') : t('diary:readMore')} {expandedEntries.has(entry.id) ? '↑' : '→'}
-                </button>
               </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
       )}
 
       {/* Empty State - No entries for specific trip */}
@@ -512,10 +561,7 @@ export default function Diary() {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('diary:startCapturingExperiences')}
           </p>
-          <button
-            className="btn btn-primary"
-            onClick={() => setIsModalOpen(true)}
-          >
+          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
             <Plus className="w-5 h-5" />
             {t('diary:createFirstEntry')}
           </button>
@@ -533,13 +579,8 @@ export default function Diary() {
             <MapIcon className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold mb-2">{t('diary:noTripsPlannedTitle')}</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {t('diary:createTripForDiary')}
-          </p>
-          <button
-            onClick={() => navigate('/trips')}
-            className="btn btn-primary"
-          >
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{t('diary:createTripForDiary')}</p>
+          <button onClick={() => navigate('/trips')} className="btn btn-primary">
             <Plus className="w-5 h-5" />
             {t('trips:createTrip')}
           </button>
@@ -557,77 +598,18 @@ export default function Diary() {
             <Image className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold mb-2">{t('diary:noDiaryEntriesTitle')}</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {t('diary:selectTripAndStart')}
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{t('diary:selectTripAndStart')}</p>
         </motion.div>
       )}
 
-      {/* Lightbox Modal */}
-      {lightbox.open && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-          {/* Close Button */}
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
-          >
-            <X className="w-8 h-8" />
-          </button>
-
-          {/* Photo Counter */}
-          <div className="absolute top-4 left-4 text-white text-sm">
-            {lightbox.index + 1} / {lightbox.photos.length}
-          </div>
-
-          {/* Previous Button */}
-          {lightbox.photos.length > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
-              className="absolute left-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
-            >
-              <ChevronLeft className="w-8 h-8" />
-            </button>
-          )}
-
-          {/* Image */}
-          <img
-            src={getPhotoUrl(lightbox.photos[lightbox.index])}
-            alt={`Photo ${lightbox.index + 1}`}
-            onClick={(e) => e.stopPropagation()}
-            className="max-h-[90vh] max-w-[90vw] object-contain"
-          />
-
-          {/* Next Button */}
-          {lightbox.photos.length > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
-              className="absolute right-4 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black/50 hover:bg-black/70"
-            >
-              <ChevronRight className="w-8 h-8" />
-            </button>
-          )}
-
-          {/* Thumbnails */}
-          {lightbox.photos.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {lightbox.photos.map((photo, i) => (
-                <img
-                  key={i}
-                  src={getPhotoUrl(photo)}
-                  alt={`Thumbnail ${i + 1}`}
-                  onClick={(e) => { e.stopPropagation(); setLightbox(prev => ({ ...prev, index: i })); }}
-                  className={`w-12 h-12 object-cover rounded cursor-pointer transition-all ${
-                    i === lightbox.index ? 'ring-2 ring-white opacity-100' : 'opacity-50 hover:opacity-75'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Lightbox */}
+      <Lightbox
+        open={lightbox.open}
+        items={lightbox.items}
+        initialIndex={lightbox.index}
+        onClose={closeLightbox}
+        onCaptionSaved={onCaptionSaved}
+      />
 
       {/* Diary Modal */}
       <DiaryModal

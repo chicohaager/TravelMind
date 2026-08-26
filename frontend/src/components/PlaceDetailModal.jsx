@@ -1,20 +1,31 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, MapPin, Star, Clock, Phone, Globe, ExternalLink,
-  Calendar, DollarSign, Info, MessageSquare, Image as ImageIcon,
-  Plus
+  X,
+  MapPin,
+  Star,
+  Clock,
+  Phone,
+  Globe,
+  ExternalLink,
+  Calendar,
+  Euro,
+  Info,
+  Image as ImageIcon,
+  Plus,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
+import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }) {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('about')
 
   const TABS = [
-    { id: 'about', labelKey: 'places.tabAbout', icon: Info },
-    { id: 'photos', labelKey: 'places.tabPhotos', icon: ImageIcon },
+    { id: 'about', labelKey: 'places:tabAbout', icon: Info },
+    { id: 'photos', labelKey: 'places:tabPhotos', icon: ImageIcon },
   ]
 
   if (!isOpen || !place) return null
@@ -45,8 +56,9 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
             {place.image_url && (
               <div className="relative h-48 bg-gray-200 dark:bg-gray-700 flex-shrink-0">
                 <img
-                  src={place.image_url}
+                  src={getPhotoUrl(place.image_url)}
                   alt={place.name}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
                 <button
@@ -199,7 +211,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.cost && (
                         <div className="flex items-start gap-3">
-                          <DollarSign className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Euro className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:costField')}
@@ -219,11 +231,11 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                               {t('places:visitDateField')}
                             </div>
                             <div className="text-sm">
-                              {new Date(place.visit_date).toLocaleDateString('de-DE', {
+                              {new Date(place.visit_date).toLocaleDateString(aktuelleLocale(), {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
-                                day: 'numeric'
+                                day: 'numeric',
                               })}
                             </div>
                           </div>
@@ -276,8 +288,12 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                         {place.photos.map((photo, index) => (
                           <img
                             key={index}
-                            src={photo}
-                            alt={t('places:photoAlt').replace('{name}', place.name).replace('{index}', index + 1)}
+                            src={getThumbUrl(photo)}
+                            onError={onThumbError(photo)}
+                            loading="lazy"
+                            alt={t('places:photoAlt')
+                              .replace('{name}', place.name)
+                              .replace('{index}', index + 1)}
                             className="w-full h-48 object-cover rounded-lg"
                           />
                         ))}

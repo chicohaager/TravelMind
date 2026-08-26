@@ -1,315 +1,139 @@
-# CLAUDE.md
+# CLAUDE.md — Arbeitsregeln für dieses Projekt
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Wiederhergestellt am 2026-08-25. Commit `f82d006` hatte die Datei entfernt.
+Das ist **nicht** die alte Fassung: sie beschreibt, was am 2026-08-25 gemessen
+gilt, und enthält die Fallen, die beim Wiederaufbau der Produktion aufgefallen
+sind.
 
-## Project Overview
+---
 
-TravelMind is a self-hosted travel planning and diary application with AI assistance powered by Claude API. The app uses a FastAPI backend (Python) with React frontend (Vite), SQLite/PostgreSQL database, and provides features for trip planning, diary entries, budget tracking, and AI-powered travel recommendations.
-
-## Development Commands
-
-### Backend (FastAPI/Python)
-
-```bash
-# Start development server (with hot reload)
-cd backend
-python main.py
-
-# Or with uvicorn directly
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run tests
-pytest
-pytest -v  # verbose mode
-pytest backend/tests/  # specific directory
-```
-
-### Frontend (React/Vite)
+## Vor der ersten Änderung
 
 ```bash
-# Start development server
-cd frontend
-npm run dev
+# Backend
+python3.11 -m venv venv && source venv/bin/activate
+pip install -r backend/requirements.txt flake8 black isort pytest-cov
 
-# Build for production
-npm run build
+# Frontend
+cd frontend && npm ci
 
-# Preview production build
-npm run preview
-
-# Install dependencies
-npm install
-
-# Linting
-npm run lint
-
-# Code formatting
-npm run format
+# Hooks — sie sind die günstigste Stelle, an der etwas auffällt
+pip install pre-commit && pre-commit install
 ```
 
-### Docker
+## Vor jedem „fertig"
+
+Alles hiervon muss grün sein. In CI läuft dasselbe, und **jede Zeile davon kann
+rot werden** — der alte Workflow trug `continue-on-error: true` auf neun
+Schritten, deshalb liefen 169 flake8-Verstöße und 98 CVEs unter einem grünen
+Haken auf.
 
 ```bash
-# Start all services (development)
-docker-compose up -d
+flake8 backend/                                        # muss 0 melden
+black --line-length=120 --check backend/
+isort --profile=black --line-length=120 --check-only backend/
+cd backend && pytest tests -q --cov=. --cov-fail-under=75
 
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-
-# Production deployment
-docker-compose -f docker-compose.prod.yml up -d
-
-# Rebuild containers
-docker-compose build --no-cache
+cd frontend && npx eslint .                            # muss 0 Fehler melden
+cd frontend && npx vitest run
+cd frontend && npm run build
+bash frontend/nginx.conf.test.sh                       # Exit 0
 ```
 
-## Architecture
+Bei UI-Änderungen zusätzlich: **im Browser durchklicken, in DE.** Ein HTTP 200
+sagt hier nichts — der SPA-Fallback beantwortet jeden unbekannten Pfad mit 200,
+und am 2026-08-25 lieferte `curl` auf `/api/auth/login` sauber 200, während im
+Browser jeder Login mit 503 scheiterte.
 
-### Backend Structure
+---
 
-**Layered Architecture Pattern:**
-- **Routes** (`backend/routes/`): FastAPI routers handling HTTP endpoints
-- **Services** (`backend/services/`): Business logic layer (e.g., Claude AI integration)
-- **Models** (`backend/models/`): SQLAlchemy ORM models and database schema
-- **Utils** (`backend/utils/`): Helper functions and utilities
+## Fallen, die dieses Projekt schon einmal gestellt hat
 
-**Database Models:**
-- `User`: User accounts with authentication
-- `Trip`: Main trip entity with destination, dates, budget, interests
-- `Participant`: Many-to-many relationship for trip collaboration
-- `DiaryEntry`: Markdown-based travel journal entries
-- `Place`: Points of interest with GPS coordinates
-- `Expense`: Budget tracking for trips
+Jede davon hat Stunden gekostet. Alle haben dieselbe Form: **ein Fallback zeigte
+etwas Plausibles, statt laut zu scheitern.**
 
-**Key Routes:**
-- `/api/auth/*`: JWT authentication (register, login, logout)
-- `/api/trips/*`: CRUD operations for trips
-- `/api/diary/*`: Diary entry management
-- `/api/places/*`: POI management
-- `/api/timeline/*`: Timeline view aggregation
-- `/api/budget/*`: Expense tracking and budget overview
-- `/api/ai/*`: Multi-provider AI integration endpoints (Groq, Claude, OpenAI, Gemini)
+### Frontend
 
-### Frontend Structure
+| Falle | Woran man sie erkennt |
+|---|---|
+| **`t('namensraum.schlüssel')` mit Punkt** | i18next sucht dann im Standard-Namensraum `common`, findet nichts und zeigt den Fallback. Auf dem Bildschirm stand `+ culture` statt `+ Kultur`. Namensräume brauchen einen **Doppelpunkt**. Der Test `i18n-integrity.test.js` verbietet es. |
+| **Fest verdrahtete Locale** | `toLocaleDateString('de-DE')` — spanische Nutzer bekamen deutsche Formate. Immer `aktuelleLocale()` aus `utils/format`. Auch das erzwingt ein Test. |
+| **`i18n.language` trägt die Region** | Nach der Spracherkennung steht dort `de-DE`, nicht `de`. Jeder Vergleich muss auf dem Sprachteil arbeiten (`.split('-')[0]`) oder `resolvedLanguage` nehmen. |
+| **`lng:` in `i18n.init`** | Setzt man es, wird der LanguageDetector vollständig übergangen — er ist dann konfiguriert und wirkungslos. Nicht setzen. |
+| **Keine `.env` im Build-Kontext** | Vite backt `VITE_*` ins Bundle. `frontend/.dockerignore` hält die lokale Datei draußen; CI prüft, dass keine Entwicklungs-Adresse im Bundle steht. |
+| **`VITE_API_URL` leer lassen** | Die Oberfläche spricht `/api` relativ an. Eine absolute Adresse im Bundle funktioniert nur unter genau einem Hostnamen. |
 
-**Component Organization:**
-- `src/pages/`: Route-level components (Home, Trips, TripDetail, Diary, AIAssistant)
-- `src/components/`: Reusable UI components
-- `src/components/layout/`: Layout components (Navbar, Sidebar, Layout wrapper)
-- `src/contexts/`: React contexts (AuthContext for user state)
-- `src/services/`: API client with axios
+### Backend
 
-**State Management:**
-- React Query for server state (trips, diary entries, places)
-- React Context for authentication state
-- Local component state for UI interactions
+| Falle | Woran man sie erkennt |
+|---|---|
+| **Nebenwirkungs-Importe** | `models/database.py` und `tests/conftest.py` importieren Modelle, die nirgends benutzt werden — sie registrieren Tabellen an `Base.metadata`. Ohne sie legt `create_all()` sie nicht an. Sie tragen `# noqa: F401` **und** eine Begründung. Nicht entfernen, auch nicht durch autoflake. |
+| **`login` erwartet Formulardaten** | `OAuth2PasswordRequestForm`, nicht JSON. `curl -d 'username=…&password=…'`, kein `-H 'Content-Type: application/json'`. |
+| **Datumsfelder nehmen auch ein Datum ohne Uhrzeit** | Korrigiert am 2026-08-25: die Zeile behauptete hier das Gegenteil. An allen fünf Modellen mit Datumsfeld gemessen (Reise, Tagebuch, Ort, Zeitplanung, Ausgabe) — Pydantic v2 nimmt `2026-09-01` an und ergänzt Mitternacht. Festgehalten in `tests/test_trips_crud.py`. |
+| **`/health` gibt es zweimal** | Einmal ohne Präfix und einmal als `/api/health*`. Beide antworten. |
+| **Claude teilt `max_tokens` zwischen Denken und Text** | `claude-sonnet-5` denkt adaptiv, ohne dass man es einschaltet. Mit 2048 ging das ganze Budget ans Denken; die Antwort kam gar nicht oder halb. Am 2026-08-26 erzeugte das drei ganz verschieden aussehende Fehler (`keinen Textblock (Blockarten: ['thinking'])`, `JSONDecodeError`, `'str' object has no attribute 'get'`). `CLAUDE_DENK_RESERVE` legt das Denk-Budget obendrauf; `stop_reason == "max_tokens"` scheitert jetzt laut. |
+| **Ein abgeschnittenes JSON-Array verkleidet sich als Objekt** | Ohne `]` greift der Notfall-Zweig von `_parse_ai_json` auf `{…}` zu und liefert ein `dict`. Das Iterieren gibt dann Schlüssel (`str`), und der Fehler zeigt auf den Zugriff statt auf das Token-Limit. Deshalb nimmt `_parse_ai_json` die erwartete Form entgegen. |
+| **Der Geocoder fällt auf den ORTSNAMEN zurück** | Letzte Variante von `suchvarianten` ist der blosse Siedlungsname. Findet er die Sache nicht, liefert er den Gemeindemittelpunkt — und der sieht aus wie ein Fund. Am 2026-08-26 an 16 Orten gemessen: 9 Positionen kamen so zustande. `geocode_place` gibt dafür jetzt `nur_ort=True` zurück und protokolliert `geocoding_nur_ortsgenau` als WARNUNG. Beim Prüfen einer Karte: **erst diese Warnung im Backend-Protokoll suchen**, nicht die Koordinate ansehen. |
+| **Es gibt ZWEI Karten mit Orts-Popups** | `InteractiveMap.jsx` (lazy als eigener Chunk, „Interaktive Karte & Routen") und eine INLINE gebaute in `pages/TripDetail.jsx` — letztere ist die, die man auf der Reiseseite sieht. Am 2026-08-26 stand ein neuer Hinweis nur in der ersten: Bündel enthielt den Text, Test grün, Browser leer. `positions-vorbehalt.test.jsx` sucht sich seine Dateien deshalb selbst (jede `.jsx` mit `<Popup>` und `place.name`). |
+| **KI-Antworten werden an EINER Stelle ausgewertet** | `utils/ki_antwort.py`. Bis zum 2026-08-26 lagen vier Fassungen im Code, drei davon mit stillem `[]` bei unlesbarer Antwort. Wer eine neue KI-Auswertung schreibt, benutzt `parse_ai_json(text, erwartet=…, vorgang=…)` — nichts Eigenes. |
+| **Ein Skript, das die Datenbank anfasst, braucht ALLE Modelle** | `select(User)` scheitert an `expression 'Route' failed to locate a name` — SQLAlchemy löst Beziehungen über Klassennamen auf, und `Trip` verweist auf `Route`. Im Test unsichtbar, weil `conftest.py` den Sammelimport führt. Vorlage: der Importblock in `scripts/positionen_nachtragen.py`, und ein Test, der das Skript in einem **frischen Interpreter** startet. |
 
-### Database
+### Betrieb
 
-**Async SQLAlchemy 2.0:**
-- Async database operations throughout
-- Connection pooling configured differently for SQLite vs PostgreSQL
-- Database initialized automatically on app startup via `init_db()` in `main.py:lifespan`
+| Falle | Woran man sie erkennt |
+|---|---|
+| **nginx läuft non-root auf 8080** | Port 80 kann ein unprivilegierter Prozess nicht binden. Veröffentlicht wird über das Port-Mapping. Wer das ändert, braucht wieder `user: "0:0"` — und hebt damit die Härtung des Images auf. |
+| **uid 1001 ist ein Vertrag** | Backend- und Frontend-Image laufen unter 1001. Die Bind-Mounts `uploads/` und `backups/` müssen ihr gehören, sonst startet gunicorn nicht (`PermissionError: 'uploads/trips'`). |
+| **`localhost` in Healthchecks** | Kann in schlanken Images auf `::1` auflösen, während der Dienst nur IPv4 bindet — der Container meldet dann fälschlich `unhealthy`. Immer `127.0.0.1`. |
+| **`docker compose` auf .143** | Das Plugin wird nicht gefunden. Direkt aufrufen: `/usr/lib/docker/cli-plugins/docker-compose`. |
+| **Kein `build:` in der Produktion** | Gebaut wird außerhalb, ausgeliefert werden Images mit dem Commit-SHA als Tag. Nur so gibt es einen Rückweg. |
+| **KI-Aufrufe brauchen an ZWEI Stellen mehr Zeit** | Eine Empfehlungsanfrage misst 33,4 s (am 2026-08-26 aus `rt=` im nginx-Protokoll abgelesen). Die axios-Instanz erlaubte 30 s, nginx 60 s — der Browser legte auf, im Protokoll stand `499 0 rt=30.001`, und im Browser die leere Ansicht. `KI_ZEITLIMIT_MS` und `location /api/ai/` müssen beide 180 s haben; der kürzere entscheidet. |
+| **Ohne Verwalter ist /admin für niemanden erreichbar** | Das Recht vergibt nur die Verwaltung, hinein kommt nur, wer es hat. Auflösen von außen: `docker exec travelmind-backend python3 scripts/verwalter.py {zeigen,setzen,entziehen}`. Absichtlich kein Selbstheilungszweig in der App. `entziehen` weigert sich beim letzten Verwalter. |
 
-**Session Management:**
-- Use `get_db()` dependency for route handlers
-- Sessions are automatically committed/rolled back
-- Example usage in routes:
-  ```python
-  from models.database import get_db
+---
 
-  @router.get("/trips")
-  async def get_trips(db: AsyncSession = Depends(get_db)):
-      result = await db.execute(select(Trip))
-      return result.scalars().all()
-  ```
+## Wie in diesem Projekt geprüft wird
 
-## AI Integration (Multi-Provider)
+Diese drei Regeln haben am 2026-08-25 mehr gefunden als jedes Nachdenken:
 
-**Service Location:** `backend/services/ai_service.py`
+1. **Von der Seite messen, über die die Aussage gilt.** `docker exec … id`
+   zeigt den Exec-Benutzer, nicht den laufenden Prozess — dafür `docker top`.
+   `curl` schickt keinen `Origin`-Header, ein Browser immer.
 
-**Supported Providers:**
-- **Groq (FREE!)**: llama-3.3-70b-versatile - Fast, free inference with Llama 3.3
-- **Claude (Anthropic)**: claude-3-5-sonnet-20241022
-- **OpenAI**: gpt-4-turbo-preview
-- **Google Gemini**: gemini-pro
+2. **Ein negativer Befund braucht eine Positivkontrolle.** „Kein Treffer" ist
+   wertlos, solange nicht feststeht, dass die Suche überhaupt anschlagen kann.
+   Der i18n-Scanner hat vier Fundstellen mehr gefunden als `grep`, weil er eine
+   hatte.
 
-**User Configuration:**
-- Each user configures their own AI provider and API key in Settings
-- API keys are encrypted using Fernet symmetric encryption
-- Stored securely in the database (never exposed in API responses)
-- Users can validate their API key before saving
+3. **Ein Wächter, der nie rot war, ist eine Zusicherung ohne Prüfung.** Jeder
+   Test in `i18n-integrity.test.js` und `format.test.js` wurde durch Sabotage
+   rot gesehen, bevor er eingecheckt wurde. Neue Wächter genauso.
 
-**Core Methods:**
-- `suggest_destinations()`: Recommends 5 destinations based on interests, duration, budget
-- `plan_trip()`: Creates detailed multi-day itinerary
-- `describe_destination()`: Generates poetic destination descriptions
-- `chat()`: Conversational Q&A about destinations
-- `get_local_tips()`: Local recommendations by category
+Und die Umkehrung davon: **eine Ausnahme muss enger sein als die Regel.**
+`# noqa`, `# nosec`, `eslint-disable` stehen hier je Zeile mit Begründung — nie
+je Datei und nie global. Wo doch etwas projektweit ausgenommen ist (`pyproject.toml`,
+`setup.cfg`, `.markdownlint.json`), steht der Grund daneben.
 
-**Response Handling:**
-- Prompts request structured JSON output
-- Service parses JSON from AI response
-- Falls back to raw response if JSON parsing fails
+---
 
-**Security:**
-- API keys encrypted with SECRET_KEY from environment
-- Encryption service: `backend/utils/encryption.py`
-- Keys decrypted only when needed for API calls
-- Never returned in API responses
+## Wo was liegt
 
-## Environment Configuration
+```text
+backend/
+  main.py            App, Middleware, Fehlerbehandlung, Start-Prüfungen
+  routes/            21 Module, 127 Endpunkte
+  models/            SQLAlchemy-Modelle; database.py enthält init_db
+  services/          KI-Anbindung, Geocoding, Audit, Benachrichtigungen
+  middleware/        Security-Header, Request-IDs, Metriken
+  alembic/versions/  Migrationen (erzeugt — von den Lint-Regeln ausgenommen)
 
-**Required Variables:**
-- `DATABASE_URL`: Database connection string (defaults to SQLite)
-- `JWT_SECRET`: Secret key for JWT token signing
-- `SECRET_KEY`: Secret key for encrypting API keys (IMPORTANT: Keep this secure!)
+frontend/src/
+  pages/             18 Seiten
+  components/        Wiederverwendbares
+  locales/<lang>/    4 Sprachen × 28 Namensräume, je 955 Schlüssel
+  utils/format.js    EINZIGE Stelle, an der eine konkrete Locale stehen darf
+  test/              Wächter gegen ganze Fehlerklassen
+```
 
-**Optional Variables:**
-- `BACKEND_PORT`: Backend port (default: 8000)
-- `BACKEND_RELOAD`: Enable hot reload (default: true)
-- `CORS_ORIGINS`: Allowed CORS origins (comma-separated)
-- `ENABLE_AI_FEATURES`: Toggle AI features (default: true)
-- `LOG_LEVEL`: Logging verbosity (INFO, DEBUG, WARNING, ERROR)
-
-**User-Specific Configuration (in Settings UI):**
-- AI Provider (Groq, Claude, OpenAI, or Gemini)
-- API Key for selected provider
-  - **Groq (FREE!)**: Get from https://console.groq.com/ - No credit card required
-  - Claude: Get from https://console.anthropic.com/
-  - OpenAI: Get from https://platform.openai.com/
-  - Gemini: Get from https://makersuite.google.com/
-
-See `.env.example` for complete configuration reference.
-
-## Testing
-
-**Backend Tests:**
-- Framework: pytest with pytest-asyncio
-- Test directory: `backend/tests/`
-- Run all tests: `pytest`
-- Run with coverage: `pytest --cov=backend`
-
-**Frontend Tests:**
-- Framework: React Testing Library (when added)
-- Component tests: `npm test`
-
-## API Documentation
-
-Interactive API documentation available at:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## Authentication Flow
-
-**JWT-based authentication:**
-1. User registers/logs in via `/api/auth/register` or `/api/auth/login`
-2. Backend returns JWT access token
-3. Frontend stores token and includes in Authorization header: `Bearer <token>`
-4. Protected routes validate token via JWT middleware
-5. Token includes user ID and username in payload
-
-**Implementation:**
-- Password hashing: bcrypt via passlib
-- Token generation: python-jose
-- Token validation: FastAPI dependency injection
-
-## File Upload
-
-**Upload Handling:**
-- Directory: `./uploads/` (created automatically on startup)
-- Max file size: 10MB (configurable via `MAX_UPLOAD_SIZE_MB`)
-- Allowed extensions: jpg, jpeg, png, gif, webp, pdf
-- Files served via `/uploads` static file mount
-
-## Database Migrations
-
-**Alembic Setup:**
-- Alembic is installed but migrations not yet initialized
-- To set up: `cd backend && alembic init alembic`
-- Current approach: Auto-create tables on startup via `init_db()`
-
-## Design System
-
-**Styling:**
-- Tailwind CSS with custom configuration
-- Primary color: Indigo (`#6366F1`)
-- Secondary color: Orange (`#F59E0B`)
-- Typography: Inter (body), Poppins (headings)
-- Dark mode support built-in
-
-**Custom Classes:**
-- `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-outline`: Button variants
-- `.card`: Card container with shadow and padding
-- `.input`: Form input styling
-- `.badge`: Tag/badge components
-
-**Animation:**
-- Framer Motion for page transitions and component animations
-- Smooth transitions configured in Tailwind
-
-## Common Patterns
-
-**Adding a New API Endpoint:**
-1. Create/update router in `backend/routes/`
-2. Define Pydantic schemas for request/response
-3. Implement handler using async/await
-4. Use `get_db()` dependency for database access
-5. Include router in `main.py`
-
-**Adding a New Database Model:**
-1. Create model file in `backend/models/`
-2. Inherit from `Base` (declarative_base)
-3. Define columns and relationships
-4. Import in `models/database.py:init_db()` to register
-5. Restart backend to auto-create table
-
-**Adding a New Frontend Page:**
-1. Create component in `frontend/src/pages/`
-2. Add route in `App.jsx`
-3. Update navigation in `Navbar.jsx` or `Sidebar.jsx`
-4. Use React Query for data fetching
-5. Follow existing component patterns
-
-## Troubleshooting
-
-**Database locked (SQLite):**
-- SQLite uses NullPool to avoid connection conflicts
-- Consider PostgreSQL for production
-
-**CORS errors:**
-- Check `CORS_ORIGINS` in `.env` matches frontend URL
-- Development: `http://localhost:5173` for Vite
-- Default ports: Backend 8000, Frontend 5173
-
-**Claude API errors:**
-- Verify `CLAUDE_API_KEY` is set correctly
-- Check API quota at Anthropic console
-- Review logs for detailed error messages
-
-**Import errors in backend:**
-- All models must be imported in `models/database.py:init_db()` for table creation
-- Routes are imported in `main.py` - ensure new routes are added there
-
-## Project Status
-
-**Production-ready features:**
-- Complete API structure with all major endpoints
-- Claude AI integration with multiple use cases
-- Authentication and user management
-- Database models and relationships
-- React frontend with routing and layout
-- Docker containerization
-
-**In development:**
-- Map integration (Leaflet setup present, needs component integration)
-- PWA offline capabilities
-- PDF export functionality
-- WebSocket for real-time collaboration
-- Comprehensive test coverage
+Weiteres: [`README.md`](README.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) ·
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)

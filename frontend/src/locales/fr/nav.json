@@ -2,9 +2,15 @@
   "home": "Accueil",
   "trips": "Voyages",
   "diary": "Journal",
+  "gallery": "Galerie",
+  "timeline": "Chronologie",
+  "analytics": "Analytique",
   "ai": "Assistant IA",
   "settings": "Paramètres",
   "logout": "Déconnexion",
   "login": "Connexion",
-  "register": "S'inscrire"
+  "register": "S'inscrire",
+  "transcribe": "Transcription",
+  "openMenu": "Ouvrir le menu",
+  "userMenu": "Menu utilisateur"
 }

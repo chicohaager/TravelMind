@@ -1,0 +1,37 @@
+# Was NICHT in den Build-Kontext gehoert.
+#
+# Ohne diese Datei kopiert `COPY . .` im Dockerfile.prod alles mit, was zufaellig
+# im Arbeitsverzeichnis liegt — am gefaehrlichsten die lokale .env: Vite backt
+# deren VITE_*-Werte in das Bundle ein, und das Produktions-Image traegt dann die
+# Entwicklungs-API-Adresse des Rechners, auf dem es gebaut wurde. Genau so kam
+# am 2026-08-25 ein `http://localhost:8003` in die Produktion auf .143.
+
+# Umgebungsdateien — Werte kommen zur Laufzeit, nie aus dem Build-Kontext
+.env
+.env.*
+!.env.example
+
+# Abhaengigkeiten und Build-Ergebnisse (werden im Image selbst erzeugt)
+node_modules
+dist
+dev-dist
+html
+.vite
+
+# Tests und Werkzeuge
+e2e
+playwright-report
+test-results
+playwright/.cache
+coverage
+.auth
+
+# Entwicklungsumgebung
+.git
+.gitignore
+.vscode
+.idea
+*.log
+Dockerfile*
+.dockerignore
+README*

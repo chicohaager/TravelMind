@@ -1,21 +1,32 @@
 import axios from 'axios'
 
-// In development, ALWAYS use relative URLs to leverage Vite proxy
-// In production, use the configured API URL
+// Die Adresse der API ist RELATIV, ausser jemand konfiguriert ausdruecklich
+// etwas anderes.
+//
+// Vorher stand hier ein Fallback auf 'http://localhost:8137'. Der greift genau
+// dann, wenn VITE_API_URL beim Bauen nicht gesetzt ist — und backt eine absolute
+// Adresse in ein Bundle, das anschliessend unter jedem beliebigen Hostnamen
+// ausgeliefert wird. In der Produktion auf .143 hat der Browser deshalb am
+// 2026-08-25 gegen localhost gepostet und jeder Login scheiterte mit 503,
+// waehrend dieselbe Anmeldung per curl gegen /api sauber 200 lieferte.
+//
+// Relativ ist fuer diese App immer richtig: im Betrieb proxyt nginx /api und
+// /uploads an das Backend, in der Entwicklung tut der Vite-Proxy dasselbe.
+// VITE_API_URL bleibt als Ausweg fuer den Fall, dass API und Oberflaeche
+// getrennt betrieben werden — aber nur, wenn es jemand bewusst setzt.
 const isDev = import.meta.env.DEV
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const configuredApiUrl = import.meta.env.VITE_API_URL
 
-// Force relative URLs in development
-let baseURL
-if (isDev || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-  baseURL = '/api'
-} else {
-  baseURL = `${API_URL}/api`
-}
+const baseURL = configuredApiUrl ? `${configuredApiUrl.replace(/\/+$/, '')}/api` : '/api'
 
 // Only log in development
 if (isDev) {
-  console.log('API Config:', { isDev, API_URL, baseURL, hostname: window.location.hostname })
+  console.log('API Config:', {
+    isDev,
+    configuredApiUrl,
+    baseURL,
+    hostname: window.location.hostname,
+  })
 }
 
 // Create axios instance with timeout
@@ -41,30 +52,84 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor for handling errors
+// Endpoints where a 401 must NOT trigger a refresh/redirect
+// (wrong-password login, register, and the refresh call itself).
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh']
+
+const isAuthEndpoint = (url = '') => AUTH_ENDPOINTS.some((path) => url.includes(path))
+
+// Response interceptor: single-retry token refresh on 401
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+  async (error) => {
+    const originalRequest = error.config
+
+    // Only handle 401s that are not from auth endpoints and have not been retried yet
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthEndpoint(originalRequest.url)
+    ) {
+      originalRequest._retry = true
+
+      try {
+        // Attempt a single token refresh
+        const { data } = await api.post('/auth/refresh')
+        const newToken = data?.access_token || data?.token
+        if (!newToken) {
+          throw new Error('No token returned from refresh')
+        }
+
+        // Persist new token and retry the original request with it
+        localStorage.setItem('token', newToken)
+        originalRequest.headers = originalRequest.headers || {}
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return api(originalRequest)
+      } catch (refreshError) {
+        // Refresh failed: clear token and redirect to login
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
+      }
     }
+
     return Promise.reject(error)
   }
 )
 
 // AI Services
+// Eine KI-Anfrage ist kein normaler Aufruf: das Modell denkt erst und
+// schreibt dann. Die 30 s oben reichen dafuer nicht.
+//
+// Am 2026-08-26 gegen die laufende Instanz gemessen (nginx-Zugriffsprotokoll
+// des Frontend-Containers): die Empfehlungen brachen mit
+//
+//   "POST /api/ai/personalized-recommendations" 499 0 rt=30.001
+//
+// ab — 499 heisst, der Browser hat aufgelegt, und die 30,001 s sind exakt das
+// Limit dieser Datei. Das Backend rechnete danach ungestoert weiter (die
+// Bildsuche lief noch Sekunden spaeter), nur sah das niemand mehr: im
+// Browser stand die leere Ansicht, so als haette die KI nichts gefunden.
+//
+// nginx bekommt dasselbe Limit fuer `location /api/ai/` (siehe
+// frontend/nginx.conf) — beide Sprungpunkte muessen es haben, sonst schneidet
+// der jeweils kuerzere ab.
+export const KI_ZEITLIMIT_MS = 180000
+
+const kiOptionen = { timeout: KI_ZEITLIMIT_MS }
+
 export const aiService = {
-  suggest: (data) => api.post('/ai/suggest', data),
-  plan: (data) => api.post('/ai/plan', data),
-  describe: (destination) => api.post('/ai/describe', { destination }),
-  chat: (message, context) => api.post('/ai/chat', { message, context }),
+  suggest: (data) => api.post('/ai/suggest', data, kiOptionen),
+  plan: (data) => api.post('/ai/plan', data, kiOptionen),
+  describe: (destination) => api.post('/ai/describe', { destination }, kiOptionen),
+  chat: (message, context) => api.post('/ai/chat', { message, context }, kiOptionen),
   localTips: (destination, category = 'all') =>
-    api.post('/ai/local-tips', { destination, category }),
+    api.post('/ai/local-tips', { destination, category }, kiOptionen),
   getTripSuggestions: (destination) =>
-    api.post('/ai/trip-suggestions', { destination }),
+    api.post('/ai/trip-suggestions', { destination }, kiOptionen),
   getPersonalizedRecommendations: (data) =>
-    api.post('/ai/personalized-recommendations', data),
+    api.post('/ai/personalized-recommendations', data, kiOptionen),
 }
 
 // Trips Services
@@ -85,6 +150,14 @@ export const tripsService = {
     })
   },
   geocode: (location) => api.get(`/trips/geocode/${encodeURIComponent(location)}`),
+  // Public read-only diary sharing
+  setPublish: (id, { is_public, regenerate = false }) =>
+    api.patch(`/trips/${id}/publish`, { is_public, regenerate }),
+}
+
+// Public (unauthenticated) read-only diary share
+export const publicService = {
+  getDiary: (token) => api.get(`/public/diary/${token}`),
 }
 
 // Diary Services
@@ -93,6 +166,8 @@ export const diaryService = {
   create: (tripId, data) => api.post(`/diary/${tripId}`, data),
   update: (entryId, data) => api.put(`/diary/${entryId}`, data),
   delete: (entryId) => api.delete(`/diary/${entryId}`),
+  reorderPhotos: (entryId, mediaIds) =>
+    api.patch(`/diary/${entryId}/photos/order`, { media_ids: mediaIds }),
   uploadPhoto: (entryId, file) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -102,7 +177,8 @@ export const diaryService = {
       },
     })
   },
-  deletePhoto: (entryId, photoUrl) => api.delete(`/diary/${entryId}/photo`, { params: { photo_url: photoUrl } }),
+  deletePhoto: (entryId, photoUrl) =>
+    api.delete(`/diary/${entryId}/photo`, { params: { photo_url: photoUrl } }),
   exportMarkdown: (tripId) => api.get(`/diary/${tripId}/export/markdown`, { responseType: 'blob' }),
   exportPdf: (tripId) => api.get(`/diary/${tripId}/export/pdf`, { responseType: 'blob' }),
 }
@@ -113,7 +189,8 @@ export const placesService = {
   create: (tripId, data) => api.post(`/places/${tripId}/places`, data),
   update: (placeId, data) => api.put(`/places/places/${placeId}`, data),
   delete: (placeId) => api.delete(`/places/places/${placeId}`),
-  markVisited: (placeId, visited) => api.put(`/places/places/${placeId}/visited`, null, { params: { visited } }),
+  markVisited: (placeId, visited) =>
+    api.put(`/places/places/${placeId}/visited`, null, { params: { visited } }),
   reorder: (tripId, placeIds) => api.post(`/places/${tripId}/places/reorder`, placeIds),
   // Guide Import
   searchGuides: (tripId, destination) =>
@@ -133,11 +210,42 @@ export const placesService = {
     const formData = new FormData()
     formData.append('file', file)
     return api.post(`/places/places/${placeId}/upload-photo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
   deletePhoto: (placeId, photoUrl) =>
     api.delete(`/places/places/${placeId}/photo`, { params: { photo_url: photoUrl } }),
+}
+
+// Media Services (photos as first-class items with caption / GPS / capture time)
+export const mediaService = {
+  getTripMedia: (tripId) => api.get(`/media/trip/${tripId}`),
+  getGallery: (params) => api.get('/media/gallery', { params }),
+  updateCaption: (mediaId, caption) => api.patch(`/media/${mediaId}`, { caption }),
+  delete: (mediaId) => api.delete(`/media/${mediaId}`),
+}
+
+// Search Service (cross-entity full-text search)
+export const searchService = {
+  search: (q) => api.get('/search', { params: { q } }),
+}
+
+// System capabilities (server feature flags the UI adapts to)
+export const systemService = {
+  capabilities: () => api.get('/capabilities'),
+}
+
+// Analytics dashboard (cross-trip aggregate statistics)
+export const analyticsService = {
+  summary: () => api.get('/analytics/summary'),
+}
+
+// In-app notifications
+export const notificationsService = {
+  list: (params) => api.get('/notifications', { params }),
+  unreadCount: () => api.get('/notifications/unread-count'),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllRead: () => api.post('/notifications/read-all'),
 }
 
 // Timeline Services
@@ -147,7 +255,8 @@ export const timelineService = {
   update: (entryId, data) => api.put(`/timeline/timeline/${entryId}`, data),
   delete: (entryId) => api.delete(`/timeline/timeline/${entryId}`),
   reorder: (tripId, entryIds) => api.post(`/timeline/${tripId}/timeline/reorder`, entryIds),
-  optimize: (tripId, dayDate) => api.post(`/timeline/${tripId}/timeline/optimize`, null, { params: { day_date: dayDate } }),
+  optimize: (tripId, dayDate) =>
+    api.post(`/timeline/${tripId}/timeline/optimize`, null, { params: { day_date: dayDate } }),
 }
 
 // Budget Services
@@ -157,7 +266,8 @@ export const budgetService = {
   update: (expenseId, data) => api.put(`/budget/expenses/${expenseId}`, data),
   delete: (expenseId) => api.delete(`/budget/expenses/${expenseId}`),
   getSummary: (tripId) => api.get(`/budget/${tripId}/budget-summary`),
-  splitEqually: (tripId, data) => api.post(`/budget/${tripId}/expenses/split-equally`, null, { params: data }),
+  splitEqually: (tripId, data) =>
+    api.post(`/budget/${tripId}/expenses/split-equally`, null, { params: data }),
 }
 
 // Auth Services

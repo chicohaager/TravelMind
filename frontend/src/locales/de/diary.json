@@ -1,5 +1,8 @@
 {
   "title": "Reisetagebuch",
+  "caption": "Bildunterschrift",
+  "captionPlaceholder": "Bildunterschrift hinzufügen…",
+  "captionSaved": "Bildunterschrift gespeichert",
   "newEntry": "Neuer Eintrag",
   "editEntry": "Eintrag bearbeiten",
   "deleteEntry": "Eintrag löschen",
@@ -56,5 +59,6 @@
   "updateError": "Fehler beim Aktualisieren des Eintrags",
   "deleteError": "Fehler beim Löschen des Eintrags",
   "confirmDelete": "Bist du sicher, dass du diesen Eintrag löschen möchtest?",
-  "photosDeleted": "{count} Foto(s) gelöscht"
+  "photosDeleted": "{count} Foto(s) gelöscht",
+  "heicUnsupported": "HEIC/HEIF wird auf diesem Server nicht unterstützt."
 }

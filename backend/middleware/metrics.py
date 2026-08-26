@@ -8,19 +8,21 @@ Collects application metrics for monitoring:
 - Database connection stats
 """
 
+import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-import threading
 
 
 @dataclass
 class MetricsBucket:
     """Stores metrics for a single endpoint."""
+
     request_count: int = 0
     error_count: int = 0
     total_latency: float = 0.0
@@ -71,17 +73,17 @@ class MetricsCollector:
     def _normalize_path(self, path: str) -> str:
         """Normalize path to reduce cardinality."""
         # Replace numeric IDs with placeholder
-        parts = path.split('/')
+        parts = path.split("/")
         normalized = []
         for part in parts:
             if part.isdigit():
-                normalized.append(':id')
+                normalized.append(":id")
             elif part and len(part) > 30:
                 # Truncate very long segments (likely UUIDs or tokens)
-                normalized.append(':param')
+                normalized.append(":param")
             else:
                 normalized.append(part)
-        return '/'.join(normalized)
+        return "/".join(normalized)
 
     def get_prometheus_metrics(self) -> str:
         """Generate Prometheus-format metrics output."""
@@ -115,26 +117,28 @@ class MetricsCollector:
 
         with self._lock:
             for key, bucket in self._metrics.items():
-                method, path = key.split(':', 1)
+                method, path = key.split(":", 1)
                 labels = f'method="{method}",path="{path}"'
 
                 # Request count
-                lines.append(f'travelmind_http_requests_total{{{labels}}} {bucket.request_count}')
+                lines.append(f"travelmind_http_requests_total{{{labels}}} {bucket.request_count}")
 
                 # Error count
-                lines.append(f'travelmind_http_errors_total{{{labels}}} {bucket.error_count}')
+                lines.append(f"travelmind_http_errors_total{{{labels}}} {bucket.error_count}")
 
                 # Latency histogram buckets
                 cumulative = 0
                 for b in self.LATENCY_BUCKETS:
                     cumulative += bucket.latency_buckets.get(b, 0)
                     lines.append(f'travelmind_http_request_duration_seconds_bucket{{{labels},le="{b}"}} {cumulative}')
-                lines.append(f'travelmind_http_request_duration_seconds_bucket{{{labels},le="+Inf"}} {bucket.request_count}')
-                lines.append(f'travelmind_http_request_duration_seconds_sum{{{labels}}} {bucket.total_latency:.6f}')
-                lines.append(f'travelmind_http_request_duration_seconds_count{{{labels}}} {bucket.request_count}')
+                lines.append(
+                    f'travelmind_http_request_duration_seconds_bucket{{{labels},le="+Inf"}} {bucket.request_count}'
+                )
+                lines.append(f"travelmind_http_request_duration_seconds_sum{{{labels}}} {bucket.total_latency:.6f}")
+                lines.append(f"travelmind_http_request_duration_seconds_count{{{labels}}} {bucket.request_count}")
 
         lines.append("")
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 # Global metrics collector instance
@@ -145,7 +149,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
     """Middleware to collect HTTP request metrics."""
 
     # Paths to exclude from metrics
-    EXCLUDE_PATHS = {'/metrics', '/health', '/favicon.ico'}
+    EXCLUDE_PATHS = {"/metrics", "/health", "/favicon.ico"}
 
     def __init__(self, app: ASGIApp):
         super().__init__(app)
@@ -163,10 +167,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             latency = time.time() - start_time
 
             metrics_collector.record_request(
-                method=request.method,
-                path=request.url.path,
-                status_code=response.status_code,
-                latency=latency
+                method=request.method, path=request.url.path, status_code=response.status_code, latency=latency
             )
 
             return response

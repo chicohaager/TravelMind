@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 export const useOfflineSync = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [syncStatus, setSyncStatus] = useState({ syncing: false })
+
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -84,8 +85,10 @@ export const useOfflineTrips = (apiQuery) => {
   const query = useQuery({
     ...apiQuery,
     enabled: isOnline && apiQuery.enabled !== false,
-    onSuccess: async (data) => {
-      // Save to IndexedDB
+    // react-query v5 removed the useQuery onSuccess callback, so persist to
+    // IndexedDB inside the queryFn instead (the old onSuccess never ran).
+    queryFn: async (ctx) => {
+      const data = await apiQuery.queryFn(ctx)
       try {
         if (Array.isArray(data)) {
           await indexedDB.saveTrips(data)
@@ -94,19 +97,19 @@ export const useOfflineTrips = (apiQuery) => {
       } catch (error) {
         console.error('Error caching trips:', error)
       }
-      apiQuery.onSuccess?.(data)
-    }
+      return data
+    },
   })
 
   // Return cached data if offline or while loading
-  const data = isOnline ? (query.data || cachedTrips) : cachedTrips
+  const data = isOnline ? query.data || cachedTrips : cachedTrips
 
   return {
     ...query,
     data,
     isOffline: !isOnline,
     isCached: !isOnline || !query.data,
-    isLoading: isOnline ? query.isLoading : loading
+    isLoading: isOnline ? query.isLoading : loading,
   }
 }
 
@@ -135,7 +138,8 @@ export const useOfflineDiary = (tripId, apiQuery) => {
   const query = useQuery({
     ...apiQuery,
     enabled: isOnline && !!tripId && apiQuery.enabled !== false,
-    onSuccess: async (data) => {
+    queryFn: async (ctx) => {
+      const data = await apiQuery.queryFn(ctx)
       try {
         if (Array.isArray(data)) {
           await indexedDB.saveDiaryEntries(data)
@@ -143,18 +147,18 @@ export const useOfflineDiary = (tripId, apiQuery) => {
       } catch (error) {
         console.error('Error caching diary entries:', error)
       }
-      apiQuery.onSuccess?.(data)
-    }
+      return data
+    },
   })
 
-  const data = isOnline ? (query.data || cachedEntries) : cachedEntries
+  const data = isOnline ? query.data || cachedEntries : cachedEntries
 
   return {
     ...query,
     data,
     isOffline: !isOnline,
     isCached: !isOnline || !query.data,
-    isLoading: isOnline ? query.isLoading : loading
+    isLoading: isOnline ? query.isLoading : loading,
   }
 }
 
@@ -183,7 +187,8 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
   const query = useQuery({
     ...apiQuery,
     enabled: isOnline && !!tripId && apiQuery.enabled !== false,
-    onSuccess: async (data) => {
+    queryFn: async (ctx) => {
+      const data = await apiQuery.queryFn(ctx)
       try {
         if (Array.isArray(data)) {
           await indexedDB.savePlaces(data)
@@ -191,18 +196,18 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
       } catch (error) {
         console.error('Error caching places:', error)
       }
-      apiQuery.onSuccess?.(data)
-    }
+      return data
+    },
   })
 
-  const data = isOnline ? (query.data || cachedPlaces) : cachedPlaces
+  const data = isOnline ? query.data || cachedPlaces : cachedPlaces
 
   return {
     ...query,
     data,
     isOffline: !isOnline,
     isCached: !isOnline || !query.data,
-    isLoading: isOnline ? query.isLoading : loading
+    isLoading: isOnline ? query.isLoading : loading,
   }
 }
 
@@ -212,7 +217,6 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
 export const useOfflineMutation = (mutationFn, options = {}) => {
   const { t } = useTranslation()
   const { isOnline } = useOfflineSync()
-  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (variables) => {
@@ -227,7 +231,7 @@ export const useOfflineMutation = (mutationFn, options = {}) => {
           endpoint: options.endpoint,
           data: variables,
           entityType: options.entityType,
-          metadata: options.metadata || {}
+          metadata: options.metadata || {},
         })
 
         toast.success(t('offline:changeWillSync'))
@@ -255,7 +259,7 @@ export const useOfflineMutation = (mutationFn, options = {}) => {
       }
 
       options.onSuccess?.(data, variables, context)
-    }
+    },
   })
 }
 
@@ -302,6 +306,6 @@ export const useClearOfflineData = () => {
     onError: (error) => {
       toast.error(t('offline:errorDeleting'))
       console.error(error)
-    }
+    },
   })
 }

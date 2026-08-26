@@ -2,8 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  DollarSign, TrendingUp, TrendingDown, MapPin, Calendar,
-  Loader, AlertCircle
+  Euro,
+  TrendingUp,
+  TrendingDown,
+  MapPin,
+  Calendar,
+  Loader,
+  AlertCircle,
 } from 'lucide-react'
 import { tripsService, budgetService } from '@/services/api'
 import { format } from 'date-fns'
@@ -13,12 +18,16 @@ import { useTranslation } from 'react-i18next'
 export default function Budget() {
   const { t } = useTranslation()
   // Fetch all trips
-  const { data: trips = [], isLoading, error } = useQuery({
+  const {
+    data: trips = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['trips'],
     queryFn: async () => {
       const response = await tripsService.getAll()
       return response.data
-    }
+    },
   })
 
   if (isLoading) {
@@ -35,9 +44,7 @@ export default function Budget() {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">{t('budget:errorLoading')}</h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('budget:errorLoadingData')}
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">{t('budget:errorLoadingData')}</p>
         </div>
       </div>
     )
@@ -47,15 +54,12 @@ export default function Budget() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <Euro className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">{t('trips:noTrips')}</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('budget:createTripToManageExpenses')}
           </p>
-          <Link
-            to="/trips"
-            className="btn-primary inline-flex items-center gap-2"
-          >
+          <Link to="/trips" className="btn-primary inline-flex items-center gap-2">
             <MapPin className="w-5 h-5" />
             {t('trips:createTrip')}
           </Link>
@@ -69,9 +73,7 @@ export default function Budget() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('budget:budgetOverview')}</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          {t('budget:manageExpensesForTrips')}
-        </p>
+        <p className="text-gray-600 dark:text-gray-400">{t('budget:manageExpensesForTrips')}</p>
       </div>
 
       {/* Budget Cards Grid */}
@@ -92,7 +94,7 @@ function TripBudgetCard({ trip, index }) {
     queryFn: async () => {
       const response = await budgetService.getSummary(trip.id)
       return response.data
-    }
+    },
   })
 
   const budget = trip.budget || 0
@@ -107,16 +109,11 @@ function TripBudgetCard({ trip, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Link
-        to={`/trips/${trip.id}?tab=budget`}
-        className="block h-full"
-      >
+      <Link to={`/trips/${trip.id}?tab=budget`} className="block h-full">
         <div className="card h-full hover:shadow-xl transition-shadow duration-200 cursor-pointer">
           {/* Trip Header */}
           <div className="mb-4">
-            <h3 className="text-xl font-bold mb-1 line-clamp-2">
-              {trip.title}
-            </h3>
+            <h3 className="text-xl font-bold mb-1 line-clamp-2">{trip.title}</h3>
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <MapPin className="w-4 h-4" />
               <span>{trip.destination}</span>
@@ -124,9 +121,7 @@ function TripBudgetCard({ trip, index }) {
             {trip.start_date && (
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
                 <Calendar className="w-4 h-4" />
-                <span>
-                  {format(new Date(trip.start_date), 'PP', { locale: de })}
-                </span>
+                <span>{format(new Date(trip.start_date), 'PP', { locale: de })}</span>
               </div>
             )}
           </div>
@@ -137,9 +132,11 @@ function TripBudgetCard({ trip, index }) {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium">{t('budget:budgetUsage')}</span>
-                <span className={`text-sm font-bold ${
-                  isOverBudget ? 'text-red-600' : 'text-primary-600'
-                }`}>
+                <span
+                  className={`text-sm font-bold ${
+                    isOverBudget ? 'text-red-600' : 'text-primary-600'
+                  }`}
+                >
                   {percentageSpent.toFixed(0)}%
                 </span>
               </div>
@@ -149,8 +146,8 @@ function TripBudgetCard({ trip, index }) {
                     isOverBudget
                       ? 'bg-red-500'
                       : percentageSpent > 80
-                      ? 'bg-yellow-500'
-                      : 'bg-green-500'
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
                   }`}
                   style={{ width: `${Math.min(percentageSpent, 100)}%` }}
                 />
@@ -172,9 +169,7 @@ function TripBudgetCard({ trip, index }) {
                 <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                   {t('budget:spent')}
                 </div>
-                <div className={`font-bold text-sm ${
-                  isOverBudget ? 'text-red-600' : ''
-                }`}>
+                <div className={`font-bold text-sm ${isOverBudget ? 'text-red-600' : ''}`}>
                   {spent.toFixed(0)} {trip.currency || 'EUR'}
                 </div>
               </div>
@@ -183,9 +178,11 @@ function TripBudgetCard({ trip, index }) {
                 <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                   {t('budget:remaining')}
                 </div>
-                <div className={`font-bold text-sm flex items-center justify-center gap-1 ${
-                  isOverBudget ? 'text-red-600' : 'text-green-600'
-                }`}>
+                <div
+                  className={`font-bold text-sm flex items-center justify-center gap-1 ${
+                    isOverBudget ? 'text-red-600' : 'text-green-600'
+                  }`}
+                >
                   {isOverBudget ? (
                     <TrendingDown className="w-3 h-3" />
                   ) : (

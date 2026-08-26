@@ -14,7 +14,7 @@ class ErrorBoundaryClass extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo })
     // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error('Error Boundary caught an error:', error, errorInfo)
     }
   }
@@ -28,10 +28,7 @@ class ErrorBoundaryClass extends React.Component {
       return this.props.fallback ? (
         this.props.fallback(this.state.error, this.handleReset)
       ) : (
-        <ErrorFallback
-          error={this.state.error}
-          onReset={this.handleReset}
-        />
+        <ErrorFallback error={this.state.error} onReset={this.handleReset} />
       )
     }
 
@@ -69,25 +66,17 @@ function ErrorFallback({ error, onReset }) {
           Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.
         </p>
 
-        {process.env.NODE_ENV === 'development' && error && (
+        {import.meta.env.DEV && error && (
           <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-left overflow-auto max-h-40">
-            <p className="text-sm font-mono text-red-600 dark:text-red-400">
-              {error.toString()}
-            </p>
+            <p className="text-sm font-mono text-red-600 dark:text-red-400">{error.toString()}</p>
           </div>
         )}
 
         <div className="flex gap-3 justify-center">
-          <button
-            onClick={onReset}
-            className="btn-outline"
-          >
+          <button onClick={onReset} className="btn-outline">
             Erneut versuchen
           </button>
-          <button
-            onClick={() => window.location.href = '/'}
-            className="btn-primary"
-          >
+          <button onClick={() => (window.location.href = '/')} className="btn-primary">
             Zur Startseite
           </button>
         </div>

@@ -1,226 +1,213 @@
-# ============================================
-# TravelMind - Production Docker Compose
-# ============================================
-# Usage:
-#   docker-compose -f docker-compose.prod.yml up -d
+# ============================================================================
+# TravelMind — Produktions-Compose
+# ============================================================================
+# Ersetzt die am 2026-08-25 wiederhergestellte Fassung. Zwei Konstruktions-
+# fehler der Vorgaengerin sind hier behoben:
 #
-# Before first run:
-#   1. Copy .env.example to .env and configure
-#   2. Generate secure JWT_SECRET and SECRET_KEY
-#   3. Configure your domain and SSL certificates
+#   1. KEIN `build:`. Gebaut wird ausserhalb, ausgeliefert werden getaggte
+#      Images (Tag = Commit-SHA). Erst dadurch gibt es einen Rueckweg: die
+#      Vorversion bleibt unter ihrem Tag liegen und ist ein `up -d` entfernt.
+#   2. KEIN `user: "0:0"`. Die Vorgaengerin hat damit das `USER travelmind`
+#      aus dem Dockerfile ausgehebelt. Ursache war, dass nginx auf Port 80
+#      hoerte — das kann ein unprivilegierter Prozess nicht binden. Behoben
+#      an der Ursache: nginx hoert auf 8080, veroeffentlicht wird per
+#      Port-Mapping.
+#
+# Aufruf:
+#   TRAVELMIND_TAG=<commit-sha> docker compose -f docker-compose.prod.yml up -d
+#
+# Erwartet daneben eine .env mit POSTGRES_PASSWORD, JWT_SECRET, SECRET_KEY.
+# ============================================================================
 
-version: '3.8'
+name: travelmind
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
 
 services:
-  # ==========================================
-  # Backend Service (FastAPI + Gunicorn)
-  # ==========================================
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
-    container_name: travelmind-backend
-    restart: always
-    environment:
-      # Database
-      - DATABASE_URL=${DATABASE_URL:-postgresql://travelmind:travelmind@db:5432/travelmind}
-      
-      # Security (REQUIRED - generate secure values!)
-      - JWT_SECRET=${JWT_SECRET}
-      - SECRET_KEY=${SECRET_KEY}
-      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
-      
-      # CORS (set to your domain)
-      - CORS_ORIGINS=${CORS_ORIGINS:-https://your-domain.com}
-      
-      # Frontend URL for password reset emails
-      - FRONTEND_URL=${FRONTEND_URL:-https://your-domain.com}
-      
-      # Logging
-      - LOG_LEVEL=${LOG_LEVEL:-WARNING}
-      
-      # Rate Limiting
-      - RATE_LIMIT_AUTH_LOGIN=${RATE_LIMIT_AUTH_LOGIN:-10/minute}
-      - RATE_LIMIT_AI_CHAT=${RATE_LIMIT_AI_CHAT:-20/minute}
-      
-      # Optional: Sentry error tracking
-      - SENTRY_DSN=${SENTRY_DSN:-}
-      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-production}
-      
-      # Optional: Email for password reset
-      - SMTP_HOST=${SMTP_HOST:-}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-      - SMTP_FROM=${SMTP_FROM:-noreply@your-domain.com}
-    volumes:
-      # Persistent data
-      - travelmind_data:/app/data
-      - travelmind_uploads:/app/uploads
-      - travelmind_backups:/app/backups
-      - travelmind_logs:/app/logs
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - travelmind-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 256M
 
-  # ==========================================
-  # Frontend Service (Nginx + React)
-  # ==========================================
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-    container_name: travelmind-frontend
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      # SSL certificates (optional, use with reverse proxy)
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - backend
-    networks:
-      - travelmind-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
-
-  # ==========================================
-  # Database Service (PostgreSQL)
-  # ==========================================
+  # ── Datenbank ────────────────────────────────────────────────────────────
   db:
-    image: postgres:15-alpine
+    <<: *hardening
+    image: postgres:16-alpine
     container_name: travelmind-db
-    restart: always
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-travelmind}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-travelmind}
+      POSTGRES_USER: travelmind
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+      POSTGRES_DB: travelmind
+      TZ: ${TZ:-Europe/Berlin}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      # Custom PostgreSQL config for production
-      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
-    command: postgres -c config_file=/etc/postgresql/postgresql.conf
-    networks:
-      - travelmind-network
+      - ${TRAVELMIND_DATA:-.}/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-travelmind} -d ${POSTGRES_DB:-travelmind}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U travelmind -d travelmind"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
+      retries: 30
+    # postgres laeuft ohnehin als uid 70; das Entrypoint braucht zum Wechsel
+    # dorthin SETUID/SETGID, alles Uebrige faellt weg.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    networks: [travelmind]
 
-  # ==========================================
-  # Redis Cache (Optional but recommended)
-  # ==========================================
-  redis:
-    image: redis:7-alpine
-    container_name: travelmind-redis
-    restart: always
-    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    networks:
-      - travelmind-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-
-  # ==========================================
-  # Backup Service (Scheduled backups)
-  # ==========================================
-  backup:
-    image: postgres:15-alpine
-    container_name: travelmind-backup
-    restart: always
+  # ── Migration (laeuft einmal, dann Ende) ─────────────────────────────────
+  migrate:
+    image: travelmind-backend:${TRAVELMIND_TAG:?TRAVELMIND_TAG fehlt (Commit-SHA)}
+    container_name: travelmind-migrate
+    command: ["alembic", "upgrade", "head"]
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-travelmind}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-travelmind}
-      - POSTGRES_HOST=db
-      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
-    volumes:
-      - travelmind_backups:/backups
+      DATABASE_URL: postgresql+asyncpg://travelmind:${POSTGRES_PASSWORD}@db:5432/travelmind
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY fehlt in .env}
+      TZ: ${TZ:-Europe/Berlin}
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - travelmind-network
-    # Run daily backup at 2 AM
-    entrypoint: /bin/sh
-    command: >
-      -c 'while true; do
-        echo "Starting backup at $$(date)";
-        PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h $$POSTGRES_HOST -U $$POSTGRES_USER $$POSTGRES_DB > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql;
-        echo "Backup complete. Cleaning old backups...";
-        find /backups -name "backup_*.sql" -mtime +$$BACKUP_RETENTION_DAYS -delete;
-        echo "Sleeping until next backup...";
-        sleep 86400;
-      done'
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks: [travelmind]
 
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  travelmind_data:
-    driver: local
-  travelmind_uploads:
-    driver: local
-  travelmind_backups:
-    driver: local
-  travelmind_logs:
-    driver: local
+  # ── Backend ──────────────────────────────────────────────────────────────
+  backend:
+    <<: *hardening
+    image: travelmind-backend:${TRAVELMIND_TAG:?TRAVELMIND_TAG fehlt (Commit-SHA)}
+    container_name: travelmind-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://travelmind:${POSTGRES_PASSWORD}@db:5432/travelmind
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt in .env}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY fehlt in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8190}
+      ENABLE_DEMO_MODE: "false"
+      TZ: ${TZ:-Europe/Berlin}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Schreibgeschuetztes Wurzeldateisystem — belegt am 2026-08-25: der
+    # Container startet, /api/health/live antwortet mit 200, die Bind-Mounts
+    # bleiben beschreibbar, und `touch /app/probe` scheitert.
+    #
+    # Drei Verzeichnisse braucht der Prozess trotzdem: /tmp, /app/data (das
+    # Lifespan legt es beim Start an, auch mit PostgreSQL) und /app/logs.
+    read_only: true
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/uploads:/app/uploads
+      - ${TRAVELMIND_DATA:-.}/backups:/app/backups
+      - type: tmpfs
+        target: /tmp
+        tmpfs: { mode: 01777 }
+      - type: tmpfs
+        target: /app/data
+        tmpfs: { mode: 01777 }
+      - type: tmpfs
+        target: /app/logs
+        tmpfs: { mode: 01777 }
+    cap_drop: [ALL]
+    networks: [travelmind]
+
+  # ── Frontend (nginx, non-root auf 8080) ──────────────────────────────────
+  frontend:
+    <<: *hardening
+    image: travelmind-frontend:${TRAVELMIND_TAG:?TRAVELMIND_TAG fehlt (Commit-SHA)}
+    container_name: travelmind-frontend
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+    ports:
+      - "${TRAVELMIND_PORT:-8190}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    # nginx schreibt nur nach /var/cache/nginx und /tmp — beides als tmpfs,
+    # der Rest des Dateisystems bleibt schreibgeschuetzt.
+    read_only: true
+    volumes:
+      # tmpfs braucht ausdruecklich mode 1777 — der Docker-Standard gehoert
+      # root und ist fuer uid 1001 nicht beschreibbar; nginx scheitert dann an
+      # mkdir("/var/cache/nginx/client_temp").
+      - type: tmpfs
+        target: /tmp
+        tmpfs: { mode: 01777 }
+      - type: tmpfs
+        target: /var/cache/nginx
+        tmpfs: { mode: 01777 }
+    cap_drop: [ALL]
+    networks: [travelmind]
+
+  # ── Sicherung ────────────────────────────────────────────────────────────
+  # Laeuft im selben Netz und benutzt den pg_dump DESSELBEN Image-Stands wie
+  # der Server — damit koennen die Versionen nicht auseinanderlaufen.
+  #
+  # Bewusst KEIN Docker-Socket und kein systemd: beides braucht Root auf dem
+  # Host. Der Takt-Container ist stattdessen Teil des Verbunds, faehrt mit ihm
+  # hoch und runter und ist in `docker ps` sichtbar. Ein ausgefallener
+  # Zeitgeber faellt damit auf, statt still zu verschwinden — genau der Fall,
+  # der am 2026-08-25 zwei Monate lang niemandem aufgefallen ist.
+  backup:
+    <<: *hardening
+    image: postgres:16-alpine
+    container_name: travelmind-backup
+    entrypoint: ["/bin/sh", "/skripte/takt.sh"]
+    environment:
+      PGHOST: db
+      PGDATABASE: travelmind
+      PGUSER: travelmind
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+      BACKUP_DIR: /backups
+      UPLOADS_DIR: /uploads
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_UHRZEIT: ${BACKUP_UHRZEIT:-03:00}
+      BACKUP_BEIM_START: ${BACKUP_BEIM_START:-nein}
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/deploy/backup:/skripte:ro
+      # Die Fotos nur LESEND — eine Sicherung darf nie schreiben koennen,
+      # was sie sichert.
+      - ${TRAVELMIND_DATA:-.}/uploads:/uploads:ro
+      - ${TRAVELMIND_DATA:-.}/backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    networks: [travelmind]
+
+  # ── Waechter ─────────────────────────────────────────────────────────────
+  # Der Grund steht im Befund vom 2026-08-25: die Produktion war zwei Monate
+  # abgeschaltet, und es ist niemandem aufgefallen — weil nichts hingesehen hat.
+  #
+  # Prueft Oberflaeche UND API durch dieselbe Kette wie ein Nutzer, und zwar
+  # den INHALT, nicht nur den Statuscode: der SPA-Rueckfall beantwortet jeden
+  # Pfad mit 200, und die API kann 200 liefern, waehrend die Datenbank weg ist.
+  waechter:
+    <<: *hardening
+    image: curlimages/curl:latest
+    container_name: travelmind-waechter
+    entrypoint: ["/bin/sh", "/skripte/waechter.sh"]
+    environment:
+      WATCH_UI: http://frontend:8080/
+      WATCH_API: http://backend:8137/api/health
+      WATCH_INTERVAL: ${WATCH_INTERVAL:-60}
+      WATCH_FAILURES: ${WATCH_FAILURES:-3}
+      # Ohne diese beiden meldet der Waechter nur ins Protokoll.
+      PUSHOVER_TOKEN: ${PUSHOVER_TOKEN:-}
+      PUSHOVER_USER: ${PUSHOVER_USER:-}
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ${TRAVELMIND_DATA:-.}/deploy/waechter:/skripte:ro
+      # Dem curl-Image fehlt tzdata; ohne die Zonendaten ignoriert es TZ und
+      # protokolliert in UTC. Bei einem Alarm ist der Zeitstempel aber genau
+      # das, was man spaeter lesen will.
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    networks: [travelmind]
 
 networks:
-  travelmind-network:
+  travelmind:
     driver: bridge

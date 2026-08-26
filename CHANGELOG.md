@@ -1,86 +1,95 @@
-# Changelog
+# Änderungen
 
-All notable changes to TravelMind will be documented in this file.
+Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
+Versionierung nach [SemVer](https://semver.org/lang/de/).
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-- Request ID middleware for request tracing and debugging
-- Detailed health check endpoint with system resource monitoring
-- E2E tests with Playwright
-- GDPR-compliant user data export (Article 20 compliance)
-- Password reset flow with JWT-based email verification
-- Database backup scripts (SQLite & PostgreSQL)
-- Production Docker builds with multi-stage optimization
-- Production docker-compose with Redis cache and auto-backup
-- Deployment script for easy production deployments
-- **Multi-language support**: Added French and Spanish translations
-- **Namespace-based i18n**: Migrated to namespace-based translation system
-- **Lightbox**: Full-screen image viewing in diary entries with keyboard navigation
-- **Expandable diary entries**: "Read more" functionality for long entries
-- **IndexedDB fallback**: Graceful handling when IndexedDB is unavailable
-
-### Changed
-- Centralized rate limiting configuration
-- Enhanced OpenAPI documentation with examples
-- Improved i18n architecture with 25 separate namespace files per language
-- LanguageSwitcher now dynamically loads available languages
-
-### Fixed
-- Settings page "t is not defined" error
-- Diary "Weiterlesen" button not working
-- IndexedDB "open is not a function" error in certain environments
-
-### Security
-- Added audit logging for sensitive operations
-- Improved rate limiting per endpoint
-
-## [1.0.0] - 2025-01-15
-
-### Added
-- Initial release of TravelMind
-- User authentication with JWT
-- Trip management (CRUD operations)
-- Travel diary with photos and mood tracking
-- Places/POI management with GPS coordinates
-- Budget and expense tracking
-- Timeline view for trip activities
-- Multi-provider AI integration (Groq, Claude, OpenAI, Gemini)
-- User-configurable AI API keys
-- Multi-language support (German, English)
-- Responsive web interface
-- Docker containerization
-- PostgreSQL and SQLite support
-
-### Security
-- JWT-based authentication
-- Password hashing with bcrypt
-- API key encryption
-- CORS configuration
-- Security headers middleware
-- CSRF protection
-- Request size limits
-
-### Documentation
-- OpenAPI/Swagger documentation
-- README with setup instructions
-- CONTRIBUTING guidelines
-- Environment variable documentation
+Die Version steht an **drei** Stellen und muss zusammen wandern:
+`frontend/package.json`, `backend/main.py` (`version=`) und die Fußzeile in
+`frontend/src/components/layout/Sidebar.jsx`. Ein Test hält das fest —
+auseinandergelaufene Versionsangaben sind der Grund, warum eine
+Fehlermeldung aus dem Betrieb sich nicht zuordnen lässt.
 
 ---
 
-## Version History
+## [1.1.0] — 2026-08-25
 
-### Legend
-- `Added` - New features
-- `Changed` - Changes in existing functionality
-- `Deprecated` - Soon-to-be removed features
-- `Removed` - Removed features
-- `Fixed` - Bug fixes
-- `Security` - Vulnerability fixes
+Ein Tag Instandsetzung vor einer Reise. Die Anwendung war seit dem 26. Juni
+abgeschaltet, ohne dass es jemandem aufgefallen wäre; danach wurde jede
+Behauptung über sie nachgemessen. Der Ertrag sind nicht die Tests — es sind
+die Fehler, die dabei herausfielen.
 
-[Unreleased]: https://github.com/your-repo/TravelMind/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/your-repo/TravelMind/releases/tag/v1.0.0
+### Behoben — Datenverlust und tote Funktionen
+
+- **Das Löschen einer Ortsliste löschte alle Orte darin.** Der
+  Bestätigungsdialog versprach wörtlich das Gegenteil. Die Datenbankregel
+  sagte `SET NULL`, die ORM-Kaskade kam ihr zuvor.
+- **Die drei DSGVO-Endpunkte haben nie funktioniert** — Datenmitnahme
+  (Art. 20) und Löschantrag (Art. 17) antworteten auf jeden Aufruf mit 422.
+  Ein Parameter ohne Typangabe wurde zum Pflicht-Query-Parameter.
+- **Kein Foto über 1 MB war hochladbar.** `client_max_body_size` fehlte in
+  nginx, es galt der Standard von 1 MB — ein Handyfoto hat 2–5 MB.
+- **Jede Claude-Anfrage scheiterte** seit dem Initial-Commit: der
+  anthropic-SDK nimmt `temperature` nicht mehr an. Dazu ein Folgefehler —
+  die aktuellen Modelle denken adaptiv, `content[0].text` gibt es dann nicht.
+- **Alle vier KI-Modell-IDs waren veraltet**, die von Groq (dem kostenlosen
+  Standardanbieter) stand nicht mehr im Angebot.
+- **`IconSelector` war nicht darstellbar** — importierte ein lucide-Symbol,
+  das es in der installierten Version nicht gibt.
+- **Die tägliche Sicherung war stillgelegt** — das Deploy-Skript löschte das
+  bind-gemountete Skriptverzeichnis; die laufenden Container sahen ein leeres
+  `/skripte`.
+- **`/api/health` stürzte auf 500 ab**, wenn eine Teilprüfung warf — der
+  Ausfall nahm die Auskunft mit, die sagen soll, was ausgefallen ist.
+
+### Behoben — Sicherheit und Datenschutz
+
+- **Der API-Schlüssel des Nutzers stand in KI-Fehlermeldungen** (zehn
+  Stellen in `routes/ai.py`, dazu die Schlüsselprüfung). Anbieter schreiben
+  ihn in ihre Meldung; er landete damit in der HTTP-Antwort, in den
+  Entwicklerwerkzeugen und im Proxy-Protokoll.
+- **Ein Kontowechsel ohne Neuladen zeigte die Daten des vorigen Kontos.**
+  Auf geteilten Rechnern ein Leseloch ohne Token.
+- **Hinter einem Reverse Proxy zählten alle Besucher als einer** — die
+  Ratenbegrenzung hätte den getroffen, der nichts falsch gemacht hat.
+
+### Behoben — Oberfläche
+
+- **18 rohe i18n-Schlüssel** waren sichtbar (`diary.moodHappy` statt
+  „Glücklich"), dazu 25 Beschriftungen, die nie durch `t()` liefen —
+  darunter drei fest **deutsche**, die ein englischer Nutzer zu sehen bekam.
+- **Sprachwahl, Dunkelmodus und Abmelden lagen auf dem Handy außerhalb des
+  Bildschirms** und waren damit nicht erreichbar.
+- **„Route speichern" wirkte tot** — Orte kamen nur per Ziehen hinein.
+
+### Geändert
+
+- **Gestaltung „Adria"**: Tiefsee-Teal statt Indigo, Signalorange statt
+  Amber, Newsreader + Public Sans statt Poppins + Inter. Die Kontraste sind
+  gerechnet, nicht geschätzt. Schriften werden selbst ausgeliefert — vorher
+  kamen sie von Google und hätten offline gefehlt.
+- **Übersetzungen werden nachgeladen**: index-Chunk 227 → 103 kB, beim
+  Erstaufruf 2 Anfragen statt 57.
+- Der Inhalt darf auf breiten Schirmen atmen (bis 1800 px, vierte Spalte).
+
+### Betrieb
+
+- Sicherung mit **Restore-Probe** nach jedem Lauf, Wächter mit Alarm,
+  Deploy-Skript mit Rückweg.
+- Coverage 53 % → **75,3 %**, 71 → 492 Tests; CI-Schranke von 50 auf 75.
+- Frontend: 90 Tests, darunter Wächter gegen ganze Fehlerklassen (i18n,
+  Gestaltungs-Token, Symbol-Importe, Barrierefreiheit, SDK-Signaturen).
+
+### Bekannt und offen
+
+- Die Sicherung liegt auf **derselben Platte** wie die Daten (3-2-1 nicht
+  erfüllt).
+- `google.generativeai` ist abgekündigt; die Umstellung auf `google.genai`
+  steht aus.
+- Die Auflösung der Client-IP hinter Pangolin ist konfiguriert, aber erst
+  LAN-seitig gemessen.
+
+---
+
+## [1.0.0] — 2025-11-01
+
+Erste Fassung.

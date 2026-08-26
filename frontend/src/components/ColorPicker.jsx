@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 
 const PRESET_COLORS = [
-  '#6366F1', // Indigo (default)
+  '#1F7A7D', // Indigo (default)
   '#EF4444', // Red
   '#F59E0B', // Amber
   '#10B981', // Green
@@ -16,7 +17,8 @@ const PRESET_COLORS = [
   '#A855F7', // Violet
 ]
 
-export default function ColorPicker({ value = '#6366F1', onChange, label = 'Color' }) {
+export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Color' }) {
+  const { t } = useTranslation()
   const [showCustom, setShowCustom] = useState(false)
 
   const handleColorChange = (color) => {
@@ -43,9 +45,7 @@ export default function ColorPicker({ value = '#6366F1', onChange, label = 'Colo
             style={{ backgroundColor: color }}
             title={color}
           >
-            {value === color && (
-              <Check className="w-5 h-5 text-white mx-auto drop-shadow" />
-            )}
+            {value === color && <Check className="w-5 h-5 text-white mx-auto drop-shadow" />}
           </button>
         ))}
       </div>
@@ -55,9 +55,9 @@ export default function ColorPicker({ value = '#6366F1', onChange, label = 'Colo
         <button
           type="button"
           onClick={() => setShowCustom(!showCustom)}
-          className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
-          {showCustom ? 'Hide' : 'Choose'} custom color
+          {showCustom ? t('common:hideCustomColor') : t('common:showCustomColor')}
         </button>
       </div>
 
@@ -73,7 +73,7 @@ export default function ColorPicker({ value = '#6366F1', onChange, label = 'Colo
             type="text"
             value={value}
             onChange={(e) => handleColorChange(e.target.value)}
-            placeholder="#6366F1"
+            placeholder="#1F7A7D"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
             maxLength={7}
           />
@@ -82,7 +82,7 @@ export default function ColorPicker({ value = '#6366F1', onChange, label = 'Colo
 
       {/* Current Color Display */}
       <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-        <span>Selected:</span>
+        <span>{t('common:selectedColor')}</span>
         <div
           className="w-6 h-6 rounded border border-gray-300"
           style={{ backgroundColor: value }}

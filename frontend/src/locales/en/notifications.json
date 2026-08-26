@@ -1,0 +1,8 @@
+{
+  "title": "Notifications",
+  "empty": "No notifications",
+  "markAllRead": "Mark all as read",
+  "invite_received": "{{actor}} invited you to the trip “{{trip}}”.",
+  "invite_accepted": "{{actor}} accepted your invitation to “{{trip}}”.",
+  "invite_declined": "{{actor}} declined your invitation to “{{trip}}”."
+}

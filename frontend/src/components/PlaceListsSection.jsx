@@ -1,31 +1,35 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Plus, ChevronDown, ChevronRight, MoreVertical, Edit, Trash2,
-  MapPin, Sparkles, X, Check
-} from 'lucide-react'
+import { Plus, ChevronDown, ChevronRight, Trash2, Sparkles, X, Check } from 'lucide-react'
+// Symbole der halbfertigen Bearbeiten-Funktion weiter unten. Bewusst
+// behalten, damit die Stelle sichtbar bleibt statt spurlos zu verschwinden.
+// eslint-disable-next-line no-unused-vars
+import { Edit } from 'lucide-react'
 import { placesService } from '@/services/api'
 import toast from 'react-hot-toast'
 import PlaceCard from './PlaceCard'
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
 
+// Nur der Schluessel steht hier; uebersetzt wird beim Rendern. Fest
+// verdrahtete englische Beschriftungen standen bis 2026-08-25 in JEDER
+// Oberflaeche, auch der deutschen.
 const EMOJI_PRESETS = [
-  { emoji: '🍽️', label: 'Restaurants' },
-  { emoji: '🏛️', label: 'Museums' },
-  { emoji: '🏖️', label: 'Beaches' },
-  { emoji: '🌳', label: 'Parks' },
-  { emoji: '🎯', label: 'Attractions' },
-  { emoji: '🛍️', label: 'Shopping' },
-  { emoji: '🎉', label: 'Nightlife' },
-  { emoji: '☕', label: 'Cafes' },
-  { emoji: '🏨', label: 'Hotels' },
-  { emoji: '👁️', label: 'Viewpoints' },
+  { emoji: '🍽️', schluessel: 'restaurant' },
+  { emoji: '🏛️', schluessel: 'museum' },
+  { emoji: '🏖️', schluessel: 'beach' },
+  { emoji: '🌳', schluessel: 'park' },
+  { emoji: '🎯', schluessel: 'attraction' },
+  { emoji: '🛍️', schluessel: 'shopping' },
+  { emoji: '🎉', schluessel: 'nightlife' },
+  { emoji: '☕', schluessel: 'cafe' },
+  { emoji: '🏨', schluessel: 'hotel' },
+  { emoji: '👁️', schluessel: 'viewpoint' },
 ]
 
 const COLOR_PRESETS = [
-  '#6366F1', // Indigo
+  '#1F7A7D', // Indigo
   '#F59E0B', // Orange
   '#10B981', // Green
   '#3B82F6', // Blue
@@ -41,15 +45,17 @@ export default function PlaceListsSection({
   onEditPlace,
   onDeletePlace,
   onToggleVisited,
-  onPlaceClick
+  onPlaceClick,
 }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [isCreatingList, setIsCreatingList] = useState(false)
+  // Gehoert zur halbfertigen Listen-Umbenennung (siehe updateListMutation unten).
+  // eslint-disable-next-line no-unused-vars
   const [editingListId, setEditingListId] = useState(null)
   const [newListTitle, setNewListTitle] = useState('')
   const [newListIcon, setNewListIcon] = useState('📍')
-  const [newListColor, setNewListColor] = useState('#6366F1')
+  const [newListColor, setNewListColor] = useState('#1F7A7D')
   const [collapsedLists, setCollapsedLists] = useState(new Set())
 
   // Fetch custom lists
@@ -59,7 +65,7 @@ export default function PlaceListsSection({
       const response = await placesService.getLists(tripId)
       return response.data
     },
-    enabled: !!tripId
+    enabled: !!tripId,
   })
 
   // Create list mutation
@@ -73,15 +79,18 @@ export default function PlaceListsSection({
       setIsCreatingList(false)
       setNewListTitle('')
       setNewListIcon('📍')
-      setNewListColor('#6366F1')
+      setNewListColor('#1F7A7D')
       toast.success(t('placeLists:listCreated'))
     },
     onError: () => {
       toast.error(t('placeLists:errorCreating'))
-    }
+    },
   })
 
   // Update list mutation
+  // HALBFERTIG: Liste umbenennen. Die Mutation ist vollstaendig, aber kein
+  // Element ruft sie auf — genauso wie editingListId oben. Siehe docs/ROADMAP.md.
+  // eslint-disable-next-line no-unused-vars
   const updateListMutation = useMutation({
     mutationFn: async ({ listId, data }) => {
       const response = await placesService.updateList(listId, data)
@@ -94,7 +103,7 @@ export default function PlaceListsSection({
     },
     onError: () => {
       toast.error(t('placeLists:errorUpdating'))
-    }
+    },
   })
 
   // Delete list mutation
@@ -109,7 +118,7 @@ export default function PlaceListsSection({
     },
     onError: () => {
       toast.error(t('placeLists:errorDeleting'))
-    }
+    },
   })
 
   const handleCreateList = async () => {
@@ -122,7 +131,7 @@ export default function PlaceListsSection({
       title: newListTitle,
       icon: newListIcon,
       color: newListColor,
-      is_collapsed: false
+      is_collapsed: false,
     })
   }
 
@@ -133,7 +142,7 @@ export default function PlaceListsSection({
   }
 
   const toggleListCollapse = (listId) => {
-    setCollapsedLists(prev => {
+    setCollapsedLists((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(listId)) {
         newSet.delete(listId)
@@ -145,14 +154,14 @@ export default function PlaceListsSection({
   }
 
   // Group places by list
-  const placesWithoutList = places.filter(p => !p.list_id)
-  const placesByList = placeLists.map(list => ({
+  const placesWithoutList = places.filter((p) => !p.list_id)
+  const placesByList = placeLists.map((list) => ({
     ...list,
-    places: places.filter(p => p.list_id === list.id)
+    places: places.filter((p) => p.list_id === list.id),
   }))
 
   // Recommended places section (places without a custom list and no visit_date)
-  const recommendedPlaces = placesWithoutList.filter(p => !p.visit_date)
+  const recommendedPlaces = placesWithoutList.filter((p) => !p.visit_date)
 
   return (
     <div className="space-y-4">
@@ -295,7 +304,7 @@ export default function PlaceListsSection({
             <div>
               <label className="block text-sm font-medium mb-2">{t('placeLists:icon')}</label>
               <div className="flex flex-wrap gap-2">
-                {EMOJI_PRESETS.map(({ emoji, label }) => (
+                {EMOJI_PRESETS.map(({ emoji, schluessel }) => (
                   <button
                     key={emoji}
                     onClick={() => setNewListIcon(emoji)}
@@ -305,7 +314,7 @@ export default function PlaceListsSection({
                         ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
                     )}
-                    title={label}
+                    title={t(`places:categories.${schluessel}`)}
                   >
                     {emoji}
                   </button>
@@ -349,7 +358,7 @@ export default function PlaceListsSection({
                   setIsCreatingList(false)
                   setNewListTitle('')
                   setNewListIcon('📍')
-                  setNewListColor('#6366F1')
+                  setNewListColor('#1F7A7D')
                 }}
                 disabled={createListMutation.isPending}
                 className="btn-outline flex items-center gap-2"

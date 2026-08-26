@@ -3,15 +3,19 @@ User Settings Router
 Manage user preferences including AI provider configuration
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field
 from typing import Optional
 
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from models.database import get_db
-from models.user import User, AIProvider
+from models.user import AIProvider, User
+from pydantic import BaseModel, Field
 from routes.auth import get_current_active_user
+from sqlalchemy.ext.asyncio import AsyncSession
 from utils.encryption import encryption_service
+from utils.rate_limits import RateLimits, limiter
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -19,6 +23,7 @@ router = APIRouter()
 # Pydantic Models
 class AISettingsResponse(BaseModel):
     """Response model for AI settings (never returns API key)"""
+
     ai_provider: Optional[str] = None
     has_api_key: bool = False
 
@@ -28,12 +33,14 @@ class AISettingsResponse(BaseModel):
 
 class AISettingsUpdate(BaseModel):
     """Request model for updating AI settings"""
+
     ai_provider: str = Field(..., description="AI provider: groq (FREE), claude, openai, or gemini")
     api_key: str = Field(..., min_length=10, description="API key for the selected provider")
 
 
 class UserSettingsResponse(BaseModel):
     """Complete user settings response"""
+
     id: int
     username: str
     email: str
@@ -48,9 +55,9 @@ class UserSettingsResponse(BaseModel):
 
 # Endpoints
 @router.get("/settings", response_model=UserSettingsResponse)
+@limiter.limit(RateLimits.USER_PROFILE_READ)
 async def get_user_settings(
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Get current user settings including AI configuration
@@ -59,7 +66,7 @@ async def get_user_settings(
     """
     ai_settings = AISettingsResponse(
         ai_provider=current_user.ai_provider.value if current_user.ai_provider else None,
-        has_api_key=bool(current_user.encrypted_api_key)
+        has_api_key=bool(current_user.encrypted_api_key),
     )
 
     return UserSettingsResponse(
@@ -69,14 +76,13 @@ async def get_user_settings(
         full_name=current_user.full_name,
         avatar_url=current_user.avatar_url,
         bio=current_user.bio,
-        ai_settings=ai_settings
+        ai_settings=ai_settings,
     )
 
 
 @router.get("/settings/ai", response_model=AISettingsResponse)
-async def get_ai_settings(
-    current_user: User = Depends(get_current_active_user)
-):
+@limiter.limit(RateLimits.USER_PROFILE_READ)
+async def get_ai_settings(request: Request, current_user: User = Depends(get_current_active_user)):
     """
     Get AI provider settings
 
@@ -85,15 +91,17 @@ async def get_ai_settings(
     """
     return AISettingsResponse(
         ai_provider=current_user.ai_provider.value if current_user.ai_provider else None,
-        has_api_key=bool(current_user.encrypted_api_key)
+        has_api_key=bool(current_user.encrypted_api_key),
     )
 
 
 @router.put("/settings/ai", response_model=AISettingsResponse)
+@limiter.limit("20/minute")
 async def update_ai_settings(
+    request: Request,
     settings: AISettingsUpdate,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update AI provider and API key
@@ -106,7 +114,7 @@ async def update_ai_settings(
     if provider_lower not in ["groq", "claude", "openai", "gemini"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid AI provider. Must be one of: groq, claude, openai, gemini"
+            detail="Invalid AI provider. Must be one of: groq, claude, openai, gemini",
         )
 
     # Map string to enum
@@ -114,7 +122,7 @@ async def update_ai_settings(
         "groq": AIProvider.GROQ,
         "claude": AIProvider.CLAUDE,
         "openai": AIProvider.OPENAI,
-        "gemini": AIProvider.GEMINI
+        "gemini": AIProvider.GEMINI,
     }
 
     # Generate a new salt for this user if they don't have one
@@ -131,16 +139,13 @@ async def update_ai_settings(
     await db.commit()
     await db.refresh(current_user)
 
-    return AISettingsResponse(
-        ai_provider=current_user.ai_provider.value,
-        has_api_key=True
-    )
+    return AISettingsResponse(ai_provider=current_user.ai_provider.value, has_api_key=True)
 
 
 @router.delete("/settings/ai")
+@limiter.limit("20/minute")
 async def delete_ai_settings(
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Delete AI provider settings
@@ -154,17 +159,13 @@ async def delete_ai_settings(
 
     await db.commit()
 
-    return {
-        "message": "AI settings deleted successfully",
-        "ai_provider": None,
-        "has_api_key": False
-    }
+    return {"message": "AI settings deleted successfully", "ai_provider": None, "has_api_key": False}
 
 
 @router.post("/settings/ai/validate")
+@limiter.limit("10/minute")
 async def validate_api_key(
-    settings: AISettingsUpdate,
-    current_user: User = Depends(get_current_active_user)
+    request: Request, settings: AISettingsUpdate, current_user: User = Depends(get_current_active_user)
 ):
     """
     Validate an API key without saving it
@@ -176,7 +177,7 @@ async def validate_api_key(
     if provider_lower not in ["groq", "claude", "openai", "gemini"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid AI provider. Must be one of: groq, claude, openai, gemini"
+            detail="Invalid AI provider. Must be one of: groq, claude, openai, gemini",
         )
 
     try:
@@ -187,20 +188,26 @@ async def validate_api_key(
         ai_service = create_ai_service(provider_lower, settings.api_key)
 
         # Make a simple test call
-        test_response = await ai_service.provider.chat(
-            prompt="Say 'API key valid' in one word",
-            max_tokens=10
-        )
+        await ai_service.provider.chat(prompt="Say 'API key valid' in one word", max_tokens=10)
 
-        return {
-            "valid": True,
-            "provider": provider_lower,
-            "message": "API key is valid and working"
-        }
+        return {"valid": True, "provider": provider_lower, "message": "API key is valid and working"}
 
     except Exception as e:
+        # NICHT `str(e)` in die Antwort: Anbieter-Bibliotheken schreiben den
+        # geprueften Schluessel gern in ihre Fehlermeldung ("invalid api key:
+        # gsk_…"). Er stuende dann in der HTTP-Antwort, in den
+        # Entwicklerwerkzeugen des Browsers und im Proxy-Protokoll — genau der
+        # Wert, den dieser Endpunkt schuetzen soll. Dieselbe Ursache wie in
+        # routes/ai.py, am 2026-08-25 an beiden Stellen behoben.
+        logger.warning(
+            "ai_key_validation_failed",
+            provider=provider_lower,
+            user_id=current_user.id,
+            fehler_typ=type(e).__name__,
+            fehler=str(e),
+        )
         return {
             "valid": False,
             "provider": provider_lower,
-            "message": f"API key validation failed: {str(e)}"
+            "message": f"Der Schluessel wurde vom Anbieter abgelehnt ({type(e).__name__}).",
         }

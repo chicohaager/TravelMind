@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/LanguageSwitcher'
+import GlobalSearch from '@components/GlobalSearch'
+import NotificationBell from '@components/NotificationBell'
 
 export default function Navbar({ onMenuClick }) {
   const navigate = useNavigate()
@@ -41,11 +43,20 @@ export default function Navbar({ onMenuClick }) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-md">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        {/*
+          `min-w-0` an beiden Gruppen, damit sie schrumpfen duerfen.
+          Am 2026-08-25 bei 411 px gemessen: die rechte Gruppe reichte bis
+          x=577 und lag damit komplett ausserhalb des Bildschirms — Sprachwahl,
+          Dunkelmodus und das Benutzermenue (mit ABMELDEN) waren auf dem
+          Telefon nicht erreichbar, und die Seite scrollt nicht seitlich.
+        */}
+        <div className="flex justify-between items-center h-16 gap-2">
           {/* Logo & Menu */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <button
               onClick={onMenuClick}
+              aria-label={t('nav:openMenu')}
+              title={t('nav:openMenu')}
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <Menu className="w-6 h-6" />
@@ -55,14 +66,20 @@ export default function Navbar({ onMenuClick }) {
               <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">🌍</span>
               </div>
-              <span className="text-xl font-bold text-gradient">
-                TravelMind
-              </span>
+              {/* Der Schriftzug kostet 149 px — auf dem Telefon bleibt das
+                  Globus-Symbol, das reicht als Heimweg. */}
+              <span className="hidden sm:inline text-xl font-bold text-gradient">TravelMind</span>
             </Link>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Global Search (authenticated only) */}
+            {isAuthenticated && <GlobalSearch />}
+
+            {/* Notifications (authenticated only) */}
+            {isAuthenticated && <NotificationBell />}
+
             {/* Language Switcher */}
             <LanguageSwitcher />
 
@@ -70,7 +87,7 @@ export default function Navbar({ onMenuClick }) {
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Toggle dark mode"
+              aria-label={t('common:toggleDarkMode')}
             >
               {darkMode ? (
                 <Sun className="w-5 h-5 text-yellow-500" />
@@ -84,19 +101,21 @@ export default function Navbar({ onMenuClick }) {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
+                  aria-label={t('nav:userMenu')}
+                  title={t('nav:userMenu')}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <User className="w-5 h-5" />
-                  <span className="hidden sm:inline text-sm font-medium">
-                    {user?.username}
-                  </span>
+                  <span className="hidden sm:inline text-sm font-medium">{user?.username}</span>
                 </button>
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                       <p className="text-sm font-medium">{user?.full_name || user?.username}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {user?.email}
+                      </p>
                       {user?.is_superuser && (
                         <span className="inline-block mt-1 px-2 py-0.5 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded text-xs font-medium">
                           Admin

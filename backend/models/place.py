@@ -2,10 +2,10 @@
 Place model - Locations/POIs in a trip
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float, Boolean
+from models.database import Base
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
 
 
 class Place(Base):
@@ -17,8 +17,20 @@ class Place(Base):
 
     # Location data
     address = Column(String(500), nullable=True)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
+    # NULL bedeutet "Position unbekannt".
+    #
+    # Bis 2026-08-26 waren diese Spalten NOT NULL. "Unbekannt" liess sich
+    # dadurch gar nicht ausdruecken, und fehlgeschlagene Geokodierungen
+    # landeten als 0.0/0.0 in der Datenbank — der Null-Insel im Golf von
+    # Guinea. Auf der Karte sah das aus wie ein gueltiger Ort im Atlantik,
+    # nicht wie ein fehlender Wert. Siehe utils/geocoding.py.
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    # NULL = ungeprueft, True = nur ortsgenau (Gemeindemittelpunkt),
+    # False = objektgenau. Am 2026-08-26 gemessen: 9 von 16 Positionen einer
+    # echten Reise waren Gemeindemittelpunkte und auf der Karte nicht von
+    # einem echten Fund zu unterscheiden. Siehe utils/geocoding.py.
+    position_unsicher = Column(Boolean, nullable=True)
 
     # Category
     category = Column(String(50), nullable=True)  # e.g., "restaurant", "hotel", "sight", "activity"
@@ -69,6 +81,13 @@ class Place(Base):
     # Relationships
     trip = relationship("Trip", back_populates="places")
     place_list = relationship("PlaceList", back_populates="places")
+    media = relationship(
+        "Media",
+        back_populates="place",
+        cascade="all, delete-orphan",
+        order_by="Media.order_index",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<Place {self.name}>"

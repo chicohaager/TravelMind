@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Lock, Trash2, AlertTriangle, Eye, EyeOff, Brain, CheckCircle, XCircle, Loader } from 'lucide-react'
+import {
+  Lock,
+  Trash2,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Brain,
+  CheckCircle,
+  XCircle,
+  Loader,
+} from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { usersService, userSettingsService } from '@/services/api'
 import { useNavigate } from 'react-router-dom'
@@ -181,28 +191,19 @@ export default function Settings() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('settings:title')}</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          {t('settings:securityDescription')}
-        </p>
+        <p className="text-gray-600 dark:text-gray-400">{t('settings:securityDescription')}</p>
       </motion.div>
 
       <div className="space-y-6">
         {/* AI Configuration Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="card">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                  <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="p-2 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                  <Brain className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">{t('ai:aiConfiguration')}</h3>
@@ -222,9 +223,7 @@ export default function Settings() {
             <div className="space-y-4">
               {/* Provider Selection */}
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t('ai:provider')}
-                </label>
+                <label className="block text-sm font-medium mb-2">{t('ai:provider')}</label>
                 <select
                   value={aiSettings.ai_provider}
                   onChange={(e) => setAISettings({ ...aiSettings, ai_provider: e.target.value })}
@@ -236,9 +235,7 @@ export default function Settings() {
                   <option value="OPENAI">{t('ai:openaiOption')}</option>
                   <option value="GEMINI">{t('ai:geminiOption')}</option>
                 </select>
-                <p className="text-sm text-gray-500 mt-1">
-                  {t('ai:selectProvider')}
-                </p>
+                <p className="text-sm text-gray-500 mt-1">{t('ai:selectProvider')}</p>
               </div>
 
               {/* API Key Input */}
@@ -257,7 +254,9 @@ export default function Settings() {
                     value={aiSettings.api_key}
                     onChange={(e) => setAISettings({ ...aiSettings, api_key: e.target.value })}
                     className="input w-full pr-10"
-                    placeholder={aiSettings.has_api_key ? t('ai:enterNewApiKey') : t('ai:enterApiKey')}
+                    placeholder={
+                      aiSettings.has_api_key ? t('ai:enterNewApiKey') : t('ai:enterApiKey')
+                    }
                     disabled={aiLoading}
                   />
                   <button
@@ -275,9 +274,7 @@ export default function Settings() {
                     {aiSettings.ai_provider === 'OPENAI' && t('settings:getApiKeyOpenAI')}
                     {aiSettings.ai_provider === 'GEMINI' && t('settings:getApiKeyGemini')}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {t('settings:apiKeyEncrypted')}
-                  </p>
+                  <p className="text-xs text-gray-500">{t('settings:apiKeyEncrypted')}</p>
                 </div>
               </div>
 
@@ -393,9 +390,7 @@ export default function Settings() {
                     {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  {t('auth:passwordTooShort')}
-                </p>
+                <p className="text-sm text-gray-500 mt-1">{t('auth:passwordTooShort')}</p>
               </div>
 
               <div>
@@ -415,11 +410,7 @@ export default function Settings() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="btn-primary w-full"
-                disabled={loading}
-              >
+              <button type="submit" className="btn-primary w-full" disabled={loading}>
                 {loading ? t('settings:updating') : t('settings:changePassword')}
               </button>
             </form>
@@ -468,7 +459,9 @@ export default function Settings() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    {t('settings:confirmUsernamePromptPrefix')} <strong>{user?.username || ''}</strong> {t('settings:confirmUsernamePromptSuffix')}
+                    {t('settings:confirmUsernamePromptPrefix')}{' '}
+                    <strong>{user?.username || ''}</strong>{' '}
+                    {t('settings:confirmUsernamePromptSuffix')}
                   </label>
 
                   <input

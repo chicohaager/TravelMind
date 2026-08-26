@@ -2,12 +2,21 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Sparkles, MapPin, Clock, DollarSign, Plus, Loader,
-  AlertCircle, RefreshCw, CheckCircle, Info, Star, ExternalLink
+  Sparkles,
+  MapPin,
+  Clock,
+  Euro,
+  Plus,
+  Loader,
+  AlertCircle,
+  RefreshCw,
+  CheckCircle,
+  Star,
 } from 'lucide-react'
 import { aiService, placesService } from '@/services/api'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { reportError } from '@/utils/sentry'
 
 const CATEGORY_ICONS = {
   restaurant: '🍽️',
@@ -19,20 +28,20 @@ const CATEGORY_ICONS = {
   park: '🌳',
   shopping: '🛍️',
   nightlife: '🎉',
-  other: '📍'
+  other: '📍',
 }
 
 const CATEGORY_COLORS = {
   restaurant: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300',
   attraction: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300',
   beach: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300',
-  hotel: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300',
+  hotel: 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300',
   viewpoint: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
   museum: 'bg-slate-100 text-slate-700 dark:bg-slate-900/20 dark:text-slate-300',
   park: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',
   shopping: 'bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-300',
   nightlife: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/20 dark:text-fuchsia-300',
-  other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300'
+  other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300',
 }
 
 // Generate a placeholder image URL based on category
@@ -55,35 +64,36 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
     isLoading,
     error,
     refetch,
-    isRefetching
+    isRefetching,
   } = useQuery({
     queryKey: ['recommendations', tripId],
     queryFn: async () => {
-      const existingPlaceNames = places.map(p => p.name)
+      const existingPlaceNames = places.map((p) => p.name)
 
       const response = await aiService.getPersonalizedRecommendations({
         destination: trip.destination,
         interests: trip.interests || [],
         existing_places: existingPlaceNames,
         budget: trip.budget,
-        duration: trip.start_date && trip.end_date
-          ? Math.ceil((new Date(trip.end_date) - new Date(trip.start_date)) / (1000 * 60 * 60 * 24))
-          : null,
-        currency: trip.currency || 'EUR'
+        duration:
+          trip.start_date && trip.end_date
+            ? Math.ceil(
+                (new Date(trip.end_date) - new Date(trip.start_date)) / (1000 * 60 * 60 * 24)
+              )
+            : null,
+        currency: trip.currency || 'EUR',
       })
 
       return response.data
     },
-    enabled: !!trip
+    enabled: !!trip,
   })
 
   const recommendations = recommendationsData?.recommendations || []
 
   const toggleSelection = (recName) => {
-    setSelectedRecommendations(prev =>
-      prev.includes(recName)
-        ? prev.filter(name => name !== recName)
-        : [...prev, recName]
+    setSelectedRecommendations((prev) =>
+      prev.includes(recName) ? prev.filter((name) => name !== recName) : [...prev, recName]
     )
   }
 
@@ -91,7 +101,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
     if (selectedRecommendations.length === recommendations.length) {
       setSelectedRecommendations([])
     } else {
-      setSelectedRecommendations(recommendations.map(rec => rec.name))
+      setSelectedRecommendations(recommendations.map((rec) => rec.name))
     }
   }
 
@@ -104,11 +114,18 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
     setIsAddingMultiple(true)
 
     try {
-      const selectedRecs = recommendations.filter(rec => selectedRecommendations.includes(rec.name))
+      const selectedRecs = recommendations.filter((rec) =>
+        selectedRecommendations.includes(rec.name)
+      )
 
       for (const rec of selectedRecs) {
         await placesService.create(tripId, {
           name: rec.name,
+          // Die vom Modell behauptete Gemeinde geht getrennt mit. Sie wird
+          // nicht gespeichert, sondern nach dem Geokodieren geprueft: liegt
+          // der gefundene Ort weiter als 25 km entfernt, ist die Zuordnung
+          // widerlegt und steht als Warnung im Server-Protokoll.
+          behaupteter_ort: rec.ort || null,
           description: rec.description,
           category: rec.category,
           latitude: 0,
@@ -119,14 +136,17 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
           notes: `${t('recommendations:aiRecommendation')}: ${rec.reason}`,
           image_url: getPlaceholderImage(rec.category, rec.name),
           tags: [rec.category],
-          photos: []
+          photos: [],
         })
       }
 
-      toast.success(t('recommendations:recommendationsAdded', { count: selectedRecommendations.length }))
+      toast.success(
+        t('recommendations:recommendationsAdded', { count: selectedRecommendations.length })
+      )
       setSelectedRecommendations([])
       setTimeout(() => refetch(), 500)
     } catch (err) {
+      reportError(err, 'RecommendationsView.addMultiple')
       toast.error(t('recommendations:errorAdding'))
     } finally {
       setIsAddingMultiple(false)
@@ -139,6 +159,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
     try {
       await placesService.create(tripId, {
         name: recommendation.name,
+        behaupteter_ort: recommendation.ort || null,
         description: recommendation.description,
         category: recommendation.category,
         latitude: 0,
@@ -149,12 +170,13 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
         notes: `${t('recommendations:aiRecommendation')}: ${recommendation.reason}`,
         image_url: getPlaceholderImage(recommendation.category, recommendation.name),
         tags: [recommendation.category],
-        photos: []
+        photos: [],
       })
 
       toast.success(t('recommendations:placeAdded', { name: recommendation.name }))
       setTimeout(() => refetch(), 500)
     } catch (err) {
+      reportError(err, 'RecommendationsView.addSingle')
       toast.error(t('recommendations:errorAdding'))
     } finally {
       setAddingPlaceId(null)
@@ -167,9 +189,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <Loader className="w-12 h-12 animate-spin mx-auto text-primary-600 mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">
-              {t('recommendations:analyzingTrip')}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400">{t('recommendations:analyzingTrip')}</p>
           </div>
         </div>
       </div>
@@ -227,7 +247,9 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
               className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium text-sm rounded-full flex items-center gap-2 transition-colors border border-gray-200"
             >
               <CheckCircle className="w-4 h-4" />
-              {selectedRecommendations.length === recommendations.length ? t('recommendations:deselectAll') : t('recommendations:selectAll')}
+              {selectedRecommendations.length === recommendations.length
+                ? t('recommendations:deselectAll')
+                : t('recommendations:selectAll')}
             </button>
 
             {selectedRecommendations.length > 0 && (
@@ -244,7 +266,9 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                 ) : (
                   <>
                     <Plus className="w-4 h-4" />
-                    {t('recommendations:addSelectedCount', { count: selectedRecommendations.length })}
+                    {t('recommendations:addSelectedCount', {
+                      count: selectedRecommendations.length,
+                    })}
                   </>
                 )}
               </button>
@@ -252,7 +276,10 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
 
             {selectedRecommendations.length > 0 && (
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {t('recommendations:selectedOfTotal', { selected: selectedRecommendations.length, total: recommendations.length })}
+                {t('recommendations:selectedOfTotal', {
+                  selected: selectedRecommendations.length,
+                  total: recommendations.length,
+                })}
               </span>
             )}
           </div>
@@ -305,9 +332,11 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                   {/* Tags & Info */}
                   <div className="flex flex-wrap gap-2 mb-2">
                     {rec.category && (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[rec.category] || CATEGORY_COLORS.other}`}>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[rec.category] || CATEGORY_COLORS.other}`}
+                      >
                         <span>{CATEGORY_ICONS[rec.category] || '📍'}</span>
-                        {t(`places.categories.${rec.category}`, rec.category)}
+                        {t(`places:categories.${rec.category}`, rec.category)}
                       </span>
                     )}
                     {rec.best_time && (
@@ -318,8 +347,8 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                     )}
                     {rec.estimated_cost > 0 && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300 rounded-full text-xs font-medium">
-                        <DollarSign className="w-3 h-3" />
-                        ~{rec.estimated_cost} {trip.currency || 'EUR'}
+                        <Euro className="w-3 h-3" />~{rec.estimated_cost}{' '}
+                        {trip.currency || 'EUR'}
                       </span>
                     )}
                   </div>
@@ -365,7 +394,9 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
       ) : (
         <div className="text-center py-12 card">
           <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{t('recommendations:noRecommendationsAvailable')}</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            {t('recommendations:noRecommendationsAvailable')}
+          </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             {t('recommendations:addInterestsAndPlaces')}
           </p>

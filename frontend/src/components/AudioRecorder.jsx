@@ -1,128 +1,126 @@
-import React, { useState, useRef } from 'react';
-import { Mic, Square, Upload, X, Loader } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import api from '../services/api';
+import { useState, useRef } from 'react'
+import { Mic, Square, Upload, X, Loader } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import api from '../services/api'
 
 const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
-  const { t } = useTranslation();
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [error, setError] = useState(null);
+  const { t } = useTranslation()
+  const [isRecording, setIsRecording] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [audioBlob, setAudioBlob] = useState(null)
+  const [error, setError] = useState(null)
 
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const timerRef = useRef(null);
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
+  const timerRef = useRef(null)
 
   const startRecording = async () => {
     try {
-      setError(null);
+      setError(null)
 
       // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
 
       // Create MediaRecorder
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+        mimeType: 'audio/webm;codecs=opus',
+      })
 
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
 
       // Handle data available
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+          audioChunksRef.current.push(event.data)
         }
-      };
+      }
 
       // Handle recording stop
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(audioBlob);
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        setAudioBlob(audioBlob)
 
         // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-      };
+        stream.getTracks().forEach((track) => track.stop())
+      }
 
       // Start recording
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
+      mediaRecorder.start()
+      setIsRecording(true)
+      setRecordingTime(0)
 
       // Start timer
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
+        setRecordingTime((prev) => prev + 1)
+      }, 1000)
     } catch (err) {
-      console.error('Error starting recording:', err);
-      setError(t('common:audioRecorder.microphoneDenied'));
+      console.error('Error starting recording:', err)
+      setError(t('common:audioRecorder.microphoneDenied'))
     }
-  };
+  }
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
 
       // Clear timer
       if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+        clearInterval(timerRef.current)
+        timerRef.current = null
       }
     }
-  };
+  }
 
   const uploadAndTranscribe = async () => {
-    if (!audioBlob) return;
+    if (!audioBlob) return
 
     try {
-      setIsProcessing(true);
-      setError(null);
+      setIsProcessing(true)
+      setError(null)
 
       // Create FormData
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
 
       // Send to backend
       const response = await api.post('/diary/transcribe-audio', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-      });
+      })
 
       if (response.data.success) {
         // Call callback with transcribed text
-        onTranscriptReceived(response.data.text);
+        onTranscriptReceived(response.data.text)
 
         // Reset
-        setAudioBlob(null);
-        setRecordingTime(0);
+        setAudioBlob(null)
+        setRecordingTime(0)
       } else {
-        setError(t('common:audioRecorder.transcriptionFailed'));
+        setError(t('common:audioRecorder.transcriptionFailed'))
       }
-
     } catch (err) {
-      console.error('Error transcribing audio:', err);
-      setError(err.response?.data?.detail || t('common:audioRecorder.transcriptionError'));
+      console.error('Error transcribing audio:', err)
+      setError(err.response?.data?.detail || t('common:audioRecorder.transcriptionError'))
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   const cancelRecording = () => {
-    setAudioBlob(null);
-    setRecordingTime(0);
-    setError(null);
-  };
+    setAudioBlob(null)
+    setRecordingTime(0)
+    setError(null)
+  }
 
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   return (
     <div className="audio-recorder">
@@ -167,7 +165,9 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
             <div className="flex-1">
               <div className="flex items-center gap-2 text-gray-600">
                 <Mic size={18} />
-                <span className="text-sm">{t('common:audioRecorder.recording')}: {formatTime(recordingTime)}</span>
+                <span className="text-sm">
+                  {t('common:audioRecorder.recording')}: {formatTime(recordingTime)}
+                </span>
               </div>
             </div>
 
@@ -175,7 +175,7 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
               type="button"
               onClick={uploadAndTranscribe}
               disabled={isProcessing}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition disabled:opacity-50"
             >
               {isProcessing ? (
                 <>
@@ -202,11 +202,9 @@ const AudioRecorder = ({ onTranscriptReceived, disabled = false }) => {
         )}
       </div>
 
-      <p className="text-xs text-gray-500 mt-2">
-        💡 {t('common:audioRecorder.tip')}
-      </p>
+      <p className="text-xs text-gray-500 mt-2">💡 {t('common:audioRecorder.tip')}</p>
     </div>
-  );
-};
+  )
+}
 
-export default AudioRecorder;
+export default AudioRecorder

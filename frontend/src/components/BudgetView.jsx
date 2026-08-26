@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Plus, Euro, TrendingUp, TrendingDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '../utils/errorHandler'
@@ -22,7 +21,7 @@ export default function BudgetView({ tripId, participants }) {
       const response = await budgetService.getExpenses(tripId)
       return response.data
     },
-    enabled: !!tripId
+    enabled: !!tripId,
   })
 
   // Fetch budget summary
@@ -32,7 +31,7 @@ export default function BudgetView({ tripId, participants }) {
       const response = await budgetService.getSummary(tripId)
       return response.data
     },
-    enabled: !!tripId
+    enabled: !!tripId,
   })
 
   // Create expense mutation
@@ -49,7 +48,7 @@ export default function BudgetView({ tripId, participants }) {
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorAdding')))
-    }
+    },
   })
 
   // Update expense mutation
@@ -67,7 +66,7 @@ export default function BudgetView({ tripId, participants }) {
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorUpdating')))
-    }
+    },
   })
 
   // Delete expense mutation
@@ -82,7 +81,7 @@ export default function BudgetView({ tripId, participants }) {
     },
     onError: (error) => {
       toast.error(formatError(error, t('budget:errorDeleting')))
-    }
+    },
   })
 
   const handleExpenseSubmit = async (data) => {
@@ -120,7 +119,7 @@ export default function BudgetView({ tripId, participants }) {
     accommodation: t('budget:categories.accommodation'),
     activities: t('budget:categories.activities'),
     shopping: t('budget:categories.shopping'),
-    other: t('budget:categories.other')
+    other: t('budget:categories.other'),
   }
 
   return (
@@ -132,7 +131,7 @@ export default function BudgetView({ tripId, participants }) {
             <h2 className="text-2xl font-bold mb-4">{t('budget:budgetSummary')}</h2>
 
             {/* Total */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-6 mb-6">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-400 text-white rounded-xl p-6 mb-6">
               <div className="text-sm opacity-90 mb-1">{t('budget:totalExpenses')}</div>
               <div className="text-4xl font-bold">
                 {summary.total_expenses.toFixed(2)} {summary.currency}
@@ -169,31 +168,46 @@ export default function BudgetView({ tripId, participants }) {
                     const isNeutral = Math.abs(balance) < 0.01
 
                     return (
-                      <div key={participantId} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                      <div
+                        key={participantId}
+                        className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
+                      >
                         <div className="flex items-center justify-between mb-2">
                           <div className="font-semibold">{data.name}</div>
-                          <div className={`flex items-center gap-1 font-bold ${
-                            isNeutral
-                              ? 'text-gray-600 dark:text-gray-400'
-                              : isPositive
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`}>
+                          <div
+                            className={`flex items-center gap-1 font-bold ${
+                              isNeutral
+                                ? 'text-gray-600 dark:text-gray-400'
+                                : isPositive
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : 'text-red-600 dark:text-red-400'
+                            }`}
+                          >
                             {isPositive && <TrendingUp className="w-4 h-4" />}
                             {!isPositive && !isNeutral && <TrendingDown className="w-4 h-4" />}
                             <span>
-                              {isNeutral ? t('budget:balanced') : `${isPositive ? '+' : ''}${balance.toFixed(2)} ${summary.currency}`}
+                              {isNeutral
+                                ? t('budget:balanced')
+                                : `${isPositive ? '+' : ''}${balance.toFixed(2)} ${summary.currency}`}
                             </span>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">{t('budget:paid')}:</span>
-                            <span className="ml-2 font-medium">{data.paid.toFixed(2)} {summary.currency}</span>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {t('budget:paid')}:
+                            </span>
+                            <span className="ml-2 font-medium">
+                              {data.paid.toFixed(2)} {summary.currency}
+                            </span>
                           </div>
                           <div>
-                            <span className="text-gray-600 dark:text-gray-400">{t('budget:owes')}:</span>
-                            <span className="ml-2 font-medium">{data.owes.toFixed(2)} {summary.currency}</span>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {t('budget:owes')}:
+                            </span>
+                            <span className="ml-2 font-medium">
+                              {data.owes.toFixed(2)} {summary.currency}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -209,7 +223,7 @@ export default function BudgetView({ tripId, participants }) {
         <div className="card">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              <DollarSign className="w-6 h-6" />
+              <Euro className="w-6 h-6" />
               {t('budget:expenses')}
             </h2>
             <button
@@ -218,7 +232,6 @@ export default function BudgetView({ tripId, participants }) {
                 setIsExpenseModalOpen(true)
               }}
               className="btn btn-primary btn-sm"
-              disabled={!participants || participants.length === 0}
             >
               <Plus className="w-4 h-4" />
               {t('budget:addExpense')}
@@ -227,26 +240,18 @@ export default function BudgetView({ tripId, participants }) {
 
           {expenses.length === 0 ? (
             <div className="text-center py-12">
-              <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {t('budget:noExpensesYet')}
-              </p>
-              {participants && participants.length > 0 ? (
-                <button
-                  onClick={() => {
-                    setEditingExpense(null)
-                    setIsExpenseModalOpen(true)
-                  }}
-                  className="btn btn-primary"
-                >
-                  <Plus className="w-4 h-4" />
-                  {t('budget:addFirstExpense')}
-                </button>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-500">
-                  {t('budget:addParticipantsFirst')}
-                </p>
-              )}
+              <Euro className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{t('budget:noExpensesYet')}</p>
+              <button
+                onClick={() => {
+                  setEditingExpense(null)
+                  setIsExpenseModalOpen(true)
+                }}
+                className="btn btn-primary"
+              >
+                <Plus className="w-4 h-4" />
+                {t('budget:addFirstExpense')}
+              </button>
             </div>
           ) : (
             <div className="space-y-4">

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Map, ArrowLeft, Loader } from 'lucide-react'
-import { toast, Toaster } from 'react-hot-toast'
+import { Map, ArrowLeft, Loader, Image as ImageIcon } from 'lucide-react'
+import { Toaster } from 'react-hot-toast'
 import InteractiveMap from '../components/InteractiveMap'
 import RouteBuilder from '../components/RouteBuilder'
-import { tripsService, placesService, routesService } from '../services/api'
+import { tripsService, placesService, routesService, mediaService } from '../services/api'
 import { useTranslation } from 'react-i18next'
 
 export default function TripMap() {
@@ -13,6 +13,7 @@ export default function TripMap() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [routes, setRoutes] = useState([])
+  const [showPhotos, setShowPhotos] = useState(true)
 
   // Fetch trip data
   const { data: trip, isLoading: tripLoading } = useQuery({
@@ -27,19 +28,35 @@ export default function TripMap() {
   const { data: places = [], isLoading: placesLoading } = useQuery({
     queryKey: ['places', id],
     queryFn: async () => {
-      const response = await placesService.getByTrip(id)
+      const response = await placesService.getPlaces(id)
       return response.data
     },
   })
 
   // Fetch routes
-  const { data: routesData = [], isLoading: routesLoading, refetch: refetchRoutes } = useQuery({
+  const {
+    data: routesData = [],
+    isLoading: routesLoading,
+    refetch: refetchRoutes,
+  } = useQuery({
     queryKey: ['routes', id],
     queryFn: async () => {
       const response = await routesService.getByTrip(id)
       return response.data
     },
   })
+
+  // Fetch trip media; keep only geotagged diary photos for map markers
+  const { data: allMedia = [] } = useQuery({
+    queryKey: ['media', id],
+    queryFn: async () => {
+      const response = await mediaService.getTripMedia(id)
+      return response.data
+    },
+  })
+  const geoPhotos = allMedia.filter(
+    (m) => m.diary_entry_id != null && m.latitude != null && m.longitude != null
+  )
 
   useEffect(() => {
     if (routesData) {
@@ -55,7 +72,7 @@ export default function TripMap() {
   if (tripLoading || placesLoading || routesLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     )
   }
@@ -66,10 +83,7 @@ export default function TripMap() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('tripDetail:tripNotFound')}</h2>
           <p className="text-gray-600 mb-4">{t('notFound:subtitle')}</p>
-          <button
-            onClick={() => navigate('/trips')}
-            className="btn btn-primary"
-          >
+          <button onClick={() => navigate('/trips')} className="btn btn-primary">
             {t('tripDetail:backToTrips')}
           </button>
         </div>
@@ -94,11 +108,11 @@ export default function TripMap() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <Map className="w-6 h-6 text-indigo-600" />
+                  <Map className="w-6 h-6 text-primary-600" />
                   {trip.title} - {t('common:interactiveMap')}
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  {places.length} places • {routes.length} routes
+                  {places.length} {t('map:places')} • {routes.length} {t('map:routes')}
                 </p>
               </div>
             </div>
@@ -111,25 +125,37 @@ export default function TripMap() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Map */}
           <div className="lg:col-span-2">
+            {geoPhotos.length > 0 && (
+              <label className="flex items-center gap-2 mb-3 text-sm text-gray-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showPhotos}
+                  onChange={(e) => setShowPhotos(e.target.checked)}
+                  className="rounded"
+                />
+                <ImageIcon className="w-4 h-4 text-primary-600" />
+                {t('map:showPhotos', 'Fotos auf der Karte anzeigen')} ({geoPhotos.length})
+              </label>
+            )}
             <div className="card p-0 overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
-              {places.length > 0 ? (
+              {places.length > 0 || geoPhotos.length > 0 ? (
                 <InteractiveMap
                   places={places}
                   routes={routes}
-                  center={trip.latitude && trip.longitude ? [trip.latitude, trip.longitude] : undefined}
+                  photos={showPhotos ? geoPhotos : []}
+                  center={
+                    trip.latitude && trip.longitude ? [trip.latitude, trip.longitude] : undefined
+                  }
                   zoom={12}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                   <Map className="w-16 h-16 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('map:noPlacesYet')}</h3>
-                  <p className="text-gray-600 mb-4">
-                    {t('map:addPlacesToSeeOnMap')}
-                  </p>
-                  <button
-                    onClick={() => navigate(`/trips/${id}`)}
-                    className="btn btn-primary"
-                  >
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {t('map:noPlacesYet')}
+                  </h3>
+                  <p className="text-gray-600 mb-4">{t('map:addPlacesToSeeOnMap')}</p>
+                  <button onClick={() => navigate(`/trips/${id}`)} className="btn btn-primary">
                     {t('map:addPlaces')}
                   </button>
                 </div>
@@ -151,12 +177,8 @@ export default function TripMap() {
                 <div className="card">
                   <div className="text-center py-8">
                     <Map className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {t('map:createRoutes')}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {t('map:needTwoPlacesForRoute')}
-                    </p>
+                    <h3 className="font-semibold text-gray-900 mb-2">{t('map:createRoutes')}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{t('map:needTwoPlacesForRoute')}</p>
                     <button
                       onClick={() => navigate(`/trips/${id}`)}
                       className="btn btn-primary btn-sm"
@@ -183,7 +205,7 @@ export default function TripMap() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">{t('map:visited')}</span>
                       <span className="font-medium">
-                        {places.filter(p => p.visited).length} / {places.length}
+                        {places.filter((p) => p.visited).length} / {places.length}
                       </span>
                     </div>
                   </div>
@@ -191,11 +213,9 @@ export default function TripMap() {
               )}
 
               {/* Help Section */}
-              <div className="card mt-4 bg-indigo-50 border-indigo-200">
-                <h3 className="font-semibold text-indigo-900 mb-2">💡 {t('map:tip')}</h3>
-                <p className="text-sm text-indigo-700">
-                  {t('map:dragPlacesToCreateRoutes')}
-                </p>
+              <div className="card mt-4 bg-primary-50 border-primary-200">
+                <h3 className="font-semibold text-primary-900 mb-2">💡 {t('map:tip')}</h3>
+                <p className="text-sm text-primary-700">{t('map:dragPlacesToCreateRoutes')}</p>
               </div>
             </div>
           </div>

@@ -6,7 +6,12 @@ import { useTranslation } from 'react-i18next'
 import ColorPicker from './ColorPicker'
 import { routesService } from '../services/api'
 
-export default function RouteBuilder({ tripId, places = [], routes: initialRoutes = [], onRoutesChange }) {
+export default function RouteBuilder({
+  tripId,
+  places = [],
+  routes: initialRoutes = [],
+  onRoutesChange,
+}) {
   const { t } = useTranslation()
   const [routes, setRoutes] = useState(initialRoutes)
   const [editingRoute, setEditingRoute] = useState(null)
@@ -15,7 +20,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
   const [newRoute, setNewRoute] = useState({
     name: '',
     description: '',
-    color: '#6366F1',
+    color: '#1F7A7D',
     line_style: 'solid',
     line_width: 3,
     place_ids: [],
@@ -53,6 +58,18 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
     setNewRoute({ ...newRoute, place_ids: newPlaceIds })
   }
 
+  // Orte per KLICK zur Route nehmen.
+  //
+  // Bis 2026-08-25 ging das NUR per Ziehen. Auf dem Telefon — dem Geraet, mit
+  // dem man unterwegs eine Route plant — ist Ziehen zwischen zwei scrollenden
+  // Listen unzuverlaessig, und der Speichern-Knopf bleibt stumm deaktiviert.
+  // Das liest sich als "Knopf ohne Funktion", genau so gemeldet.
+  // Ziehen bleibt fuer das Umsortieren.
+  const addPlace = (placeId) => {
+    if (newRoute.place_ids.includes(placeId)) return
+    setNewRoute({ ...newRoute, place_ids: [...newRoute.place_ids, placeId] })
+  }
+
   const handleSaveRoute = async () => {
     if (!newRoute.name) {
       toast.error(t('routes:pleaseEnterRouteName'))
@@ -85,14 +102,18 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
       // Update routes list
       if (editingRoute) {
-        setRoutes(routes.map(r => r.id === savedRoute.id ? savedRoute : r))
+        setRoutes(routes.map((r) => (r.id === savedRoute.id ? savedRoute : r)))
       } else {
         setRoutes([...routes, savedRoute])
       }
 
       // Notify parent
       if (onRoutesChange) {
-        onRoutesChange(editingRoute ? routes.map(r => r.id === savedRoute.id ? savedRoute : r) : [...routes, savedRoute])
+        onRoutesChange(
+          editingRoute
+            ? routes.map((r) => (r.id === savedRoute.id ? savedRoute : r))
+            : [...routes, savedRoute]
+        )
       }
 
       // Reset form
@@ -103,12 +124,20 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
     }
   }
 
+  // Was noch fehlt, damit gespeichert werden kann — als Liste, damit sie
+  // sowohl den Knopf steuert als auch dem Nutzer angezeigt werden kann. Eine
+  // Bedingung, die nur den Knopf deaktiviert, ist fuer den Nutzer unsichtbar.
+  const fehltZumSpeichern = [
+    !newRoute.name && t('routes:missingRouteName'),
+    newRoute.place_ids.length < 2 && t('routes:missingTwoPlaces'),
+  ].filter(Boolean)
+
   const handleDeleteRoute = async (routeId) => {
     if (!confirm(t('routes:confirmDeleteRoute'))) return
 
     try {
       await routesService.delete(routeId)
-      const newRoutes = routes.filter(r => r.id !== routeId)
+      const newRoutes = routes.filter((r) => r.id !== routeId)
       setRoutes(newRoutes)
       if (onRoutesChange) {
         onRoutesChange(newRoutes)
@@ -140,7 +169,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
     setNewRoute({
       name: '',
       description: '',
-      color: '#6366F1',
+      color: '#1F7A7D',
       line_style: 'solid',
       line_width: 3,
       place_ids: [],
@@ -148,9 +177,9 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
     })
   }
 
-  const getPlaceById = (placeId) => places.find(p => p.id === placeId)
+  const getPlaceById = (placeId) => places.find((p) => p.id === placeId)
 
-  const availablePlaces = places.filter(p => !newRoute.place_ids.includes(p.id))
+  const availablePlaces = places.filter((p) => !newRoute.place_ids.includes(p.id))
 
   return (
     <div className="space-y-4">
@@ -172,15 +201,12 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
         {routes.length > 0 && (
           <div className="space-y-2">
-            {routes.map(route => (
+            {routes.map((route) => (
               <div
                 key={route.id}
                 className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg"
               >
-                <div
-                  className="w-1 h-12 rounded-full"
-                  style={{ backgroundColor: route.color }}
-                />
+                <div className="w-1 h-12 rounded-full" style={{ backgroundColor: route.color }} />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium truncate">{route.name}</h4>
                   <p className="text-sm text-gray-500">
@@ -190,7 +216,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                 <div className="flex gap-2">
                   <button
                     onClick={() => editRoute(route)}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
                     {t('routes:editRoute')}
                   </button>
@@ -292,7 +318,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                               {...provided.dragHandleProps}
                               className={`
                                 flex items-center gap-2 p-2 bg-white border rounded-lg cursor-move
-                                ${snapshot.isDragging ? 'shadow-lg border-indigo-500' : 'border-gray-200'}
+                                ${snapshot.isDragging ? 'shadow-lg border-primary-500' : 'border-gray-200'}
                               `}
                             >
                               <GripVertical className="w-4 h-4 text-gray-400" />
@@ -302,6 +328,15 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                                   <p className="text-xs text-gray-500">{place.category}</p>
                                 )}
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => addPlace(place.id)}
+                                title={t('routes:addPlaceToRoute')}
+                                aria-label={`${t('routes:addPlaceToRoute')}: ${place.name}`}
+                                className="shrink-0 p-1 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
                             </div>
                           )}
                         </Draggable>
@@ -319,13 +354,15 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
 
               {/* Route Order */}
               <div>
-                <h4 className="font-medium mb-2">{t('routes:routeOrder')} ({newRoute.place_ids.length})</h4>
+                <h4 className="font-medium mb-2">
+                  {t('routes:routeOrder')} ({newRoute.place_ids.length})
+                </h4>
                 <Droppable droppableId="route-places">
                   {(provided) => (
                     <div
                       {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="space-y-2 min-h-[200px] max-h-[400px] overflow-y-auto p-3 bg-indigo-50 rounded-lg border-2 border-dashed border-indigo-300"
+                      className="space-y-2 min-h-[200px] max-h-[400px] overflow-y-auto p-3 bg-primary-50 rounded-lg border-2 border-dashed border-primary-300"
                     >
                       {newRoute.place_ids.map((placeId, index) => {
                         const place = getPlaceById(placeId)
@@ -344,10 +381,10 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                                 {...provided.dragHandleProps}
                                 className={`
                                   flex items-center gap-2 p-2 bg-white border rounded-lg
-                                  ${snapshot.isDragging ? 'shadow-lg border-indigo-500' : 'border-gray-200'}
+                                  ${snapshot.isDragging ? 'shadow-lg border-primary-500' : 'border-gray-200'}
                                 `}
                               >
-                                <span className="flex items-center justify-center w-6 h-6 bg-indigo-500 text-white text-xs font-bold rounded-full">
+                                <span className="flex items-center justify-center w-6 h-6 bg-primary-500 text-white text-xs font-bold rounded-full">
                                   {index + 1}
                                 </span>
                                 <GripVertical className="w-4 h-4 text-gray-400" />
@@ -358,7 +395,10 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                                   )}
                                 </div>
                                 <button
+                                  type="button"
                                   onClick={() => removePlace(index)}
+                                  title={t('routes:removePlaceFromRoute')}
+                                  aria-label={`${t('routes:removePlaceFromRoute')}: ${place.name}`}
                                   className="text-red-500 hover:text-red-700"
                                 >
                                   <Minus className="w-4 h-4" />
@@ -371,7 +411,7 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
                       {provided.placeholder}
                       {newRoute.place_ids.length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-8">
-                          {t('routes:dragPlacesHere')}
+                          {t('routes:tapOrDragPlacesHere')}
                         </p>
                       )}
                     </div>
@@ -381,19 +421,26 @@ export default function RouteBuilder({ tripId, places = [], routes: initialRoute
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 mt-6">
+            {/*
+              Ein deaktivierter Knopf ohne Begruendung ist ein kaputter Knopf:
+              der Nutzer sieht, dass nichts passiert, und erfaehrt nicht warum.
+              Deshalb steht darueber, was noch fehlt.
+            */}
+            {fehltZumSpeichern.length > 0 && (
+              <p className="mt-6 text-sm text-amber-700 dark:text-amber-400">
+                {t('routes:whyCantISave')} {fehltZumSpeichern.join(', ')}
+              </p>
+            )}
+            <div className="flex gap-3 mt-3">
               <button
                 onClick={handleSaveRoute}
                 className="btn btn-primary flex items-center gap-2"
-                disabled={!newRoute.name || newRoute.place_ids.length < 2}
+                disabled={fehltZumSpeichern.length > 0}
               >
                 <Save className="w-4 h-4" />
                 {editingRoute ? t('routes:updateRoute') : t('routes:saveRoute')}
               </button>
-              <button
-                onClick={resetForm}
-                className="btn btn-outline"
-              >
+              <button onClick={resetForm} className="btn btn-outline">
                 {t('routes:cancelRoute')}
               </button>
             </div>

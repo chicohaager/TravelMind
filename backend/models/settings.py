@@ -3,9 +3,9 @@ Global Settings Model
 Stores application-wide configuration
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.sql import func
 from models.database import Base
+from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy.sql import func
 
 
 class Settings(Base):
@@ -33,6 +33,7 @@ class Settings(Base):
             return int(self.value)
         elif self.value_type == "json":
             import json
+
             return json.loads(self.value)
         else:
             return self.value

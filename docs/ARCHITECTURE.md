@@ -4,7 +4,7 @@
 
 TravelMind ist eine moderne, dreischichtige Web-Anwendung:
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │                  Client (Browser)                    │
 │  • React 18 (UI Framework)                          │
@@ -47,7 +47,7 @@ TravelMind ist eine moderne, dreischichtige Web-Anwendung:
 
 ### Verzeichnisstruktur
 
-```
+```text
 frontend/src/
 ├── components/          # Wiederverwendbare Komponenten
 │   ├── layout/         # Layout-Komponenten
@@ -84,7 +84,7 @@ frontend/src/
 
 ### Component-Hierarchie
 
-```
+```text
 App (Routing)
 └── Layout
     ├── Navbar
@@ -109,6 +109,7 @@ App (Routing)
 ### State Management
 
 **Server State** (React Query):
+
 ```javascript
 // Trips abrufen
 const { data, isLoading } = useQuery({
@@ -126,6 +127,7 @@ const mutation = useMutation({
 ```
 
 **Client State** (Zustand - geplant):
+
 ```javascript
 // Store für UI-State
 const useUIStore = create((set) => ({
@@ -151,7 +153,7 @@ const useUIStore = create((set) => ({
 
 ### Verzeichnisstruktur
 
-```
+```text
 backend/
 ├── models/                 # Datenbank-Modelle
 │   ├── database.py        # DB-Setup & Session
@@ -188,7 +190,7 @@ backend/
 
 **Layered Architecture:**
 
-```
+```text
 Request → Router → Service → Model → Database
          ↓
       Pydantic
@@ -291,7 +293,7 @@ Ausgabe als strukturiertes JSON mit:
 
 ### AI-Assistent
 
-```
+```text
 POST /api/ai/suggest          # Reiseziele vorschlagen
 POST /api/ai/plan             # Reiseplan erstellen
 POST /api/ai/describe         # Destination beschreiben
@@ -302,7 +304,7 @@ GET  /api/ai/status           # AI-Status prüfen
 
 ### Trips
 
-```
+```text
 GET    /api/trips             # Alle Reisen
 POST   /api/trips             # Neue Reise
 GET    /api/trips/:id         # Einzelne Reise
@@ -313,7 +315,7 @@ GET    /api/trips/:id/summary # Statistiken
 
 ### Diary
 
-```
+```text
 GET    /api/diary/:tripId              # Alle Einträge
 POST   /api/diary/:tripId              # Neuer Eintrag
 PUT    /api/diary/:id                  # Eintrag bearbeiten
@@ -323,7 +325,7 @@ POST   /api/diary/:tripId/export       # Export (PDF/MD)
 
 ### Places
 
-```
+```text
 GET    /api/places/:tripId/places      # Alle Orte
 POST   /api/places/:tripId/places      # Ort hinzufügen
 PUT    /api/places/places/:id          # Ort bearbeiten
@@ -333,7 +335,7 @@ PUT    /api/places/places/:id/visited  # Als besucht markieren
 
 ### Auth
 
-```
+```text
 POST /api/auth/register       # Registrierung
 POST /api/auth/login          # Login
 POST /api/auth/logout         # Logout
@@ -347,7 +349,7 @@ POST /api/auth/refresh        # Token erneuern
 
 **JWT-Token-Flow:**
 
-```
+```text
 1. Login → Server validiert Credentials
 2. Server generiert JWT-Token
 3. Client speichert Token (localStorage)
@@ -419,10 +421,10 @@ stmt = select(Trip).options(
 
 ### Docker-Architektur
 
-```
+```text
 docker-compose.yml
 ├── backend (FastAPI)
-│   └── Port 8000
+│   └── Port 8137
 ├── frontend (React/Nginx)
 │   └── Port 80/5173
 └── db (PostgreSQL)
@@ -432,6 +434,7 @@ docker-compose.yml
 ### Build-Prozess
 
 **Frontend:**
+
 ```bash
 npm run build         # Vite Build
 → dist/              # Static Files
@@ -439,6 +442,7 @@ npm run build         # Vite Build
 ```
 
 **Backend:**
+
 ```bash
 pip install          # Dependencies
 → uvicorn/gunicorn   # ASGI Server
@@ -529,31 +533,35 @@ test('user can create trip', async () => {
 
 ## Erweiterungen (Roadmap)
 
-### Phase 1 - MVP (aktuell)
-- ✅ Grundstruktur
-- ✅ Claude AI Integration
-- ✅ Design-System
-- 🚧 Datenbank-Anbindung
+### ✅ Umgesetzt
 
-### Phase 2 - Features
-- 📍 Karten-Integration (Leaflet)
-- 📸 Foto-Upload & Galerie
-- 📄 PDF-Export
-- 🔔 Benachrichtigungen
+- Grundstruktur, AI-Integration (Multi-Provider), Design-System
+- PostgreSQL-Anbindung (async SQLAlchemy, Alembic)
+- Karten-Integration (Leaflet), Foto-Upload, PDF-Export
+- Multi-User (Reisen teilen mit Rollen), Offline-First (PWA)
+- **Bild-Pipeline**: WebP-Kompression, Thumbnails, EXIF (Aufnahmedatum + GPS), HEIC/HEIF
+- **Media-Tabelle** als Source-of-Truth (Bildunterschriften, GPS, Reihenfolge) inkl. Backfill
+- **Geo-Fotos auf der Karte** (Auto-Geotagging aus EXIF)
+- **Volltextsuche** (Postgres FTS + ILIKE-Fallback, Navbar-Dropdown)
+- **Route-Code-Splitting** (React.lazy)
+- **Backup/Restore** für DB + Uploads (Skripte + Doku, ZimaOS-Anhang)
+- **Reise-übergreifende Foto-Galerie** (`/media/gallery`, nach Reise gruppiert, geteilte Lightbox)
+- **Öffentliche read-only Share-Links** für Reisetagebücher (Privacy-Schalter, Token, `/share/:token`, `/api/public/diary/{token}`)
+- **Drag-&-Drop-Foto-Sortierung** im Tagebuch (`@hello-pangea/dnd`, `PATCH /api/diary/{entry_id}/photos/order`)
+- **Foto-Timeline** (`/timeline`, nach Aufnahmemonat gruppiert) + **Lightbox-Feinschliff** (Aufnahmedatum, Preload, Swipe) + **HEIC-Status** (`/api/capabilities`, HEIC im Datei-Picker)
+- **In-App-Benachrichtigungen** (Navbar-Glocke, Reise-Einladungen empfangen/angenommen/abgelehnt, `/api/notifications`)
+- **Analytics-Dashboard** (`/analytics`, reise-übergreifende Statistiken, `/api/analytics/summary`, hand-gerollte CSS-Charts)
 
-### Phase 3 - Collaboration
-- 👥 Multi-User Support
-- 💬 Echtzeit-Chat (WebSocket)
-- 🔗 Reisen teilen
-- 📊 Kollaborative Planung
+### 🔜 Als Nächstes
 
-### Phase 4 - Advanced
+_Kern-Roadmap abgearbeitet — nächste Ideen siehe „Später"._
+
+### 💡 Später
+
+- 💬 Echtzeit-Kollaboration (WebSocket)
 - 📱 Native Mobile App (React Native)
-- 🌐 Offline-First (PWA)
-- 🔍 Volltextsuche
-- 📈 Analytics Dashboard
 
 ---
 
-**Dokumentations-Version**: 1.0
-**Letztes Update**: 2024-10-09
+**Dokumentations-Version**: 2.0
+**Letztes Update**: 2026-06-24

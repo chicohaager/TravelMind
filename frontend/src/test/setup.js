@@ -20,7 +20,7 @@ afterEach(() => {
 // Mock window.matchMedia (needed for responsive components)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -37,17 +37,29 @@ class MockIntersectionObserver {
   constructor(callback) {
     this.callback = callback
   }
-  observe() { return null }
-  unobserve() { return null }
-  disconnect() { return null }
+  observe() {
+    return null
+  }
+  unobserve() {
+    return null
+  }
+  disconnect() {
+    return null
+  }
 }
 window.IntersectionObserver = MockIntersectionObserver
 
 // Mock ResizeObserver (needed for some UI components)
 class MockResizeObserver {
-  observe() { return null }
-  unobserve() { return null }
-  disconnect() { return null }
+  observe() {
+    return null
+  }
+  unobserve() {
+    return null
+  }
+  disconnect() {
+    return null
+  }
 }
 window.ResizeObserver = MockResizeObserver
 

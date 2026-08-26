@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Upload, Image as ImageIcon, Sparkles, MapPin as MapPinIcon } from 'lucide-react'
+import { X, Upload, Image as Sparkles, MapPin as MapPinIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { tripsService, aiService, participantsService } from '@services/api'
@@ -7,7 +7,13 @@ import toast from 'react-hot-toast'
 import ParticipantsManager from './ParticipantsManager'
 import { useTranslation } from 'react-i18next'
 
-export default function TripModal({ isOpen, onClose, onSubmit, initialData = null, isEditing = false }) {
+export default function TripModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData = null,
+  isEditing = false,
+}) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState({
     title: '',
@@ -19,7 +25,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
     budget: '',
     currency: 'EUR',
     latitude: null,
-    longitude: null
+    longitude: null,
   })
 
   const [selectedImage, setSelectedImage] = useState(null)
@@ -33,7 +39,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
       const response = await participantsService.getParticipants(initialData.id)
       return response.data
     },
-    enabled: isEditing && !!initialData?.id
+    enabled: isEditing && !!initialData?.id,
   })
 
   // Load initial data when editing
@@ -49,7 +55,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
         budget: initialData.budget || '',
         currency: initialData.currency || 'EUR',
         latitude: initialData.latitude || null,
-        longitude: initialData.longitude || null
+        longitude: initialData.longitude || null,
       })
       // Set existing image preview if available
       if (initialData.cover_image) {
@@ -67,7 +73,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
         budget: '',
         currency: 'EUR',
         latitude: null,
-        longitude: null
+        longitude: null,
       })
       setSelectedImage(null)
       setImagePreview(null)
@@ -88,7 +94,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
     onError: (error) => {
       toast.error(t('trips:imageUploadError'))
       console.error(error)
-    }
+    },
   })
 
   // AI Suggestions mutation
@@ -99,20 +105,20 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
     },
     onSuccess: (data) => {
       // Apply AI suggestions to form
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         title: data.title || prev.title,
         description: data.description || prev.description,
         interests: data.interests || prev.interests,
         budget: data.budget_min ? Math.round((data.budget_min + data.budget_max) / 2) : prev.budget,
-        currency: data.currency || prev.currency
+        currency: data.currency || prev.currency,
       }))
       toast.success(t('trips:aiSuggestionsLoaded'))
     },
     onError: (error) => {
       toast.error(t('trips:aiSuggestionsError'))
       console.error(error)
-    }
+    },
   })
 
   // Geocoding mutation
@@ -123,17 +129,17 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
     },
     onSuccess: (data) => {
       // Apply coordinates to form
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         latitude: data.latitude,
-        longitude: data.longitude
+        longitude: data.longitude,
       }))
       toast.success(t('trips:coordinatesFound').replace('{name}', data.display_name))
     },
     onError: (error) => {
       toast.error(t('trips:coordinatesNotFound'))
       console.error(error)
-    }
+    },
   })
 
   const handleAiSuggestions = async () => {
@@ -204,30 +210,30 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
     'beach',
     'cityTrip',
     'adventure',
-    'relaxation'
+    'relaxation',
   ]
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
   const addInterest = (interest) => {
     if (!formData.interests.includes(interest)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        interests: [...prev.interests, interest]
+        interests: [...prev.interests, interest],
       }))
     }
   }
 
   const removeInterest = (interest) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      interests: prev.interests.filter(i => i !== interest)
+      interests: prev.interests.filter((i) => i !== interest),
     }))
   }
 
@@ -248,7 +254,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
       start_date: formData.start_date ? `${formData.start_date}T00:00:00` : null,
       end_date: formData.end_date ? `${formData.end_date}T00:00:00` : null,
       latitude: formData.latitude,
-      longitude: formData.longitude
+      longitude: formData.longitude,
     }
 
     // Submit trip data
@@ -269,7 +275,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
       end_date: '',
       interests: [],
       budget: '',
-      currency: 'EUR'
+      currency: 'EUR',
     })
     setSelectedImage(null)
     setImagePreview(null)
@@ -315,9 +321,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('trips:tripTitle')} *
-                  </label>
+                  <label className="block text-sm font-medium mb-2">{t('trips:tripTitle')} *</label>
                   <input
                     type="text"
                     name="title"
@@ -380,16 +384,15 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
                   </div>
                   {formData.latitude && formData.longitude && (
                     <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      📍 {t('trips:coordinatesLabel')}: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+                      📍 {t('trips:coordinatesLabel')}: {formData.latitude.toFixed(4)},{' '}
+                      {formData.longitude.toFixed(4)}
                     </div>
                   )}
                 </div>
 
                 {/* Cover Image Upload */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('trips:coverImage')}
-                  </label>
+                  <label className="block text-sm font-medium mb-2">{t('trips:coverImage')}</label>
 
                   {imagePreview ? (
                     <div className="relative">
@@ -411,7 +414,8 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <Upload className="w-10 h-10 mb-3 text-gray-400" />
                         <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">{t('trips:clickToUpload')}</span> {t('trips:orDragDrop')}
+                          <span className="font-semibold">{t('trips:clickToUpload')}</span>{' '}
+                          {t('trips:orDragDrop')}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {t('trips:fileTypes')}
@@ -484,7 +488,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
                           key={interest}
                           className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded-full text-sm"
                         >
-                          {t(`interests.${interest}`, interest)}
+                          {t(`interests:${interest}`, interest)}
                           <button
                             type="button"
                             onClick={() => removeInterest(interest)}
@@ -500,7 +504,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
                   {/* Suggestion Buttons */}
                   <div className="flex flex-wrap gap-2 mb-3">
                     {interestSuggestions
-                      .filter(s => !formData.interests.includes(s))
+                      .filter((s) => !formData.interests.includes(s))
                       .map((interest) => (
                         <button
                           key={interest}
@@ -508,7 +512,7 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
                           onClick={() => addInterest(interest)}
                           className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full text-sm transition-colors"
                         >
-                          + {t(`interests.${interest}`, interest)}
+                          + {t(`interests:${interest}`, interest)}
                         </button>
                       ))}
                   </div>
@@ -585,17 +589,10 @@ export default function TripModal({ isOpen, onClose, onSubmit, initialData = nul
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="btn btn-secondary flex-1"
-                  >
+                  <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
                     {t('common:cancel')}
                   </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary flex-1"
-                  >
+                  <button type="submit" className="btn btn-primary flex-1">
                     {isEditing ? t('trips:saveChanges') : t('trips:createTrip')}
                   </button>
                 </div>

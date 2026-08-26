@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { usersService } from '@/services/api'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function Profile() {
   const { t } = useTranslation()
@@ -68,10 +69,10 @@ export default function Profile() {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
+    return new Date(dateString).toLocaleDateString(aktuelleLocale(), {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
@@ -85,11 +86,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('profile:myProfile')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Verwalte deine persönlichen Informationen
@@ -136,9 +133,7 @@ export default function Profile() {
             </div>
 
             <h2 className="text-xl font-bold mt-4">{user.username}</h2>
-            {user.full_name && (
-              <p className="text-gray-600 dark:text-gray-400">{user.full_name}</p>
-            )}
+            {user.full_name && <p className="text-gray-600 dark:text-gray-400">{user.full_name}</p>}
 
             {user.is_superuser && (
               <span className="inline-block mt-2 px-3 py-1 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded-full text-sm font-medium">
@@ -230,7 +225,9 @@ export default function Profile() {
                     Vollständiger Name
                   </label>
                   <div className="text-gray-900 dark:text-gray-100">
-                    {user.full_name || <span className="text-gray-400 italic">{t('profile:notSpecified')}</span>}
+                    {user.full_name || (
+                      <span className="text-gray-400 italic">{t('profile:notSpecified')}</span>
+                    )}
                   </div>
                 </div>
 
@@ -239,7 +236,9 @@ export default function Profile() {
                     Über mich
                   </label>
                   <div className="text-gray-900 dark:text-gray-100">
-                    {user.bio || <span className="text-gray-400 italic">{t('profile:noDescription')}</span>}
+                    {user.bio || (
+                      <span className="text-gray-400 italic">{t('profile:noDescription')}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -247,9 +246,7 @@ export default function Profile() {
               // Edit Mode
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Vollständiger Name
-                  </label>
+                  <label className="block text-sm font-medium mb-2">Vollständiger Name</label>
                   <input
                     type="text"
                     value={formData.full_name}
@@ -260,9 +257,7 @@ export default function Profile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    E-Mail
-                  </label>
+                  <label className="block text-sm font-medium mb-2">E-Mail</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -274,9 +269,7 @@ export default function Profile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Über mich
-                  </label>
+                  <label className="block text-sm font-medium mb-2">Über mich</label>
                   <textarea
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}

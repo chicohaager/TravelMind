@@ -1,15 +1,22 @@
-import { useState } from 'react'
 import { Calendar, Clock, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, Reorder, AnimatePresence } from 'framer-motion'
 import TimelineEntryCard from './TimelineEntryCard'
+import { aktuelleLocale } from '@/utils/format'
 
-export default function TimelineDay({ day, onReorder, onDeleteEntry, onOptimize, isExpanded, onToggleExpand }) {
+export default function TimelineDay({
+  day,
+  onReorder,
+  onDeleteEntry,
+  onOptimize,
+  isExpanded,
+  onToggleExpand,
+}) {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('de-DE', {
+    return date.toLocaleDateString(aktuelleLocale(), {
       weekday: 'long',
       day: '2-digit',
-      month: 'long'
+      month: 'long',
     })
   }
 
@@ -29,7 +36,7 @@ export default function TimelineDay({ day, onReorder, onDeleteEntry, onOptimize,
     >
       {/* Day Header */}
       <div
-        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 cursor-pointer"
+        className="bg-gradient-to-r from-primary-600 to-primary-400 text-white p-4 cursor-pointer"
         onClick={onToggleExpand}
       >
         <div className="flex items-center justify-between">
@@ -63,11 +70,7 @@ export default function TimelineDay({ day, onReorder, onDeleteEntry, onOptimize,
                 Optimieren
               </button>
             )}
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5" />
-            ) : (
-              <ChevronDown className="w-5 h-5" />
-            )}
+            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </div>
         </div>
       </div>

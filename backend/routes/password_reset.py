@@ -4,21 +4,33 @@ Password Reset Router
 Secure password reset flow with token-based verification.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
 import os
 import secrets
-import structlog
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
+# PyJWT statt python-jose.
+#
+# python-jose 3.4.0 haelt pyasn1 unter 0.5 fest — dort stehen sechs bekannte
+# Schwachstellen — und zieht ecdsa mit, fuer das es UEBERHAUPT KEINE
+# behebende Version gibt. Beide waren am 2026-08-25 die letzten offenen
+# Findings von pip-audit und liessen sich nur durch den Wechsel schliessen.
+#
+# Die benutzte Schnittstelle ist identisch: encode(payload, key, algorithm=),
+# decode(token, key, algorithms=[]). PyJWT prueft "exp" ebenfalls von sich
+# aus und wirft dabei ExpiredSignatureError, eine Unterklasse von PyJWTError.
+import jwt
+import structlog
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from jwt import PyJWTError as JWTError
 from models.database import get_db
 from models.user import User
+from pydantic import BaseModel, EmailStr, Field
 from services.audit_service import audit_service
-from utils.rate_limits import limiter, RateLimits
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.password_policy import MINDESTLAENGE, passwort_pruefen
+from utils.rate_limits import limiter
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
@@ -35,7 +47,7 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetConfirm(BaseModel):
     token: str = Field(..., example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-    new_password: str = Field(..., min_length=8, example="newSecurePassword123")
+    new_password: str = Field(..., min_length=MINDESTLAENGE, example="newSecurePassword123")
 
 
 class PasswordResetResponse(BaseModel):
@@ -57,13 +69,7 @@ def create_reset_token(email: str, user_id: int) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
     nonce = secrets.token_hex(16)
 
-    to_encode = {
-        "sub": email,
-        "user_id": user_id,
-        "exp": expire,
-        "type": "password_reset",
-        "nonce": nonce
-    }
+    to_encode = {"sub": email, "user_id": user_id, "exp": expire, "type": "password_reset", "nonce": nonce}
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -83,32 +89,26 @@ def verify_reset_token(token: str, password_changed_at: datetime = None) -> dict
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
         if payload.get("type") != "password_reset":
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid token type"
-            )
+            raise HTTPException(status_code=400, detail="Invalid token type")
 
         # Check if token was issued before password was changed (token already used)
         if password_changed_at:
             token_issued_at = datetime.fromtimestamp(
-                payload.get("exp") - (RESET_TOKEN_EXPIRE_MINUTES * 60),
-                tz=timezone.utc
+                payload.get("exp") - (RESET_TOKEN_EXPIRE_MINUTES * 60), tz=timezone.utc
             )
             if token_issued_at < password_changed_at:
-                logger.warning("password_reset_token_already_used", token_issued=token_issued_at, password_changed=password_changed_at)
-                raise HTTPException(
-                    status_code=400,
-                    detail="Reset token has already been used"
+                logger.warning(
+                    "password_reset_token_already_used",
+                    token_issued=token_issued_at,
+                    password_changed=password_changed_at,
                 )
+                raise HTTPException(status_code=400, detail="Reset token has already been used")
 
         return payload
 
     except JWTError as e:
         logger.warning("password_reset_token_invalid", error=str(e))
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid or expired reset token"
-        )
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
 
 
 async def send_reset_email(email: str, reset_token: str, username: str):
@@ -128,21 +128,12 @@ async def send_reset_email(email: str, reset_token: str, username: str):
     if smtp_host:
         # TODO: Implement actual email sending
         # For now, we'll just log that we would send an email
-        logger.info(
-            "password_reset_email_would_send",
-            email=email,
-            username=username
-        )
+        logger.info("password_reset_email_would_send", email=email, username=username)
     else:
         # Development mode - log the reset link
-        logger.info(
-            "password_reset_link_generated",
-            email=email,
-            username=username,
-            reset_url=reset_url
-        )
+        logger.info("password_reset_link_generated", email=email, username=username, reset_url=reset_url)
         print(f"\n{'='*60}")
-        print(f"PASSWORD RESET LINK (Development Mode)")
+        print("PASSWORD RESET LINK (Development Mode)")
         print(f"{'='*60}")
         print(f"User: {username} ({email})")
         print(f"Reset URL: {reset_url}")
@@ -156,7 +147,7 @@ async def request_password_reset(
     request: Request,
     reset_request: PasswordResetRequest,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Request a password reset.
@@ -169,9 +160,7 @@ async def request_password_reset(
     even if the email doesn't exist in the system.
     """
     # Find user by email
-    result = await db.execute(
-        select(User).where(User.email == reset_request.email)
-    )
+    result = await db.execute(select(User).where(User.email == reset_request.email))
     user = result.scalar_one_or_none()
 
     if user:
@@ -179,12 +168,7 @@ async def request_password_reset(
         reset_token = create_reset_token(user.email, user.id)
 
         # Send email in background
-        background_tasks.add_task(
-            send_reset_email,
-            user.email,
-            reset_token,
-            user.username
-        )
+        background_tasks.add_task(send_reset_email, user.email, reset_token, user.username)
 
         # Audit log
         await audit_service.log_auth_event(
@@ -193,7 +177,7 @@ async def request_password_reset(
             user_id=user.id,
             username=user.username,
             request=request,
-            details={"email": user.email}
+            details={"email": user.email},
         )
 
         logger.info("password_reset_requested", user_id=user.id, email=user.email)
@@ -205,16 +189,14 @@ async def request_password_reset(
     return PasswordResetResponse(
         message="If an account with this email exists, a password reset link has been sent.",
         email_sent=True,
-        expires_in_minutes=RESET_TOKEN_EXPIRE_MINUTES
+        expires_in_minutes=RESET_TOKEN_EXPIRE_MINUTES,
     )
 
 
 @router.post("/reset-password", response_model=PasswordResetResponse)
 @limiter.limit("10/hour")
 async def confirm_password_reset(
-    request: Request,
-    reset_confirm: PasswordResetConfirm,
-    db: AsyncSession = Depends(get_db)
+    request: Request, reset_confirm: PasswordResetConfirm, db: AsyncSession = Depends(get_db)
 ):
     """
     Confirm password reset with token.
@@ -237,28 +219,26 @@ async def confirm_password_reset(
     email = payload.get("sub")
 
     # Find user
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.email == email)
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.email == email))
     user = result.scalar_one_or_none()
 
     if not user:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid reset token"
-        )
+        raise HTTPException(status_code=400, detail="Invalid reset token")
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=400,
-            detail="User account is disabled"
-        )
+        raise HTTPException(status_code=400, detail="User account is disabled")
 
     # Verify token with password_changed_at check (prevents token reuse)
     verify_reset_token(reset_confirm.token, user.password_changed_at)
 
     # Update password and set password_changed_at to invalidate all existing reset tokens
     now = datetime.now(timezone.utc)
+    # Dritter Weg, an dem ein Passwort gesetzt wird — dieselben Regeln.
+    # Ohne diese Zeile waere das Zuruecksetzen die offene Tuer gewesen.
+    pruefung = await passwort_pruefen(reset_confirm.new_password)
+    if not pruefung.gueltig:
+        raise HTTPException(status_code=400, detail=pruefung.grund)
+
     user.hashed_password = User.hash_password(reset_confirm.new_password)
     user.password_changed_at = now
     user.updated_at = now
@@ -267,27 +247,19 @@ async def confirm_password_reset(
 
     # Audit log
     await audit_service.log_auth_event(
-        db=db,
-        event="password_reset_completed",
-        user_id=user.id,
-        username=user.username,
-        request=request
+        db=db, event="password_reset_completed", user_id=user.id, username=user.username, request=request
     )
 
     logger.info("password_reset_completed", user_id=user.id)
 
     return PasswordResetResponse(
-        message="Password has been successfully reset. You can now login with your new password.",
-        email_sent=False
+        message="Password has been successfully reset. You can now login with your new password.", email_sent=False
     )
 
 
 @router.get("/verify-reset-token")
 @limiter.limit("30/minute")
-async def verify_token_validity(
-    request: Request,
-    token: str
-):
+async def verify_token_validity(request: Request, token: str):
     """
     Verify if a reset token is still valid.
 
@@ -304,12 +276,8 @@ async def verify_token_validity(
         return {
             "valid": True,
             "expires_in_minutes": remaining_minutes,
-            "email": payload.get("sub", "")[:3] + "***"  # Partially hide email
+            "email": payload.get("sub", "")[:3] + "***",  # Partially hide email
         }
 
     except HTTPException:
-        return {
-            "valid": False,
-            "expires_in_minutes": 0,
-            "email": None
-        }
+        return {"valid": False, "expires_in_minutes": 0, "email": None}

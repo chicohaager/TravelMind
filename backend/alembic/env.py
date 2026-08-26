@@ -9,28 +9,18 @@ import asyncio
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
-from sqlalchemy import create_engine
-
 from alembic import context
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # Load environment variables
 load_dotenv()
 
+
 # Import all models for autogenerate to detect
 from models.database import Base
-from models.user import User
-from models.trip import Trip
-from models.diary import DiaryEntry
-from models.place import Place
-from models.place_list import PlaceList
-from models.expense import Expense
-from models.participant import Participant
-from models.route import Route
-from models.settings import SystemSetting, UserAISetting
 
 # This is the Alembic Config object
 config = context.config
@@ -44,11 +34,15 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    """Get database URL from environment or alembic.ini"""
-    url = os.getenv("DATABASE_URL")
-    if url:
-        return url
-    return config.get_main_option("sqlalchemy.url")
+    """Get database URL from environment or alembic.ini.
+
+    Postgres URLs are normalized to the asyncpg driver (mirroring
+    models.database), since online migrations run on an async engine.
+    """
+    url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    if url and url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
 
 def run_migrations_offline() -> None:

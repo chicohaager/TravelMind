@@ -1,8 +1,15 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, Link as LinkIcon, Search, CheckCircle, Circle, Loader, AlertCircle,
-  MapPin, Globe, Info
+  X,
+  Link as Search,
+  CheckCircle,
+  Circle,
+  Loader,
+  AlertCircle,
+  MapPin,
+  Globe,
+  Info,
 } from 'lucide-react'
 import { placesService } from '@/services/api'
 import toast from 'react-hot-toast'
@@ -18,13 +25,18 @@ const CATEGORY_ICONS = {
   park: '🌳',
   shopping: '🛍️',
   nightlife: '🎉',
-  other: '📍'
+  other: '📍',
 }
 
-export default function ImportFromGuideModal({ isOpen, onClose, tripId, destination, onImportComplete }) {
+export default function ImportFromGuideModal({
+  isOpen,
+  onClose,
+  tripId,
+  destination,
+  onImportComplete,
+}) {
   const { t } = useTranslation()
   const [searchDestination, setSearchDestination] = useState(destination || '')
-  const [loading, setLoading] = useState(false)
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [extractedPlaces, setExtractedPlaces] = useState([])
@@ -59,7 +71,9 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
           const sourceText = response.data.sources_searched?.length
             ? ` ${t('places:from')} ${response.data.sources_searched.join(', ')}`
             : ''
-          toast.success(t('places:placesFound', { count: response.data.places.length }) + sourceText + '!')
+          toast.success(
+            t('places:placesFound', { count: response.data.places.length }) + sourceText + '!'
+          )
         }
       } else {
         setError(response.data.error || t('places:errorSearching'))
@@ -102,7 +116,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
 
     try {
       // Convert extracted places to PlaceCreate format
-      const placesToImport = Array.from(selectedPlaces).map(index => {
+      const placesToImport = Array.from(selectedPlaces).map((index) => {
         const place = extractedPlaces[index]
         return {
           name: place.name,
@@ -119,7 +133,7 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
           currency: 'EUR',
           rating: null,
           notes: null,
-          photos: []
+          photos: [],
         }
       })
 
@@ -245,7 +259,9 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
               {sourcesSearched.length > 0 && (
                 <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   <Globe className="w-4 h-4" />
-                  <span>{t('places:sourcesSearched')} {sourcesSearched.join(', ')}</span>
+                  <span>
+                    {t('places:sourcesSearched')} {sourcesSearched.join(', ')}
+                  </span>
                 </div>
               )}
             </div>
@@ -261,7 +277,9 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
                     onClick={toggleAll}
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    {selectedPlaces.size === extractedPlaces.length ? t('places:deselectAll') : t('places:selectAll')}
+                    {selectedPlaces.size === extractedPlaces.length
+                      ? t('places:deselectAll')
+                      : t('places:selectAll')}
                   </button>
                 </div>
 
@@ -290,7 +308,9 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2">
-                            <span className="text-xl">{CATEGORY_ICONS[place.category] || '📍'}</span>
+                            <span className="text-xl">
+                              {CATEGORY_ICONS[place.category] || '📍'}
+                            </span>
                             <div className="flex-1">
                               <h4 className="font-semibold">{place.name}</h4>
                               {place.description && (
@@ -338,15 +358,13 @@ export default function ImportFromGuideModal({ isOpen, onClose, tripId, destinat
             <div className="flex-shrink-0 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('places:selectedCountPrefix')} <strong>{selectedPlaces.size}</strong> {t('places:selectedCountMiddle')} <strong>{extractedPlaces.length}</strong> {t('places:selectedCountSuffix')}
+                  {t('places:selectedCountPrefix')} <strong>{selectedPlaces.size}</strong>{' '}
+                  {t('places:selectedCountMiddle')} <strong>{extractedPlaces.length}</strong>{' '}
+                  {t('places:selectedCountSuffix')}
                 </p>
 
                 <div className="flex gap-2">
-                  <button
-                    onClick={handleClose}
-                    className="btn-outline"
-                    disabled={importing}
-                  >
+                  <button onClick={handleClose} className="btn-outline" disabled={importing}>
                     {t('common:cancel')}
                   </button>
                   <button

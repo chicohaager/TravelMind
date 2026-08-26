@@ -1,6 +1,7 @@
-import { DollarSign, Calendar, User, Users, Edit, Trash2 } from 'lucide-react'
+import { Calendar, User, Users, Edit, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 const categoryIcons = {
   food: '🍽️',
@@ -8,7 +9,7 @@ const categoryIcons = {
   accommodation: '🏨',
   activities: '🎯',
   shopping: '🛍️',
-  other: '📝'
+  other: '📝',
 }
 
 const categoryColors = {
@@ -17,23 +18,28 @@ const categoryColors = {
   accommodation: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
   activities: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
   shopping: 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300',
-  other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+  other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 }
 
 export default function ExpenseCard({ expense, participants, onEdit, onDelete }) {
   const { t } = useTranslation()
   const formatDate = (dateStr) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('de-DE', {
+    return date.toLocaleDateString(aktuelleLocale(), {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     })
   }
 
   const categoryClass = categoryColors[expense.category] || categoryColors.other
   const categoryIcon = categoryIcons[expense.category] || categoryIcons.other
-  const categoryLabel = t(`budget.categories.${expense.category}`) || t('budget:categories.other')
+  // Namensraum mit DOPPELPUNKT. Mit einem Punkt sucht i18next im
+  // Standard-Namensraum 'common', findet nichts und gibt den Key zurueck —
+  // und weil t() dabei einen Wahrheitswert liefert, griff das ||-Fallback nie.
+  const categoryLabel = t(`budget:categories.${expense.category}`, {
+    defaultValue: t('budget:categories.other'),
+  })
 
   return (
     <motion.div
@@ -67,7 +73,9 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
 
             <div className="flex items-center gap-1">
               <User className="w-4 h-4" />
-              <span>{t('budget:paidBy')} <strong>{expense.paid_by_name}</strong></span>
+              <span>
+                {t('budget:paidBy')} <strong>{expense.paid_by_name}</strong>
+              </span>
             </div>
 
             {expense.splits && expense.splits.length > 0 && (
@@ -81,14 +89,21 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
           {/* Splits Details */}
           {expense.splits && expense.splits.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('budget:splitDetails')}</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                {t('budget:splitDetails')}
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {expense.splits.map((split) => {
                   const participant = participants.find((p) => p.id === split.participant_id)
                   return (
-                    <div key={split.participant_id} className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/50 rounded px-2 py-1">
+                    <div
+                      key={split.participant_id}
+                      className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/50 rounded px-2 py-1"
+                    >
                       <span>{participant?.name || t('budget:unknown')}</span>
-                      <span className="font-medium">{split.amount.toFixed(2)} {expense.currency}</span>
+                      <span className="font-medium">
+                        {split.amount.toFixed(2)} {expense.currency}
+                      </span>
                     </div>
                   )
                 })}
