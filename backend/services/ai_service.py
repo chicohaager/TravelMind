@@ -50,6 +50,26 @@ def modell_id(variable: str) -> str:
     return os.getenv(variable) or STANDARD_MODELLE[variable]
 
 
+def _abbruch_pruefen(anbieter: str, response, max_tokens: int) -> None:
+    """Laut scheitern, wenn die Antwort am Token-Limit abgeschnitten wurde.
+
+    OpenAI und Groq melden das als `finish_reason == "length"`. Ohne diese
+    Pruefung geht der halbe Text weiter in den JSON-Parser, und dessen Meldung
+    zeigt dann auf die Formatierung statt auf die Ursache — dieselbe Falle wie
+    bei Claude (siehe `CLAUDE_DENK_RESERVE`).
+
+    Defensiv per getattr: ein SDK-Sprung, der das Feld umbenennt, darf hier
+    keinen Absturz erzeugen — dann greift die Pruefung eben nicht mehr, und
+    das faellt im Test auf, nicht beim Nutzer.
+    """
+    wahl = next(iter(getattr(response, "choices", None) or []), None)
+    if getattr(wahl, "finish_reason", None) == "length":
+        raise RuntimeError(
+            f"{anbieter}-Antwort am Token-Limit abgeschnitten (max_tokens={max_tokens}). "
+            f"Weniger Ausgabe anfordern oder das Budget erhoehen."
+        )
+
+
 class AIProvider(ABC):
     """Abstract base class for AI providers"""
 
@@ -69,6 +89,33 @@ class AIProvider(ABC):
         Returns:
             AI response text
         """
+
+
+# Auf Claude begrenzt `max_tokens` DENKEN UND TEXT ZUSAMMEN — bei den anderen
+# drei Anbietern nur den Text.
+#
+# Die aktuellen Claude-Modelle denken adaptiv, ohne dass man es einschaltet:
+# laut Anbieter-Doku (geprueft 2026-08-26) heisst "`thinking` weglassen" bei
+# claude-sonnet-5 nicht "kein Denken", sondern "adaptives Denken". Ein knappes
+# Budget geht damit ganz an den Denk-Block, und der Textblock kommt gar nicht
+# mehr — oder nur halb.
+#
+# Am 2026-08-26 in der Produktion gemessen (Backend-Protokoll, Benutzer 2,
+# 09:37–09:38): drei verschiedene Fehlerbilder aus EINER Ursache, alle auf
+# /api/ai/personalized-recommendations, alle mit max_tokens=2048:
+#   RuntimeError    "keinen Textblock (Blockarten: ['thinking'])"
+#                   -> die 2048 gingen restlos ans Denken
+#   JSONDecodeError "Expecting property name … line 24 column 26"
+#                   -> Text mitten im Array abgeschnitten
+#   AttributeError  "'str' object has no attribute 'get'"
+#                   -> abgeschnittenes Array, vom Notfall-Zweig als OBJEKT
+#                      geparst; das Iterieren lieferte dann Schluessel (str)
+#
+# Der Aufrufer meint mit `max_tokens` den TEXT, den er braucht. Also legt
+# dieser Anbieter das Denk-Budget obendrauf, statt es ihm wegzunehmen.
+# Abgerechnet werden nur die tatsaechlich erzeugten Token — eine grosszuegige
+# Reserve kostet nichts, wenn kurz gedacht wird.
+CLAUDE_DENK_RESERVE = 8192
 
 
 class ClaudeProvider(AIProvider):
@@ -99,13 +146,29 @@ class ClaudeProvider(AIProvider):
         # ihn annehmen; hier wird er bewusst verworfen. `test_ai_service.py`
         # prueft, dass die uebergebenen Argumente zur INSTALLIERTEN Signatur
         # passen — damit faellt der naechste solche Sprung im Test auf.
-        kwargs = {"model": self.model, "max_tokens": max_tokens, "messages": messages}
+        budget = max_tokens + CLAUDE_DENK_RESERVE
+        kwargs = {"model": self.model, "max_tokens": budget, "messages": messages}
 
         if system_prompt:
             kwargs["system"] = system_prompt
 
         # Run synchronous API call in thread pool to avoid blocking event loop
         response = await asyncio.to_thread(self.client.messages.create, **kwargs)
+
+        # Abgeschnitten? Dann LAUT scheitern, nicht halben Text weiterreichen.
+        #
+        # Ohne diese Zeile wandert eine abgeschnittene Antwort in den
+        # JSON-Parser und scheitert dort mit einer Meldung ueber Anfuehrungs-
+        # zeichen in Zeile 24 — die auf die Formatierung zeigt statt auf das
+        # Token-Limit. Genau daran ist am 2026-08-26 eine Stunde verloren
+        # gegangen: drei Fehlermeldungen, keine nannte die Ursache.
+        if getattr(response, "stop_reason", None) == "max_tokens":
+            erzeugt = getattr(getattr(response, "usage", None), "output_tokens", "?")
+            raise RuntimeError(
+                f"Claude-Antwort am Token-Limit abgeschnitten (max_tokens={budget}, "
+                f"erzeugt={erzeugt}). Denk-Block und Text teilen sich dieses Budget — "
+                f"CLAUDE_DENK_RESERVE erhoehen oder weniger Ausgabe anfordern."
+            )
 
         # Den ERSTEN Textblock suchen, nicht `content[0]` annehmen.
         #
@@ -152,6 +215,8 @@ class OpenAIProvider(AIProvider):
             max_completion_tokens=max_tokens,
             temperature=temperature,
         )
+
+        _abbruch_pruefen("OpenAI", response, max_tokens)
 
         if not response.choices or not response.choices[0].message.content:
             raise RuntimeError("OpenAI returned an empty response")
@@ -220,6 +285,8 @@ class GroqProvider(AIProvider):
             max_tokens=max_tokens,
             temperature=temperature,
         )
+
+        _abbruch_pruefen("Groq", response, max_tokens)
 
         if not response.choices or not response.choices[0].message.content:
             raise RuntimeError("Groq returned an empty response")

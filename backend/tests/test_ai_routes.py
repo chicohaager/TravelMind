@@ -19,7 +19,7 @@ import json
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from routes.ai import _parse_ai_json
+from routes.ai import _nur_objekte, _parse_ai_json
 
 # ── Antwortauswertung ───────────────────────────────────────────────────────
 
@@ -169,3 +169,55 @@ async def test_unmoegliche_dauer_wird_abgewiesen(client: AsyncClient, auth_heade
             "/api/ai/suggest", headers=auth_headers, json={"interests": ["Kultur"], "duration": dauer}
         )
         assert antwort.status_code == 422, dauer
+
+
+# ── Formprüfung: abgeschnittene Antworten dürfen nicht plausibel aussehen ────
+#
+# Am 2026-08-26 in der Produktion gemessen (Backend-Protokoll, Benutzer 2):
+# `/personalized-recommendations` starb an
+# `AttributeError: 'str' object has no attribute 'get'`. Ursache war kein
+# Zugriffsfehler, sondern ein abgeschnittenes Array: ohne schliessende `]`
+# griff der Notfall-Zweig auf `{…}` zu, lieferte ein OBJEKT, und das Iterieren
+# darüber gab Schlüssel (str) statt Empfehlungen. Ein Formfehler, der sich als
+# Programmierfehler verkleidet.
+
+
+def test_abgeschnittenes_array_wird_nicht_als_objekt_ausgegeben():
+    """Genau der Fall aus der Produktion — vorher kam hier ein dict heraus."""
+    abgeschnitten = '[\n  {"name": "Plitvice", "category": "park"},\n  {"name": "Zagreb", "cat'
+    with pytest.raises(ValueError):
+        _parse_ai_json(abgeschnitten, erwartet=list)
+
+
+def test_ohne_erwartung_bleibt_der_alte_notfall_zweig():
+    """Positivkontrolle zur Zeile darüber: die Ablehnung kommt von `erwartet`,
+    nicht davon, dass der Text unparsbar wäre."""
+    abgeschnitten = '[\n  {"name": "Plitvice", "category": "park"},\n  {"name": "Zagreb", "cat'
+    assert isinstance(_parse_ai_json(abgeschnitten), dict)
+
+
+def test_objekt_wo_eine_liste_erwartet_wird_wird_abgelehnt():
+    with pytest.raises(ValueError):
+        _parse_ai_json('{"recommendations": []}', erwartet=list)
+
+
+def test_liste_wo_ein_objekt_erwartet_wird_wird_abgelehnt():
+    with pytest.raises(ValueError):
+        _parse_ai_json("[1, 2]", erwartet=dict)
+
+
+def test_die_erwartete_form_geht_weiterhin_durch():
+    assert _parse_ai_json('```json\n[{"name": "Zagreb"}]\n```', erwartet=list) == [{"name": "Zagreb"}]
+    assert _parse_ai_json('{"a": 1}', erwartet=dict) == {"a": 1}
+
+
+def test_eintraege_die_keine_objekte_sind_werden_abgelehnt():
+    """`.get` auf einer Zeichenkette ist ein Absturz mit irreführender Meldung."""
+    with pytest.raises(ValueError) as fehler:
+        _nur_objekte(["Plitvice", {"name": "Zagreb"}], "recommendations")
+    assert "recommendations" in str(fehler.value)
+
+
+def test_eine_liste_aus_objekten_geht_unveraendert_durch():
+    eintraege = [{"name": "Zagreb"}]
+    assert _nur_objekte(eintraege, "recommendations") is eintraege
