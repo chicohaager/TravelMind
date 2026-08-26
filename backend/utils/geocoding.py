@@ -169,6 +169,7 @@ async def _photon(query: str, anker: Optional[Tuple[float, float]] = None) -> Li
                     "lat": float(koordinaten[1]),
                     "lon": float(koordinaten[0]),
                     "name": eigenschaften.get("name", ""),
+                    "land": (eigenschaften.get("countrycode") or "").lower() or None,
                 }
             )
         return aus
@@ -181,10 +182,23 @@ async def _photon(query: str, anker: Optional[Tuple[float, float]] = None) -> Li
 
 
 def _naechster(
-    kandidaten: List[Dict[str, Any]], anker: Optional[Tuple[float, float]], max_km: float
+    kandidaten: List[Dict[str, Any]],
+    anker: Optional[Tuple[float, float]],
+    max_km: float,
+    land: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Wählt den zum Anker nächstgelegenen Kandidaten innerhalb der Schranke.
+
+    Treffer im Land des Reiseziels haben **Vorrang**. Die Entfernung allein
+    reicht nicht: "Etno-Restaurant Zeleni Vir" fand ein Zeleni vir bei Banja
+    Luka, 107 km entfernt und damit innerhalb der Schranke — aber in Bosnien,
+    während die Reise in Kroatien stattfindet. Ein Treffer im falschen Land
+    ist schlimmer als keiner, weil er wie ein Ergebnis aussieht.
+
+    Ein anderes Land wird nicht ausgeschlossen, nur nachgeordnet: ein
+    Tagesausflug über die Grenze ist ein normaler Reisewunsch. Fehlt die
+    Länderkennung, zählt nur die Entfernung.
 
     Ohne Anker gibt es keine Schranke — dann ist der erste Treffer der beste,
     den der Dienst kennt, und mehr lässt sich ohne Bezugspunkt nicht sagen.
@@ -200,10 +214,21 @@ def _naechster(
     im_umkreis = [(d, k) for d, k in bewertet if d <= max_km]
     if not im_umkreis:
         return None
-    entfernung, treffer = min(im_umkreis, key=lambda x: x[0])
+    # Sortierschlüssel: erst "richtiges Land", dann Entfernung.
+    entfernung, treffer = min(
+        im_umkreis,
+        key=lambda x: (0 if (land and x[1].get("land") == land) else 1, x[0]),
+    )
     treffer = dict(treffer)
     treffer["abstand_km"] = round(entfernung, 1)
+    treffer["fremdes_land"] = bool(land and treffer.get("land") and treffer["land"] != land)
     return treffer
+
+
+# Anker -> Laenderkennung. Bewusst nur ein Beiwerk: die Signatur von
+# `anker_fuer_ziel` bleibt ein Koordinatenpaar, damit kein Aufrufer sich
+# aendern muss, und `geocode_place` kann das Land trotzdem nachschlagen.
+_anker_land: Dict[Tuple[float, float], Optional[str]] = {}
 
 
 async def anker_fuer_ziel(destination: Optional[str]) -> Optional[Tuple[float, float]]:
@@ -221,7 +246,8 @@ async def anker_fuer_ziel(destination: Optional[str]) -> Optional[Tuple[float, f
             continue
         treffer = await _nominatim(kandidat, limit=1)
         if treffer:
-            logger.info("geocoding_anker", ziel=destination, benutzt=kandidat)
+            logger.info("geocoding_anker", ziel=destination, benutzt=kandidat, land=treffer[0].get("land"))
+            _anker_land[(treffer[0]["lat"], treffer[0]["lon"])] = treffer[0].get("land")
             return (treffer[0]["lat"], treffer[0]["lon"])
     logger.warning("geocoding_anker_fehlt", ziel=destination)
     return None
@@ -243,9 +269,12 @@ async def geocode_place(
     if anker is None and destination:
         anker = await anker_fuer_ziel(destination)
 
+    # Das Land des Reiseziels bevorzugt Treffer im richtigen Staat.
+    anker_land = _anker_land.get(anker) if anker else None
+
     # Eine echte Adresse ist die verlässlichste Angabe — zuerst versuchen.
     if address:
-        treffer = _naechster(await _nominatim(address), anker, MAX_ABSTAND_KM)
+        treffer = _naechster(await _nominatim(address), anker, MAX_ABSTAND_KM, anker_land)
         if treffer:
             logger.info("geocoding_treffer", name=name, quelle="nominatim/adresse", gefunden=treffer["name"])
             return {**treffer, "quelle": "nominatim/adresse"}
@@ -254,7 +283,7 @@ async def geocode_place(
 
     for variante in varianten:
         anfrage = f"{variante}, {land}" if land else variante
-        treffer = _naechster(await _nominatim(anfrage), anker, MAX_ABSTAND_KM)
+        treffer = _naechster(await _nominatim(anfrage), anker, MAX_ABSTAND_KM, anker_land)
         if treffer:
             logger.info(
                 "geocoding_treffer",
@@ -263,6 +292,7 @@ async def geocode_place(
                 variante=variante,
                 gefunden=treffer["name"],
                 abstand_km=treffer.get("abstand_km"),
+                fremdes_land=treffer.get("fremdes_land"),
             )
             return {**treffer, "quelle": "nominatim", "variante": variante}
 
@@ -270,7 +300,7 @@ async def geocode_place(
     # regelmäßig einen Ort im falschen Land. Nur mit Anker sinnvoll.
     if anker:
         for variante in varianten:
-            treffer = _naechster(await _photon(variante, anker), anker, MAX_ABSTAND_KM)
+            treffer = _naechster(await _photon(variante, anker), anker, MAX_ABSTAND_KM, anker_land)
             if treffer:
                 logger.info(
                     "geocoding_treffer",
