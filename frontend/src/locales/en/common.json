@@ -71,5 +71,8 @@
     }
   },
   "changeLanguage": "Change language",
-  "toggleDarkMode": "Toggle dark mode"
+  "toggleDarkMode": "Toggle dark mode",
+  "showCustomColor": "Choose custom color",
+  "hideCustomColor": "Hide custom color",
+  "selectedColor": "Selected:"
 }

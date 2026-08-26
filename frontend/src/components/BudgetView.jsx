@@ -131,7 +131,7 @@ export default function BudgetView({ tripId, participants }) {
             <h2 className="text-2xl font-bold mb-4">{t('budget:budgetSummary')}</h2>
 
             {/* Total */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-6 mb-6">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-400 text-white rounded-xl p-6 mb-6">
               <div className="text-sm opacity-90 mb-1">{t('budget:totalExpenses')}</div>
               <div className="text-4xl font-bold">
                 {summary.total_expenses.toFixed(2)} {summary.currency}

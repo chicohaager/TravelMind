@@ -71,5 +71,8 @@
   "searchPlaceholder": "Voyages, entrées, lieux…",
   "clear": "Effacer",
   "changeLanguage": "Changer de langue",
-  "toggleDarkMode": "Basculer le mode sombre"
+  "toggleDarkMode": "Basculer le mode sombre",
+  "showCustomColor": "Choisir une couleur",
+  "hideCustomColor": "Masquer la couleur",
+  "selectedColor": "Sélectionné :"
 }

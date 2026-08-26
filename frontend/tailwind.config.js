@@ -4,6 +4,31 @@ export default {
     "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
+  // Sicherungsliste für die Palette.
+  //
+  // Tailwind liefert nur aus, was im Quelltext VORKOMMT. Am 2026-08-26
+  // gemessen: `bg-secondary-500` stand in keiner ausgelieferten CSS, weil die
+  // Anwendung die Signalfarbe kaum als Fläche benutzt. Für die Anwendung ist
+  // das richtig — für das Design-System nach claude.ai/design ist es eine
+  // Falle: der Agent baut damit neue Oberflächen und schreibt Klassen, die
+  // ins Leere laufen; das Ergebnis ist stillschweigend ungestylt.
+  //
+  // Deshalb steht die volle Palette hier fest drin. Kosten gemessen: siehe
+  // .design-sync/NOTES.md.
+  safelist: [
+    { pattern: /^(bg|text|border|ring|from|to|via)-(primary|secondary)-(50|100|200|300|400|500|600|700|800|900|950)$/ },
+    // Die Schrift-Utilities kommen in der Anwendung nicht vor (sie setzt die
+    // Familien ueber h1..h6 im Basis-CSS). Der Design-Agent braucht sie aber,
+    // um eigene Ueberschriften zu bauen — ohne Sicherungsliste laeuft
+    // `font-display` ins Leere. Am 2026-08-26 genau so gemessen.
+    'font-display', 'font-sans', 'font-mono', 'tabular-nums',
+    // Zustandsvarianten brauchen `variants`, nicht das Präfix im Muster —
+    // mit `hover:` im Muster erzeugt Tailwind nichts (am 2026-08-26 gemessen).
+    {
+      pattern: /^(bg|text|border)-(primary|secondary)-(100|200|300|400|500|600|700|800)$/,
+      variants: ['hover', 'focus', 'active', 'dark'],
+    },
+  ],
   darkMode: 'class',
   theme: {
     extend: {

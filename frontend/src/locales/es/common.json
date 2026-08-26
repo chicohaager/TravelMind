@@ -71,5 +71,8 @@
   "noResults": "Sin resultados",
   "searchPlaceholder": "Viajes, entradas, lugares…",
   "changeLanguage": "Cambiar idioma",
-  "toggleDarkMode": "Alternar modo oscuro"
+  "toggleDarkMode": "Alternar modo oscuro",
+  "showCustomColor": "Elegir color propio",
+  "hideCustomColor": "Ocultar color propio",
+  "selectedColor": "Seleccionado:"
 }
