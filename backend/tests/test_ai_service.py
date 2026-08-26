@@ -205,3 +205,165 @@ async def test_unbekannte_kategorie_faellt_auf_alle_zurueck():
     dienst, anbieter = _dienst(json.dumps(TIPPS))
     await dienst.get_local_tips("Lissabon", "gibtesnicht")
     assert "alle" in anbieter.letzter_prompt
+
+
+# ── Token-Budget: der Denk-Block isst den Text auf ───────────────────────────
+#
+# Am 2026-08-26 in der Produktion gemessen. Auf Claude begrenzt `max_tokens`
+# DENKEN UND TEXT zusammen, und die aktuellen Modelle denken adaptiv, ohne
+# dass man es einschaltet. Bei 2048 blieb für den Text nichts übrig:
+#
+#   {"fehler": "Claude lieferte keinen Textblock (Blockarten: ['thinking'])"}
+#
+# Dieselbe Ursache erzeugte in derselben Minute noch zwei ganz anders
+# aussehende Fehler (JSONDecodeError, AttributeError) — deshalb prüfen die
+# Tests unten nicht die Symptome, sondern das Budget und die Abbruchmeldung.
+
+
+class _Block:
+    def __init__(self, art, text=None):
+        self.type = art
+        if text is not None:
+            self.text = text
+
+
+class _Nutzung:
+    def __init__(self, tokens):
+        self.output_tokens = tokens
+
+
+class _ClaudeAntwort:
+    def __init__(self, bloecke, stop_reason="end_turn", tokens=100):
+        self.content = bloecke
+        self.stop_reason = stop_reason
+        self.usage = _Nutzung(tokens)
+
+
+class _MessagesDoppel:
+    """Nimmt den Aufruf entgegen und merkt sich die Argumente."""
+
+    def __init__(self, antwort):
+        self.antwort = antwort
+        self.kwargs = None
+
+    def create(self, **kwargs):
+        self.kwargs = kwargs
+        return self.antwort
+
+
+def _claude(antwort):
+    anbieter = ClaudeProvider.__new__(ClaudeProvider)
+    anbieter.model = "claude-sonnet-5"
+    anbieter.model_id = "claude-sonnet-5"
+    doppel = _MessagesDoppel(antwort)
+    anbieter.client = type("Klient", (), {"messages": doppel})()
+    return anbieter, doppel
+
+
+@pytest.mark.asyncio
+async def test_claude_bekommt_denk_reserve_obendrauf():
+    """Der Aufrufer meint mit max_tokens den TEXT. Ohne Reserve geht das
+    Budget ans Denken und der Textblock fehlt ganz."""
+    from services.ai_service import CLAUDE_DENK_RESERVE
+
+    anbieter, doppel = _claude(_ClaudeAntwort([_Block("text", '[{"name": "Zagreb"}]')]))
+    await anbieter.chat("Empfiehl mir Orte", max_tokens=2048)
+    assert doppel.kwargs["max_tokens"] == 2048 + CLAUDE_DENK_RESERVE
+
+
+@pytest.mark.asyncio
+async def test_die_denk_reserve_ist_groesser_als_null():
+    """Sonst besteht der Test darüber auch bei CLAUDE_DENK_RESERVE = 0."""
+    from services.ai_service import CLAUDE_DENK_RESERVE
+
+    assert CLAUDE_DENK_RESERVE >= 4096
+
+
+@pytest.mark.asyncio
+async def test_abgeschnittene_claude_antwort_scheitert_LAUT():
+    """Sonst wandert halber Text in den JSON-Parser, und dessen Meldung zeigt
+    auf Anführungszeichen in Zeile 24 statt auf das Token-Limit."""
+    anbieter, _ = _claude(_ClaudeAntwort([_Block("text", '[{"name": "Zag')], stop_reason="max_tokens", tokens=10240))
+    with pytest.raises(RuntimeError) as fehler:
+        await anbieter.chat("Empfiehl mir Orte", max_tokens=2048)
+    meldung = str(fehler.value)
+    assert "Token-Limit" in meldung
+    assert "10240" in meldung  # die erzeugte Menge gehört in die Meldung
+
+
+@pytest.mark.asyncio
+async def test_eine_vollstaendige_antwort_geht_durch():
+    """Gegenkontrolle: die Abbruchprüfung darf nicht alles sperren."""
+    anbieter, _ = _claude(_ClaudeAntwort([_Block("thinking"), _Block("text", "fertig")]))
+    assert await anbieter.chat("Frage", max_tokens=2048) == "fertig"
+
+
+# ── Dieselbe Falle bei OpenAI und Groq ──────────────────────────────────────
+
+
+class _Wahl:
+    def __init__(self, finish_reason):
+        self.finish_reason = finish_reason
+        self.message = type("Nachricht", (), {"content": "halber Text"})()
+
+
+class _ChatAntwort:
+    def __init__(self, finish_reason):
+        self.choices = [_Wahl(finish_reason)]
+
+
+@pytest.mark.parametrize("anbietername", ["OpenAI", "Groq"])
+def test_finish_reason_length_scheitert_LAUT(anbietername):
+    from services.ai_service import _abbruch_pruefen
+
+    with pytest.raises(RuntimeError) as fehler:
+        _abbruch_pruefen(anbietername, _ChatAntwort("length"), 2048)
+    assert anbietername in str(fehler.value)
+
+
+def test_eine_normale_antwort_wird_nicht_gesperrt():
+    """Gegenkontrolle — eine Prüfung, die immer anschlägt, prüft nichts."""
+    from services.ai_service import _abbruch_pruefen
+
+    _abbruch_pruefen("OpenAI", _ChatAntwort("stop"), 2048)
+    _abbruch_pruefen("OpenAI", type("Leer", (), {"choices": []})(), 2048)
+
+
+# Die Tests oben pruefen den HELFER. Dass ihn auch jemand AUFRUFT, ist eine
+# andere Aussage — beim Gegentest am 2026-08-26 blieben sie gruen, nachdem der
+# Aufruf in `GroqProvider.chat` geloescht war. Deshalb hier die Verdrahtung,
+# ueber `chat()` und mit einem Doppel an der Stelle des echten Klienten.
+
+
+class _CompletionsDoppel:
+    def __init__(self, antwort):
+        self.antwort = antwort
+
+    def create(self, **kwargs):
+        return self.antwort
+
+
+def _mit_klient(klasse, antwort):
+    anbieter = klasse.__new__(klasse)
+    anbieter.model = "ein-modell"
+    anbieter.model_id = "ein-modell"
+    fertigstellungen = _CompletionsDoppel(antwort)
+    anbieter.client = type("Klient", (), {"chat": type("C", (), {"completions": fertigstellungen})()})()
+    return anbieter
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("klasse,name", [(OpenAIProvider, "OpenAI"), (GroqProvider, "Groq")])
+async def test_die_abbruchpruefung_ist_auch_verdrahtet(klasse, name):
+    anbieter = _mit_klient(klasse, _ChatAntwort("length"))
+    with pytest.raises(RuntimeError) as fehler:
+        await anbieter.chat("Frage", max_tokens=2048)
+    assert name in str(fehler.value)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("klasse", [OpenAIProvider, GroqProvider])
+async def test_eine_vollstaendige_antwort_kommt_durch(klasse):
+    """Gegenkontrolle zur Verdrahtung."""
+    anbieter = _mit_klient(klasse, _ChatAntwort("stop"))
+    assert await anbieter.chat("Frage", max_tokens=2048) == "halber Text"

@@ -24,31 +24,68 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
-def _parse_ai_json(response: str):
+def _parse_ai_json(response: str, erwartet: type = None):
     """Parse a JSON object/array from an AI response.
 
     Models (Claude, GPT, …) frequently wrap JSON in ```json code fences or add
     a short preamble, so a bare json.loads() fails with "Expecting value: line 1
     column 1". Strip fences, then fall back to extracting the outermost {...} or
     [...]. Raises json.JSONDecodeError if nothing parseable is found.
+
+    `erwartet` nennt die Form, die der Prompt angefordert hat (`list` oder
+    `dict`). Sie ist keine Feinheit: der Notfall-Zweig probiert beide Klammer-
+    arten, und bei einem ABGESCHNITTENEN Array gibt es kein `]` mehr — dann
+    greift die `{…}`-Variante und liefert ein Objekt, das aussieht wie ein
+    Ergebnis. Am 2026-08-26 in der Produktion gemessen: der Aufrufer iterierte
+    darueber, bekam Schluessel statt Objekte und starb an
+    `'str' object has no attribute 'get'` — eine Meldung, die nichts mehr mit
+    der Ursache (Token-Limit) zu tun hat. Mit `erwartet=list` wird der falsche
+    Zweig gar nicht erst probiert.
     """
     text = (response or "").strip()
     if text.startswith("```"):
         text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
         text = re.sub(r"\s*```$", "", text).strip()
+
+    klammern = {list: (("[", "]"),), dict: (("{", "}"),)}.get(erwartet, (("[", "]"), ("{", "}")))
+
     try:
-        return json.loads(text)
+        geparst = json.loads(text)
     except json.JSONDecodeError:
         # Try array and object extraction independently so a stray bracket in a
         # preamble can't make us slice across mismatched delimiters.
-        for open_ch, close_ch in (("[", "]"), ("{", "}")):
+        geparst = _keine_form = object()
+        for open_ch, close_ch in klammern:
             start, end = text.find(open_ch), text.rfind(close_ch)
             if start != -1 and end > start:
                 try:
-                    return json.loads(text[start : end + 1])
+                    geparst = json.loads(text[start : end + 1])
+                    break
                 except json.JSONDecodeError:
                     continue
-        raise
+        if geparst is _keine_form:
+            raise
+
+    if erwartet is not None and not isinstance(geparst, erwartet):
+        raise ValueError(
+            f"KI-Antwort hat die falsche Form: erwartet {erwartet.__name__}, " f"bekommen {type(geparst).__name__}"
+        )
+    return geparst
+
+
+def _nur_objekte(elemente: list, feld: str) -> list:
+    """Sicherstellen, dass eine Liste aus Objekten besteht, bevor `.get` darauf laeuft.
+
+    Ohne diesen Schritt entscheidet die KI, ob der Endpunkt mit einem
+    AttributeError abstuerzt — und die Meldung nennt dann den Zugriff, nicht
+    die Antwort, die ihn verursacht hat.
+    """
+    falsch = [type(e).__name__ for e in elemente if not isinstance(e, dict)]
+    if falsch:
+        raise ValueError(
+            f"KI-Antwort ({feld}): {len(falsch)} von {len(elemente)} Eintraegen sind keine Objekte ({falsch[:3]})"
+        )
+    return elemente
 
 
 def _ki_fehler(vorgang: str, fehler: Exception, user_id: int) -> HTTPException:
@@ -314,10 +351,10 @@ async def get_trip_suggestions(
         )
 
         # Parse JSON response (tolerates code fences / preamble)
-        suggestions = _parse_ai_json(response)
+        suggestions = _parse_ai_json(response, erwartet=dict)
 
         return suggestions
-    except json.JSONDecodeError as e:
+    except ValueError as e:  # deckt JSONDecodeError (Unterklasse) UND die Formpruefung ab
         raise _ki_fehler("Antwort unlesbar", e, current_user.id)
     except Exception as e:
         raise _ki_fehler("Anfrage", e, current_user.id)
@@ -398,7 +435,7 @@ Wichtig:
         )
 
         # Parse JSON response (tolerates code fences / preamble)
-        recommendations = _parse_ai_json(response)
+        recommendations = _nur_objekte(_parse_ai_json(response, erwartet=list), "recommendations")
 
         # Enhance each recommendation with image URL and Google Maps link
         # Fetch photos in parallel for better performance
@@ -429,7 +466,7 @@ Wichtig:
             "count": len(recommendations),
         }
 
-    except json.JSONDecodeError as e:
+    except ValueError as e:  # deckt JSONDecodeError (Unterklasse) UND die Formpruefung ab
         raise _ki_fehler("Antwort unlesbar", e, current_user.id)
     except Exception as e:
         raise _ki_fehler("Anfrage", e, current_user.id)
