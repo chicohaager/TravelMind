@@ -191,3 +191,44 @@ class TestLandbevorzugung:
         treffer = _naechster(nur_bosnien, self.ANKER, 150.0, land="hr")
         assert treffer is not None
         assert treffer["fremdes_land"] is True
+
+
+class TestFelderVertrag:
+    """
+    Die Testwelt darf keine Eigenschaft haben, die der echte Code nicht
+    erzeugt.
+
+    TestLandbevorzugung oben arbeitet mit konstruierten Kandidaten, die ein
+    Feld `land` tragen. Am 2026-08-26 lieferte `_nominatim` dieses Feld
+    NICHT — eine Ersetzung war still gescheitert, weil `black` die Zeile
+    zuvor umformatiert hatte. Ergebnis: 18 Tests grün, während die
+    Landbevorzugung in der Produktion nie greifen konnte. Der Ort blieb in
+    Bosnien.
+
+    Dieser Test prüft nicht das Verhalten, sondern den VERTRAG zwischen
+    Abruf und Auswahl. Er braucht kein Netz.
+    """
+
+    def test_naechster_verlangt_genau_die_felder_die_der_abruf_liefert(self):
+        import inspect
+
+        from utils import geocoding
+
+        # Welche Felder baut der Abruf auf? Aus der Quelle lesen, nicht raten.
+        quelle = inspect.getsource(geocoding._nominatim)
+        for feld in ('"lat"', '"lon"', '"name"', '"land"'):
+            assert feld in quelle, f"_nominatim liefert {feld} nicht mehr"
+
+        quelle_photon = inspect.getsource(geocoding._photon)
+        for feld in ('"lat"', '"lon"', '"name"', '"land"'):
+            assert feld in quelle_photon, f"_photon liefert {feld} nicht mehr"
+
+    def test_auswahl_arbeitet_auf_diesen_feldern(self):
+        from utils.geocoding import _naechster
+
+        # Genau die Form, die _nominatim/_photon zurückgeben.
+        kandidat = {"lat": 45.4, "lon": 16.6, "name": "Test", "land": "hr"}
+        treffer = _naechster([kandidat], (45.6, 16.7), 150.0, land="hr")
+        assert treffer is not None
+        assert treffer["fremdes_land"] is False
+        assert treffer["abstand_km"] is not None

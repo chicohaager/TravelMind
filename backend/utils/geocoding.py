@@ -140,7 +140,19 @@ async def _nominatim(query: str, limit: int = 5) -> List[Dict[str, Any]]:
             antwort.raise_for_status()
             ergebnisse = antwort.json()
         await asyncio.sleep(RATE_LIMIT_DELAY)
-        return [{"lat": float(e["lat"]), "lon": float(e["lon"]), "name": e.get("display_name", "")} for e in ergebnisse]
+        return [
+            {
+                "lat": float(e["lat"]),
+                "lon": float(e["lon"]),
+                "name": e.get("display_name", ""),
+                # Laenderkennung: entscheidet mit, welcher Kandidat gewinnt.
+                # Fehlt sie, zaehlt nur die Entfernung — und ein "Zeleni vir"
+                # in Bosnien gewinnt gegen den kroatischen, weil er naeher am
+                # Anker liegt.
+                "land": ((e.get("address") or {}).get("country_code") or "").lower() or None,
+            }
+            for e in ergebnisse
+        ]
     except httpx.HTTPError as fehler:
         logger.warning("geocoding_http_fehler", dienst="nominatim", query=query, fehler=str(fehler))
         return []
