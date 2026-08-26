@@ -1,5 +1,5 @@
 /**
- * Wächter für den Fehler, den der Betreiber am 2026-08-25 gemeldet hat:
+ * Wächter für den Fehler, der am 2026-08-25 gemeldet wurde:
  * „Route speichern — Button ohne Funktion".
  *
  * Der Knopf war `disabled`, weil die Route weniger als zwei Orte hatte — und

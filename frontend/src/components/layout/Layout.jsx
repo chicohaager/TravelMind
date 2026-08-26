@@ -15,7 +15,7 @@ export default function Layout() {
 
         <main className="flex-1 p-3 sm:p-4 md:p-6 lg:ml-64 mt-16 w-full overflow-x-hidden">
           {/*
-            Bis 2026-08-25 hart auf max-w-7xl (1280 px). Auf des Betreibers Schirm
+            Bis 2026-08-25 hart auf max-w-7xl (1280 px). Auf einem breiten Schirm
             (3440 px, 80 % Zoom = 4217 CSS-Pixel) benutzte die App damit
             30 % der Breite — der Rest war leer. Ab 2xl darf die Spalte
             mitwachsen; die Karten fliessen dann in mehr Spalten, statt
