@@ -2,7 +2,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   MapPin,
   Calendar,
-  DollarSign,
+  Euro,
   Users,
   Edit,
   Trash2,
@@ -77,7 +77,7 @@ export default function TripDetail() {
     { id: 'places', name: t('tripDetail:places'), icon: MapPin },
     { id: 'diary', name: t('tripDetail:diary'), icon: BookOpen },
     { id: 'timeline', name: t('tripDetail:timeline'), icon: Clock },
-    { id: 'budget', name: t('tripDetail:budget'), icon: DollarSign },
+    { id: 'budget', name: t('tripDetail:budget'), icon: Euro },
     { id: 'participants', name: t('tripDetail:participants'), icon: Users },
   ]
 
@@ -513,7 +513,7 @@ export default function TripDetail() {
         <div className="card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <Euro className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <div className="text-sm text-gray-600 dark:text-gray-400">

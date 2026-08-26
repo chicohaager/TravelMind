@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, DollarSign, Calendar, User, Users } from 'lucide-react'
+import { X, Euro, Calendar, User, Users } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 
@@ -231,7 +231,7 @@ export default function ExpenseModal({
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
                     <label className="block text-sm font-medium mb-2">
-                      <DollarSign className="w-4 h-4 inline mr-1" />
+                      <Euro className="w-4 h-4 inline mr-1" />
                       {t('budget:amountLabel')} *
                     </label>
                     <input

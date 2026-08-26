@@ -105,22 +105,48 @@ async def test_json_im_markdown_block_wird_gelesen():
     assert (await dienst.suggest_destinations(["Kultur"], 7))["destinations"][0]["name"] == "Lissabon"
 
 
+# Bis zum 2026-08-26 gaben diese drei Methoden bei einer unlesbaren Antwort
+# eine LEERE Liste zurück. Auf dem Bildschirm stand dann „keine Vorschläge" —
+# nicht zu unterscheiden von „das Modell hat nichts gefunden", „der Schlüssel
+# ist abgelaufen" und „die Antwort war am Token-Limit abgeschnitten". Genau
+# diese drei Fälle traten in der Produktion auf, und keiner war sichtbar.
+#
+# Jetzt scheitern sie laut, und der Rohtext geht mit — ins Server-Protokoll,
+# nicht in die HTTP-Antwort (siehe `_ki_fehler` in routes/ai.py).
+
+
 @pytest.mark.asyncio
-async def test_antwort_ohne_json_liefert_den_rohtext_mit():
-    """Wichtig: der Rohtext bleibt erhalten. Ohne ihn wäre nicht zu
-    unterscheiden, ob das Modell nichts fand oder etwas anderes sagte."""
+async def test_antwort_ohne_json_scheitert_LAUT():
     dienst, _ = _dienst("Dazu kann ich nichts sagen.")
-    ergebnis = await dienst.suggest_destinations(["Kultur"], 7)
-    assert ergebnis["destinations"] == []
-    assert ergebnis["raw_response"] == "Dazu kann ich nichts sagen."
+    with pytest.raises(ValueError) as fehler:
+        await dienst.suggest_destinations(["Kultur"], 7)
+    meldung = str(fehler.value)
+    assert "Reiseziel" in meldung  # welcher Vorgang
+    assert "Dazu kann ich nichts sagen." in meldung  # was das Modell sagte
 
 
 @pytest.mark.asyncio
-async def test_kaputtes_json_liefert_ebenfalls_den_rohtext():
+async def test_kaputtes_json_scheitert_LAUT():
     dienst, _ = _dienst('{"destinations": [{"name": "Lissabon"')
-    ergebnis = await dienst.suggest_destinations(["Kultur"], 7)
-    assert ergebnis["destinations"] == []
-    assert "raw_response" in ergebnis
+    with pytest.raises(ValueError):
+        await dienst.suggest_destinations(["Kultur"], 7)
+
+
+@pytest.mark.asyncio
+async def test_ein_reiseplan_ohne_json_scheitert_LAUT():
+    dienst, _ = _dienst("Da fällt mir nichts ein.")
+    with pytest.raises(ValueError) as fehler:
+        await dienst.plan_trip("Lissabon", 5, ["Kultur"])
+    assert "Reiseplan" in str(fehler.value)
+
+
+@pytest.mark.asyncio
+async def test_ein_reiseplan_bekommt_mehr_token_als_eine_normale_anfrage():
+    """Morgen/Mittag/Abend je Tag plus Tipps — bei 2048 bricht das ab etwa
+    drei Tagen ab. Der Waechter haelt fest, dass hier mehr angefordert wird."""
+    dienst, anbieter = _dienst(json.dumps({"days": []}))
+    await dienst.plan_trip("Lissabon", 7, ["Kultur"])
+    assert anbieter.letzte_tokens >= 4096
 
 
 # ── Die Anfragen selbst ─────────────────────────────────────────────────────
@@ -182,15 +208,28 @@ async def test_geheimtipps_mit_vorrede():
 
 
 @pytest.mark.asyncio
-async def test_geheimtipps_ohne_json_ergeben_eine_leere_liste():
+async def test_geheimtipps_ohne_json_scheitern_LAUT():
     dienst, _ = _dienst("Kenne ich nicht.")
-    assert await dienst.get_local_tips("Lissabon") == []
+    with pytest.raises(ValueError) as fehler:
+        await dienst.get_local_tips("Lissabon")
+    assert "Geheimtipps" in str(fehler.value)
+    assert "Kenne ich nicht." in str(fehler.value)
 
 
 @pytest.mark.asyncio
-async def test_kaputte_geheimtipps_ergeben_eine_leere_liste():
+async def test_kaputte_geheimtipps_scheitern_LAUT():
     dienst, _ = _dienst('[{"name": "Tasca"')
-    assert await dienst.get_local_tips("Lissabon") == []
+    with pytest.raises(ValueError):
+        await dienst.get_local_tips("Lissabon")
+
+
+@pytest.mark.asyncio
+async def test_geheimtipps_aus_zeichenketten_scheitern_LAUT():
+    """Ein Modell, das statt Objekten blosse Namen liefert, darf nicht bis in
+    den `.get`-Zugriff des Aufrufers durchrutschen."""
+    dienst, _ = _dienst('["Tasca do Chico", "Ramiro"]')
+    with pytest.raises(ValueError):
+        await dienst.get_local_tips("Lissabon")
 
 
 @pytest.mark.asyncio

@@ -4,8 +4,6 @@ Multi-provider AI integration endpoints (Claude, OpenAI, Gemini)
 """
 
 import asyncio
-import json
-import re
 import urllib.parse
 from typing import Dict, List, Optional
 
@@ -17,6 +15,7 @@ from routes.auth import get_current_active_user
 from services.ai_service import create_ai_service
 from services.pexels_service import get_place_photo
 from utils.encryption import encryption_service
+from utils.ki_antwort import nur_objekte, parse_ai_json
 from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
@@ -24,68 +23,11 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
-def _parse_ai_json(response: str, erwartet: type = None):
-    """Parse a JSON object/array from an AI response.
-
-    Models (Claude, GPT, …) frequently wrap JSON in ```json code fences or add
-    a short preamble, so a bare json.loads() fails with "Expecting value: line 1
-    column 1". Strip fences, then fall back to extracting the outermost {...} or
-    [...]. Raises json.JSONDecodeError if nothing parseable is found.
-
-    `erwartet` nennt die Form, die der Prompt angefordert hat (`list` oder
-    `dict`). Sie ist keine Feinheit: der Notfall-Zweig probiert beide Klammer-
-    arten, und bei einem ABGESCHNITTENEN Array gibt es kein `]` mehr — dann
-    greift die `{…}`-Variante und liefert ein Objekt, das aussieht wie ein
-    Ergebnis. Am 2026-08-26 in der Produktion gemessen: der Aufrufer iterierte
-    darueber, bekam Schluessel statt Objekte und starb an
-    `'str' object has no attribute 'get'` — eine Meldung, die nichts mehr mit
-    der Ursache (Token-Limit) zu tun hat. Mit `erwartet=list` wird der falsche
-    Zweig gar nicht erst probiert.
-    """
-    text = (response or "").strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
-        text = re.sub(r"\s*```$", "", text).strip()
-
-    klammern = {list: (("[", "]"),), dict: (("{", "}"),)}.get(erwartet, (("[", "]"), ("{", "}")))
-
-    try:
-        geparst = json.loads(text)
-    except json.JSONDecodeError:
-        # Try array and object extraction independently so a stray bracket in a
-        # preamble can't make us slice across mismatched delimiters.
-        geparst = _keine_form = object()
-        for open_ch, close_ch in klammern:
-            start, end = text.find(open_ch), text.rfind(close_ch)
-            if start != -1 and end > start:
-                try:
-                    geparst = json.loads(text[start : end + 1])
-                    break
-                except json.JSONDecodeError:
-                    continue
-        if geparst is _keine_form:
-            raise
-
-    if erwartet is not None and not isinstance(geparst, erwartet):
-        raise ValueError(
-            f"KI-Antwort hat die falsche Form: erwartet {erwartet.__name__}, " f"bekommen {type(geparst).__name__}"
-        )
-    return geparst
-
-
-def _nur_objekte(elemente: list, feld: str) -> list:
-    """Sicherstellen, dass eine Liste aus Objekten besteht, bevor `.get` darauf laeuft.
-
-    Ohne diesen Schritt entscheidet die KI, ob der Endpunkt mit einem
-    AttributeError abstuerzt — und die Meldung nennt dann den Zugriff, nicht
-    die Antwort, die ihn verursacht hat.
-    """
-    falsch = [type(e).__name__ for e in elemente if not isinstance(e, dict)]
-    if falsch:
-        raise ValueError(
-            f"KI-Antwort ({feld}): {len(falsch)} von {len(elemente)} Eintraegen sind keine Objekte ({falsch[:3]})"
-        )
-    return elemente
+# Die Auswertung von KI-Antworten liegt in utils/ki_antwort.py — eine einzige
+# Stelle fuer Endpunkte UND Dienst. Die Aliasnamen bleiben, damit die
+# vorhandenen Tests (`from routes.ai import _parse_ai_json`) weiter greifen.
+_parse_ai_json = parse_ai_json
+_nur_objekte = nur_objekte
 
 
 def _ki_fehler(vorgang: str, fehler: Exception, user_id: int) -> HTTPException:
@@ -223,6 +165,8 @@ async def suggest_destinations(
             season=suggestion_request.season,
         )
         return suggestions
+    except ValueError as e:  # unlesbare/falsch geformte KI-Antwort
+        raise _ki_fehler("Antwort unlesbar", e, current_user.id)
     except Exception as e:
         raise _ki_fehler("Anfrage", e, current_user.id)
 
@@ -248,6 +192,8 @@ async def plan_trip(
             accommodation_type=plan_request.accommodation_type,
         )
         return itinerary
+    except ValueError as e:  # unlesbare/falsch geformte KI-Antwort
+        raise _ki_fehler("Antwort unlesbar", e, current_user.id)
     except Exception as e:
         raise _ki_fehler("Anfrage", e, current_user.id)
 
@@ -308,6 +254,8 @@ async def get_local_tips(
     try:
         tips = await ai_service.get_local_tips(destination=tips_request.destination, category=tips_request.category)
         return {"destination": tips_request.destination, "category": tips_request.category, "tips": tips}
+    except ValueError as e:  # unlesbare/falsch geformte KI-Antwort
+        raise _ki_fehler("Antwort unlesbar", e, current_user.id)
     except Exception as e:
         raise _ki_fehler("Anfrage", e, current_user.id)
 

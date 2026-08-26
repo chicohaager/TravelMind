@@ -1,4 +1,4 @@
-import { MapPin, Star, Check, Calendar, DollarSign, Edit, Trash2, ExternalLink } from 'lucide-react'
+import { MapPin, Star, Check, Calendar, Euro, Edit, Trash2, ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { aktuelleLocale } from '@/utils/format'
@@ -110,7 +110,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
           )}
           {place.cost && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300 rounded-full text-xs font-medium">
-              <DollarSign className="w-3 h-3" />
+              <Euro className="w-3 h-3" />
               {place.cost} {place.currency}
             </span>
           )}
