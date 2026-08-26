@@ -232,3 +232,86 @@ class TestFelderVertrag:
         assert treffer is not None
         assert treffer["fremdes_land"] is False
         assert treffer["abstand_km"] is not None
+
+
+class TestOrtsgenauStattObjektgenau:
+    """
+    Der Fall aus der Produktion, 2026-08-26.
+
+    Auf der Karte stand ein Marker „Terme Jezerčica in Popovača" mitten in
+    Popovača. Gemessen:
+
+      * Nominatim findet unter 'Terme Jezerčica in Popovača' und
+        'Terme Jezerčica, Popovača' NICHTS — der Ort existiert dort nicht.
+      * Die letzte Variante der Kette war der blosse Ortsname 'Popovača'.
+        Deren Koordinaten landeten als Position des Thermalbads in der
+        Datenbank, 0,00 km vom Stadtmittelpunkt.
+      * Das echte Terme Jezerčica liegt in Donja Stubica, **69,2 km** entfernt.
+
+    Zwei Lücken haben das ermöglicht, und beide werden hier festgehalten:
+    die Kette fragte nie nach dem KERN allein, und `_nominatim` warf die ART
+    des Treffers weg — niemand konnte merken, dass eine Gemeinde gefunden
+    wurde statt eines Thermalbads.
+
+    An denselben 16 Orten gemessen: 9 Positionen stammten aus einem
+    Siedlungstreffer. Kein Netz nötig, alle Daten sind Fixtures aus der
+    echten Messung.
+    """
+
+    def test_der_kern_allein_ist_eine_eigene_variante(self):
+        varianten = suchvarianten("Terme Jezerčica in Popovača")
+        assert "Terme Jezerčica" in varianten, varianten
+
+    def test_der_kern_kommt_VOR_dem_blossen_ortsnamen(self):
+        """Die Reihenfolge ist der Punkt: die erste Variante mit Treffer
+        gewinnt. Stünde 'Popovača' davor, änderte der Kern gar nichts."""
+        varianten = suchvarianten("Terme Jezerčica in Popovača")
+        assert varianten.index("Terme Jezerčica") < varianten.index("Popovača"), varianten
+
+    def test_der_ortsname_bleibt_als_letzte_zuflucht(self):
+        """Gegenkontrolle: der Kern darf den Ortsnamen nicht verdrängen.
+        'Erdödy' allein findet ein Erdody in der SLOWAKEI, 346,8 km weit —
+        das fängt die Entfernungsschranke ab, und dann muss der Ortsname noch
+        da sein."""
+        varianten = suchvarianten("Schloss Erdödy in Jastrebarsko")
+        assert varianten[-1] == "Jastrebarsko", varianten
+
+    def test_ein_gemeindetreffer_ueber_eine_abkuerzung_wird_markiert(self):
+        from utils.geocoding import _ist_nur_ort
+
+        treffer = {"lat": 45.571, "lon": 16.627, "name": "Grad Popovača", "land": "hr", "typ": "town"}
+        assert _ist_nur_ort(treffer, "Terme Jezerčica in Popovača", "Popovača") is True
+
+    def test_wer_nach_dem_ort_sucht_bekommt_keine_warnung(self):
+        """Gegenkontrolle 1: eine Markierung, die immer anschlägt, sagt
+        nichts. Wer 'Popovača' sucht und Popovača bekommt, hat gefunden,
+        was er wollte."""
+        from utils.geocoding import _ist_nur_ort
+
+        treffer = {"lat": 45.571, "lon": 16.627, "name": "Grad Popovača", "land": "hr", "typ": "town"}
+        assert _ist_nur_ort(treffer, "Popovača", "Popovača") is False
+
+    def test_ein_objekttreffer_wird_nicht_markiert(self):
+        """Gegenkontrolle 2: der echte Fund nach der Reparatur — typ=amenity,
+        gemessen am 2026-08-26."""
+        from utils.geocoding import _ist_nur_ort
+
+        treffer = {"lat": 45.9819, "lon": 15.9566, "name": "Terme Jezerčica, Donja Stubica", "typ": "amenity"}
+        assert _ist_nur_ort(treffer, "Terme Jezerčica in Popovača", "Terme Jezerčica") is False
+
+    def test_ohne_typ_wird_nicht_markiert(self):
+        """Ein fehlendes Feld darf keine Warnung erfinden — sonst wäre jeder
+        Dienst ohne Typangabe pauschal verdächtig."""
+        from utils.geocoding import _ist_nur_ort
+
+        assert _ist_nur_ort({"lat": 1, "lon": 1, "name": "x"}, "Irgendwas in Ort", "Ort") is False
+
+    def test_der_abruf_reicht_die_trefferart_durch(self):
+        """Ohne dieses Feld kann `_ist_nur_ort` nichts entscheiden — und
+        genau deshalb blieb der Fehler monatelang unsichtbar."""
+        import inspect
+
+        from utils import geocoding
+
+        for funktion in (geocoding._nominatim, geocoding._photon):
+            assert '"typ"' in inspect.getsource(funktion), f"{funktion.__name__} liefert die Trefferart nicht mehr"
