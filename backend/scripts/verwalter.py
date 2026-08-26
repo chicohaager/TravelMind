@@ -3,12 +3,12 @@
 
 Warum es dieses Skript gibt: die Benutzerverwaltung war am 2026-08-26
 vollstaendig gebaut — Endpunkte, Oberflaeche, Rechtepruefung — und trotzdem
-fuer niemanden erreichbar. In der Datenbank stand bei beiden Konten
+fuer niemanden erreichbar. In der Datenbank stand bei JEDEM Konto
 `is_superuser = false`:
 
     id | username | is_active | is_superuser
-     1 | holgi    | t         | f
-     2 | Holgi    | t         | f
+     1 | <konto-a> | t        | f
+     2 | <konto-b> | t        | f
 
 Das Recht kann man nur ueber die Verwaltung vergeben, und in die Verwaltung
 kommt nur, wer das Recht hat. Ein Henne-Ei-Problem, das ohne einen Weg von
@@ -76,9 +76,10 @@ from sqlalchemy import func, select  # noqa: E402
 
 
 async def _benutzer(db, benutzername: str) -> User:
-    # Gross-/Kleinschreibung ist hier eine Stolperfalle: auf dieser Instanz
-    # gibt es `holgi` UND `Holgi` als zwei verschiedene Konten. Deshalb wird
-    # exakt verglichen und bei einem Fehlgriff die Liste ausgegeben.
+    # Gross-/Kleinschreibung ist hier eine Stolperfalle: es kann zwei Konten
+    # geben, die sich NUR darin unterscheiden ("anna" und "Anna") — auf der
+    # Instanz vom 2026-08-26 war genau das der Fall. Deshalb wird exakt
+    # verglichen und bei einem Fehlgriff die Liste ausgegeben.
     treffer = (await db.execute(select(User).where(User.username == benutzername))).scalar_one_or_none()
     if treffer is None:
         vorhanden = (await db.execute(select(User.username).order_by(User.id))).scalars().all()

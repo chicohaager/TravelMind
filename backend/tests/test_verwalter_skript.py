@@ -2,8 +2,8 @@
 Wächter für `scripts/verwalter.py` — den einzigen Weg, das erste
 Verwalterrecht zu vergeben.
 
-Am 2026-08-26 in der Produktionsdatenbank gemessen: zwei Konten, beide
-`is_superuser = false`. Die Benutzerverwaltung war vollständig gebaut
+Am 2026-08-26 in der Produktionsdatenbank gemessen: KEIN Konto hatte
+`is_superuser = true`. Die Benutzerverwaltung war vollständig gebaut
 (21 Endpunkte in `routes/admin.py`, 723 Zeilen `AdminPanel.jsx`) und für
 niemanden erreichbar — das Recht vergibt nur die Verwaltung, und in die
 Verwaltung kommt nur, wer das Recht hat.
@@ -96,12 +96,13 @@ async def test_entziehen_geht_solange_ein_zweiter_bleibt(sitzungsfabrik, db_sess
 
 @pytest.mark.asyncio
 async def test_unbekannter_benutzer_nennt_die_vorhandenen(sitzungsfabrik, db_session):
-    """Auf dieser Instanz gibt es `holgi` UND `Holgi`. Ein Vertipper darf
-    nicht stillschweigend nichts tun."""
-    await _anlegen(db_session, "holgi")
+    """Zwei Konten koennen sich NUR in der Gross-/Kleinschreibung
+    unterscheiden — auf der Instanz vom 2026-08-26 war das so. Ein Vertipper
+    darf dann nicht stillschweigend nichts tun."""
+    await _anlegen(db_session, "anna")
     with pytest.raises(SystemExit) as fehler:
-        await skript.setzen("Holgi")
-    assert "holgi" in str(fehler.value)
+        await skript.setzen("Anna")
+    assert "anna" in str(fehler.value)
 
 
 @pytest.mark.asyncio
