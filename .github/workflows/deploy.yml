@@ -1,44 +1,68 @@
 name: Deploy to Production
 
+# Builds the production images (Dockerfile.prod — the same files docker-compose.prod.yml
+# and deploy.sh use).
+#   pull_request  → build only, nothing is pushed
+#   main / v*     → build and push to GHCR
+#
+# The server deploy runs only when the repository variable DEPLOY_PATH is set.
+# It then also needs the secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY,
+# DEPLOY_HOST_FINGERPRINT and the variable HEALTH_URL; a missing value fails the run.
+# Without DEPLOY_PATH the deploy is skipped and reported as "not configured".
+
 on:
   push:
     branches: [ main ]
     tags:
       - 'v*'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # ==================== Build and Push Docker Images ====================
+  # ==================== Build (and Push) Production Images ====================
   build-and-push:
-    name: Build & Push Docker Images
+    name: Build ${{ matrix.service }} (Dockerfile.prod)
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ backend, frontend ]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Container Registry
-        uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
-        id: meta-backend
-        uses: docker/metadata-action@v5
+        id: meta
+        uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -46,84 +70,85 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
+      - name: Build and push image
+        uses: docker/build-push-action@v7
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Extract metadata for frontend
-        id: meta-frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile.prod
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   # ==================== Deploy to Server ====================
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_PATH != ''
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Check deploy configuration
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST_FINGERPRINT: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+        run: |
+          missing=""
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_HOST_FINGERPRINT HEALTH_URL; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::DEPLOY_PATH is set, but these values are missing:$missing"
+            exit 1
+          fi
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          fingerprint: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}
+          envs: DEPLOY_PATH
           script: |
-            cd /path/to/travelmind
-            git pull origin main
-            docker-compose pull
-            docker-compose up -d
-            docker-compose logs --tail=100
-        continue-on-error: true
+            set -e
+            cd "$DEPLOY_PATH"
+            git pull --ff-only origin main
+            ./deploy.sh
 
       - name: Health check
-        run: |
-          sleep 10
-          # Add health check URL here
-          # curl -f https://your-domain.com/api/health || exit 1
-        continue-on-error: true
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+        run: curl -fsS --retry 12 --retry-delay 5 --retry-all-errors "$HEALTH_URL"
 
-  # ==================== Notify ====================
+  # ==================== Report ====================
   notify:
-    name: Notify Deployment
+    name: Deployment Status
     runs-on: ubuntu-latest
-    needs: deploy
-    if: always()
+    needs: [ build-and-push, deploy ]
+    if: always() && github.event_name != 'pull_request'
 
     steps:
       - name: Deployment status
+        env:
+          BUILD_RESULT: ${{ needs.build-and-push.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          DEPLOY_CONFIGURED: ${{ vars.DEPLOY_PATH != '' }}
         run: |
-          if [ "${{ needs.deploy.result }}" == "success" ]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed or skipped"
-          fi
+          echo "Images: $BUILD_RESULT"
+          case "$DEPLOY_RESULT" in
+            success) echo "✅ Deployment successful (health check passed)" ;;
+            skipped)
+              if [ "$DEPLOY_CONFIGURED" = "true" ]; then
+                echo "⏭️ Deployment skipped (not main, or the image build failed)"
+              else
+                echo "::notice::Server deploy not configured (repository variable DEPLOY_PATH is empty) — images only"
+              fi ;;
+            *) echo "❌ Deployment $DEPLOY_RESULT"; exit 1 ;;
+          esac
