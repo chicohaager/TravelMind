@@ -36,7 +36,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
+- Node.js 24+ (LTS)
 - npm 9+
 - Docker & Docker Compose (optional, for containerized development)
 

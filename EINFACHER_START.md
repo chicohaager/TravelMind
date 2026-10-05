@@ -23,7 +23,7 @@ pkill -f "python.*main.py"
 Öffnen Sie ein **NEUES Terminal-Fenster** (wichtig!) und führen Sie aus:
 
 ```bash
-cd /home/der Betreiber/dev/TravelMind
+cd /path/to/TravelMind
 ./START_BACKEND_CLEAN.sh
 ```
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Users, Search, Shield, UserX, Edit2, Trash2, Check, X,
+  Users, Search, Shield, UserX, Trash2, Check,
   TrendingUp, MapPin, Book, Calendar, Settings, UserPlus, Lock, Unlock
 } from 'lucide-react'
 import { adminService } from '@/services/api'
@@ -20,7 +20,6 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterActive, setFilterActive] = useState(null)
-  const [editingUser, setEditingUser] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [showCreateUser, setShowCreateUser] = useState(false)
   const [newUserData, setNewUserData] = useState({
@@ -58,7 +57,7 @@ export default function AdminPanel() {
         settingsObj[setting.key] = setting
       })
       setSettings(settingsObj)
-    } catch (error) {
+    } catch {
       toast.error(t('admin:errorLoadingData'))
     } finally {
       setLoading(false)
@@ -74,18 +73,6 @@ export default function AdminPanel() {
 
     return () => clearTimeout(timer)
   }, [searchTerm, filterActive])
-
-  const handleUpdateUser = async (userId, data) => {
-    try {
-      await adminService.updateUser(userId, data)
-      toast.success(t('admin:userUpdated'))
-      setEditingUser(null)
-      loadData()
-    } catch (error) {
-      const message = error.response?.data?.detail || t('admin:errorUpdating')
-      toast.error(message)
-    }
-  }
 
   const handleDeleteUser = async (userId) => {
     try {
@@ -104,7 +91,7 @@ export default function AdminPanel() {
       await adminService.updateUser(userId, { is_active: !currentStatus })
       toast.success(currentStatus ? t('admin:userDeactivated') : t('admin:userActivated'))
       loadData()
-    } catch (error) {
+    } catch {
       toast.error(t('admin:errorUpdating'))
     }
   }
@@ -125,7 +112,7 @@ export default function AdminPanel() {
       const response = await adminService.toggleRegistration()
       toast.success(response.data.message)
       loadData()
-    } catch (error) {
+    } catch {
       toast.error(t('admin:errorChangingRegistration'))
     }
   }
@@ -158,7 +145,7 @@ export default function AdminPanel() {
       })
       toast.success(t('admin:userLimitUpdated'))
       loadData()
-    } catch (error) {
+    } catch {
       toast.error(t('admin:errorUpdatingLimit'))
     }
   }

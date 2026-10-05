@@ -24,12 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **IndexedDB fallback**: Graceful handling when IndexedDB is unavailable
 
 ### Changed
+- Node.js base images and CI raised from Node 20/18 (end of life) to Node 24 LTS (`node:24-alpine`); `engines.node` now `>=24.0.0`
 - Centralized rate limiting configuration
 - Enhanced OpenAPI documentation with examples
 - Improved i18n architecture with 25 separate namespace files per language
 - LanguageSwitcher now dynamically loads available languages
 
 ### Fixed
+- Start guides and helper scripts no longer contain a hard-coded home directory (`RESTART_BACKEND.sh`, `START_BACKEND_FIXED.sh` now resolve paths relative to the script)
 - Settings page "t is not defined" error
 - Diary "Weiterlesen" button not working
 - IndexedDB "open is not a function" error in certain environments

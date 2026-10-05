@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, MapPin, Clock, DollarSign, Plus, Loader,
-  AlertCircle, RefreshCw, CheckCircle, Info, Star, ExternalLink
+  AlertCircle, RefreshCw, CheckCircle, Star
 } from 'lucide-react'
 import { aiService, placesService } from '@/services/api'
 import toast from 'react-hot-toast'
@@ -126,7 +126,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
       toast.success(t('recommendations:recommendationsAdded', { count: selectedRecommendations.length }))
       setSelectedRecommendations([])
       setTimeout(() => refetch(), 500)
-    } catch (err) {
+    } catch {
       toast.error(t('recommendations:errorAdding'))
     } finally {
       setIsAddingMultiple(false)
@@ -154,7 +154,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
 
       toast.success(t('recommendations:placeAdded', { name: recommendation.name }))
       setTimeout(() => refetch(), 500)
-    } catch (err) {
+    } catch {
       toast.error(t('recommendations:errorAdding'))
     } finally {
       setAddingPlaceId(null)
