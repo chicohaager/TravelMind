@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MapPin, Hotel, Coffee, UtensilsCrossed, Camera, Mountain, Ship, Plane } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 // Fix Leaflet default marker icon issue
@@ -13,22 +12,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
-// Icon mapping
-const iconMap = {
-  location: MapPin,
-  hotel: Hotel,
-  coffee: Coffee,
-  restaurant: UtensilsCrossed,
-  camera: Camera,
-  mountain: Mountain,
-  ship: Ship,
-  plane: Plane,
-}
-
 // Create custom marker icon
-const createCustomIcon = (color = '#6366F1', iconType = 'location') => {
+const createCustomIcon = (color = '#6366F1') => {
   const size = 40
-  const IconComponent = iconMap[iconType] || MapPin
 
   // Create SVG string
   const svg = `
@@ -85,13 +71,12 @@ export default function InteractiveMap({
   routes = [],
   onPlaceClick = null,
   onRouteClick = null,
-  editable = false,
   center = [51.505, -0.09],
   zoom = 13
 }) {
   const { t } = useTranslation(['map', 'places'])
-  const [selectedPlace, setSelectedPlace] = useState(null)
-  const [selectedRoute, setSelectedRoute] = useState(null)
+  const [, setSelectedPlace] = useState(null)
+  const [, setSelectedRoute] = useState(null)
 
   // Calculate initial center and zoom based on places
   const mapCenter = useMemo(() => {
@@ -177,7 +162,7 @@ export default function InteractiveMap({
           <Marker
             key={place.id}
             position={[place.latitude, place.longitude]}
-            icon={createCustomIcon(place.color || '#6366F1', place.icon_type || 'location')}
+            icon={createCustomIcon(place.color || '#6366F1')}
             eventHandlers={{
               click: () => handlePlaceClick(place),
             }}

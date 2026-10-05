@@ -1,14 +1,13 @@
 import { Plus, MapPin, Calendar, Edit2, Trash2, Eye, Wifi, WifiOff } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tripsService } from '@services/api'
 import toast from 'react-hot-toast'
 import { formatError } from '../utils/errorHandler'
 import TripModal from '@components/TripModal'
-import { useOfflineTrips, useOfflineMutation } from '@hooks/useOfflineStorage'
-import indexedDB from '@services/indexedDB'
+import { useOfflineTrips } from '@hooks/useOfflineStorage'
 import { useTranslation } from 'react-i18next'
 import { formatDate, formatCurrency } from '@/utils/format'
 
@@ -103,43 +102,6 @@ export default function Trips() {
     setIsModalOpen(false)
     setEditingTrip(null)
   }
-
-  // Beispieldaten für Fallback
-  const fallbackTrips = [
-    {
-      id: 1,
-      title: 'Sommer in Portugal',
-      destination: 'Lissabon',
-      image: 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=800&auto=format&fit=crop',
-      startDate: '2024-07-15',
-      endDate: '2024-07-22',
-      budget: 1200,
-      currency: 'EUR',
-      interests: ['Kultur', 'Essen', 'Fotografie']
-    },
-    {
-      id: 2,
-      title: 'Herbst in Japan',
-      destination: 'Kyoto & Tokyo',
-      image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&auto=format&fit=crop',
-      startDate: '2024-10-01',
-      endDate: '2024-10-10',
-      budget: 2500,
-      currency: 'EUR',
-      interests: ['Natur', 'Kultur', 'Fotografie']
-    },
-    {
-      id: 3,
-      title: 'Winterwanderung Alpen',
-      destination: 'Innsbruck',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop',
-      startDate: '2024-12-20',
-      endDate: '2024-12-27',
-      budget: 800,
-      currency: 'EUR',
-      interests: ['Natur', 'Sport', 'Fotografie']
-    }
-  ]
 
   const calculateDuration = (start, end) => {
     const days = Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24))
