@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, CalendarDays } from 'lucide-react'
-import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { timelineService } from '@services/api'
@@ -113,8 +112,8 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
 
   // Expand first day by default (moved to useEffect to avoid setState during render)
   useEffect(() => {
-    if (timeline.length > 0 && expandedDays.size === 0) {
-      setExpandedDays(new Set([timeline[0].day_date]))
+    if (timeline.length > 0) {
+      setExpandedDays((prev) => (prev.size === 0 ? new Set([timeline[0].day_date]) : prev))
     }
   }, [timeline])
 

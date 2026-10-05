@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Camera, X, FlipHorizontal, ImagePlus } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
