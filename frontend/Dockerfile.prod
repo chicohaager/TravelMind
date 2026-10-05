@@ -54,19 +54,18 @@ RUN mkdir -p /var/cache/nginx && \
 # Remove default nginx config
 RUN rm -f /etc/nginx/conf.d/default.conf
 
-# Switch to non-root user. Port 80 stays (all compose files map to it):
-# Docker sets net.ipv4.ip_unprivileged_port_start=0 inside the container's
-# network namespace, so an unprivileged process may bind it. With host
-# networking or a runtime without that default, listen on a port >= 1024.
+# Switch to non-root user. nginx listens on 8080 (nginx.conf): a port >= 1024
+# needs no privilege, independent of the runtime's
+# net.ipv4.ip_unprivileged_port_start and also with host networking.
 USER travelmind
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
 # Health check (127.0.0.1, not localhost: busybox wget tries ::1 first and
 # does not fall back, while nginx listens on IPv4 only)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
