@@ -116,7 +116,7 @@ docker-compose -f docker-compose.prod.yml down
 └──────┬──────────┘
        │
 ┌──────▼──────────┐
-│   Frontend      │  Port 80
+│   Frontend      │  Port 80 → 8080 (container, non-root)
 │  (React/Vite)   │
 └──────┬──────────┘
        │
@@ -151,6 +151,11 @@ docker exec -it travelmind-db-prod psql -U travelmind -d travelmind
 ```
 
 ## SSL/HTTPS Setup (Optional but Recommended)
+
+The frontend container serves plain HTTP only (nginx on container port 8080,
+published on `FRONTEND_PORT`, default 80) and has no certificates. Terminate TLS
+in a reverse proxy on the host: set `FRONTEND_PORT=8080` in `.env`, run
+`./deploy.sh`, and let the host nginx proxy to `http://127.0.0.1:8080`.
 
 ### Using Certbot (Let's Encrypt)
 
