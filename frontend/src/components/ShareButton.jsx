@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Share2, X, Link, MessageCircle, Send } from 'lucide-react'
+import { Share2, X, Link } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 
@@ -78,7 +78,7 @@ export default function ShareButton({ trip, className = '' }) {
       await navigator.clipboard.writeText(shareUrl)
       toast.success(t('share.linkCopied'))
       setIsOpen(false)
-    } catch (err) {
+    } catch {
       toast.error(t('share.copyFailed'))
     }
   }

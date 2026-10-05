@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Plus, ChevronDown, ChevronRight, MoreVertical, Edit, Trash2,
-  MapPin, Sparkles, X, Check
+  Plus, ChevronDown, ChevronRight, Trash2,
+  Sparkles, X, Check
 } from 'lucide-react'
 import { placesService } from '@/services/api'
 import toast from 'react-hot-toast'
@@ -46,7 +46,6 @@ export default function PlaceListsSection({
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [isCreatingList, setIsCreatingList] = useState(false)
-  const [editingListId, setEditingListId] = useState(null)
   const [newListTitle, setNewListTitle] = useState('')
   const [newListIcon, setNewListIcon] = useState('📍')
   const [newListColor, setNewListColor] = useState('#6366F1')
@@ -78,22 +77,6 @@ export default function PlaceListsSection({
     },
     onError: () => {
       toast.error(t('placeLists:errorCreating'))
-    }
-  })
-
-  // Update list mutation
-  const updateListMutation = useMutation({
-    mutationFn: async ({ listId, data }) => {
-      const response = await placesService.updateList(listId, data)
-      return response.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['placeLists', tripId])
-      setEditingListId(null)
-      toast.success(t('placeLists:listUpdated'))
-    },
-    onError: () => {
-      toast.error(t('placeLists:errorUpdating'))
     }
   })
 

@@ -212,7 +212,6 @@ export const useOfflinePlaces = (tripId, apiQuery) => {
 export const useOfflineMutation = (mutationFn, options = {}) => {
   const { t } = useTranslation()
   const { isOnline } = useOfflineSync()
-  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (variables) => {

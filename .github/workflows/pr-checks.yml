@@ -50,6 +50,23 @@ jobs:
     name: Test Coverage Report
     runs-on: ubuntu-latest
 
+    # The backend is PostgreSQL-only (models/database.py passes pool_size/max_overflow,
+    # which SQLite pools reject), so use the same Postgres service as ci.yml "Backend Tests".
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: travelmind_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,7 +84,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: sqlite:///./test.db
+          DATABASE_URL: postgresql://test:test@localhost:5432/travelmind_test
           JWT_SECRET: test-secret
           SECRET_KEY: test-secret
         run: |
@@ -94,7 +111,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'
 
       - name: Install and build
         run: |

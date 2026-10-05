@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, DollarSign, TrendingUp, TrendingDown } from 'lucide-react'
-import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '../utils/errorHandler'

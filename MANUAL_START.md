@@ -27,7 +27,7 @@ Warten Sie 5 Sekunden.
 ### 2. Backend starten
 
 ```bash
-cd /home/der Betreiber/dev/TravelMind
+cd /path/to/TravelMind
 source venv/bin/activate
 cd backend
 python main.py
@@ -48,7 +48,7 @@ Wenn Sie stattdessen einen Fehler sehen, **lassen Sie das Terminal offen** und t
 ### 3. Frontend prüfen/neu starten (in neuem Terminal)
 
 ```bash
-cd /home/der Betreiber/dev/TravelMind/frontend
+cd /path/to/TravelMind/frontend
 npm run dev
 ```
 
@@ -75,11 +75,11 @@ lsof -ti:8000 | xargs kill -9
 
 ```bash
 # Prüfen
-ls -la /home/der Betreiber/dev/TravelMind/data/travelmind.db
+ls -la /path/to/TravelMind/data/travelmind.db
 
 # Neu erstellen falls nötig
-rm /home/der Betreiber/dev/TravelMind/data/travelmind.db
-touch /home/der Betreiber/dev/TravelMind/data/travelmind.db
+rm /path/to/TravelMind/data/travelmind.db
+touch /path/to/TravelMind/data/travelmind.db
 ```
 
 ### Frontend verbindet nicht
