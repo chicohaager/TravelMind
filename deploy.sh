@@ -130,6 +130,8 @@ logs() {
 
 # Check status
 status() {
+    # FRONTEND_PORT (host port of the frontend) comes from .env, like in deploy
+    [ -f "$SCRIPT_DIR/.env" ] && source "$SCRIPT_DIR/.env"
     log_info "TravelMind Service Status:"
     docker_compose ps
     
@@ -137,14 +139,14 @@ status() {
     log_info "Health Checks:"
     
     # Check backend health
-    if curl -s http://localhost:8000/api/health/live > /dev/null 2>&1; then
+    if curl -fs http://localhost:8000/api/health/live > /dev/null 2>&1; then
         echo -e "  Backend: ${GREEN}healthy${NC}"
     else
         echo -e "  Backend: ${RED}unhealthy${NC}"
     fi
     
     # Check frontend health
-    if curl -s http://localhost/health > /dev/null 2>&1; then
+    if curl -fs "http://localhost:${FRONTEND_PORT:-80}/health" > /dev/null 2>&1; then
         echo -e "  Frontend: ${GREEN}healthy${NC}"
     else
         echo -e "  Frontend: ${RED}unhealthy${NC}"

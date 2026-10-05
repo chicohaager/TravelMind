@@ -90,17 +90,16 @@ services:
     container_name: travelmind-frontend
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      # SSL certificates (optional, use with reverse proxy)
-      - ./ssl:/etc/nginx/ssl:ro
+      # nginx in the container listens on 8080 (non-root) and speaks plain HTTP.
+      # HTTPS: terminate TLS in a reverse proxy on the host (DEPLOYMENT.md) and
+      # set FRONTEND_PORT to a free port, e.g. 8080.
+      - "${FRONTEND_PORT:-80}:8080"
     depends_on:
       - backend
     networks:
       - travelmind-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
