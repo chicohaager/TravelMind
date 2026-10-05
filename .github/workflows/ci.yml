@@ -105,19 +105,16 @@ jobs:
         run: |
           cd frontend
           npm run lint
-        continue-on-error: true
 
       - name: Build frontend
         run: |
           cd frontend
           npm run build
 
-      - name: Run tests (if available)
+      - name: Run unit tests (Vitest)
         run: |
           cd frontend
-          # Uncomment when tests are added
-          # npm test
-        continue-on-error: true
+          npm run test:run
 
   # ==================== Security Scanning ====================
   security-scan:
