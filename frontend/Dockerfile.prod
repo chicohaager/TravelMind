@@ -44,24 +44,29 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create nginx pid and cache directories with proper permissions
-RUN mkdir -p /var/cache/nginx /var/run && \
-    chown -R travelmind:travelmind /var/cache/nginx /var/run /usr/share/nginx/html && \
+# nginx runs as travelmind: it needs a writable cache/temp dir; the pid file
+# goes to /tmp (see nginx.conf), logs go to stdout/stderr via the base
+# image's /var/log/nginx symlinks
+RUN mkdir -p /var/cache/nginx && \
+    chown -R travelmind:travelmind /var/cache/nginx /usr/share/nginx/html && \
     chmod -R 755 /var/cache/nginx
 
 # Remove default nginx config
 RUN rm -f /etc/nginx/conf.d/default.conf
 
-# Switch to non-root user (nginx will still bind to port 80 via capability)
-# For full non-root, use port 8080 and update nginx.conf
+# Switch to non-root user. Port 80 stays (all compose files map to it):
+# Docker sets net.ipv4.ip_unprivileged_port_start=0 inside the container's
+# network namespace, so an unprivileged process may bind it. With host
+# networking or a runtime without that default, listen on a port >= 1024.
 USER travelmind
 
 # Expose port
 EXPOSE 80
 
-# Health check
+# Health check (127.0.0.1, not localhost: busybox wget tries ::1 first and
+# does not fall back, while nginx listens on IPv4 only)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
