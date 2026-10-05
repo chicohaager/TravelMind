@@ -10,7 +10,7 @@ unset JWT_SECRET
 unset SECRET_KEY
 
 # Export DATABASE_URL to ensure SQLite is used
-export DATABASE_URL="sqlite:////home/der Betreiber/dev/TravelMind/data/travelmind.db"
+export DATABASE_URL="sqlite:///$(pwd)/data/travelmind.db"
 
 # Activate virtual environment
 source venv/bin/activate

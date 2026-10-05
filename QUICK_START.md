@@ -26,14 +26,14 @@ sudo kill -9 <PROZESS_ID>
 ### 2. Neues Backend starten
 
 ```bash
-cd /home/der Betreiber/dev/TravelMind
+cd /path/to/TravelMind
 ./START_BACKEND.sh
 ```
 
 **Oder manuell:**
 
 ```bash
-cd /home/der Betreiber/dev/TravelMind
+cd /path/to/TravelMind
 source venv/bin/activate
 cd backend
 python main.py
@@ -44,7 +44,7 @@ python main.py
 Das Frontend ist bereits auf Port 8001 konfiguriert. Falls es nicht läuft:
 
 ```bash
-cd /home/der Betreiber/dev/TravelMind/frontend
+cd /path/to/TravelMind/frontend
 npm run dev
 ```
 
@@ -76,14 +76,14 @@ npm run dev
 Da die alte Datenbank root gehörte, wurde eine neue erstellt. Ihre Daten aus der alten DB befinden sich in:
 
 ```
-/home/der Betreiber/dev/TravelMind/data/travelmind.db.backup
+/path/to/TravelMind/data/travelmind.db.backup
 ```
 
 ## 🐛 Bei Problemen
 
 ### Backend startet nicht
 - Prüfen Sie, ob Port 8001 frei ist: `netstat -tlnp | grep 8001`
-- Prüfen Sie Berechtigungen: `ls -la /home/der Betreiber/dev/TravelMind/data/`
+- Prüfen Sie Berechtigungen: `ls -la /path/to/TravelMind/data/`
 
 ### Frontend verbindet nicht zum Backend
 - Prüfen Sie `frontend/.env`: `VITE_PROXY_TARGET=http://localhost:8001`
