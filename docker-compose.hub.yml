@@ -22,8 +22,10 @@ services:
       - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
       - ENABLE_AI_FEATURES=${ENABLE_AI_FEATURES:-true}
     volumes:
-      - ./data:/app/data
-      - ./uploads:/app/uploads
+      # Named volumes, not bind mounts: Docker creates a missing ./data or ./uploads
+      # as root, and the backend (non-root) then fails to start
+      - travelmind_data:/app/data
+      - travelmind_uploads:/app/uploads
     depends_on:
       - db
     restart: unless-stopped
@@ -41,14 +43,15 @@ services:
     image: chicohaager/travelmind-frontend:latest
     container_name: travelmind-frontend-prod
     ports:
-      - "80:80"
+      # nginx in the image listens on 8080 (non-root)
+      - "80:8080"
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - travelmind-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -79,4 +82,8 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  travelmind_data:
+    driver: local
+  travelmind_uploads:
     driver: local
