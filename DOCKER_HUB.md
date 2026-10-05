@@ -125,8 +125,16 @@ docker-compose -f docker-compose.hub.yml up -d
 
 Data is stored in Docker volumes:
 - `postgres_data` - Database data
-- `./data` - SQLite backup and logs
-- `./uploads` - User-uploaded files
+- `travelmind_data` - SQLite backup and logs
+- `travelmind_uploads` - User-uploaded files
+
+Earlier versions of `docker-compose.hub.yml` bind-mounted `./data` and `./uploads`.
+To keep files from such a setup, copy them into the volumes once:
+```bash
+docker compose -f docker-compose.hub.yml cp ./uploads/. backend:/app/uploads/
+docker compose -f docker-compose.hub.yml cp ./data/. backend:/app/data/
+docker compose -f docker-compose.hub.yml exec -u root backend chown -R travelmind:travelmind /app/uploads /app/data
+```
 
 To backup your data:
 ```bash
@@ -134,7 +142,8 @@ To backup your data:
 docker exec travelmind-db-prod pg_dump -U travelmind travelmind > backup.sql
 
 # Backup uploads
-tar -czf uploads-backup.tar.gz uploads/
+docker run --rm --volumes-from travelmind-backend-prod -v "$PWD":/backup alpine \
+  tar -czf /backup/uploads-backup.tar.gz -C /app uploads
 ```
 
 ## Troubleshooting
@@ -169,7 +178,7 @@ services:
       - "8080:8000"  # Custom backend port
   frontend:
     ports:
-      - "3000:80"    # Custom frontend port
+      - "3000:8080"  # Custom frontend port (container listens on 8080)
 ```
 
 ### Using External Database
