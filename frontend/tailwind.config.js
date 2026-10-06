@@ -1,38 +1,20 @@
+import { farbenV3, schriftgroessenV3 } from './tailwind.compat-v3.js'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
     "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
-  // Sicherungsliste für die Palette.
-  //
-  // Tailwind liefert nur aus, was im Quelltext VORKOMMT. Am 2026-08-26
-  // gemessen: `bg-secondary-500` stand in keiner ausgelieferten CSS, weil die
-  // Anwendung die Signalfarbe kaum als Fläche benutzt. Für die Anwendung ist
-  // das richtig — für das Design-System nach claude.ai/design ist es eine
-  // Falle: der Agent baut damit neue Oberflächen und schreibt Klassen, die
-  // ins Leere laufen; das Ergebnis ist stillschweigend ungestylt.
-  //
-  // Deshalb steht die volle Palette hier fest drin. Kosten gemessen: siehe
-  // .design-sync/NOTES.md.
-  safelist: [
-    { pattern: /^(bg|text|border|ring|from|to|via)-(primary|secondary)-(50|100|200|300|400|500|600|700|800|900|950)$/ },
-    // Die Schrift-Utilities kommen in der Anwendung nicht vor (sie setzt die
-    // Familien ueber h1..h6 im Basis-CSS). Der Design-Agent braucht sie aber,
-    // um eigene Ueberschriften zu bauen — ohne Sicherungsliste laeuft
-    // `font-display` ins Leere. Am 2026-08-26 genau so gemessen.
-    'font-display', 'font-sans', 'font-mono', 'tabular-nums',
-    // Zustandsvarianten brauchen `variants`, nicht das Präfix im Muster —
-    // mit `hover:` im Muster erzeugt Tailwind nichts (am 2026-08-26 gemessen).
-    {
-      pattern: /^(bg|text|border)-(primary|secondary)-(100|200|300|400|500|600|700|800)$/,
-      variants: ['hover', 'focus', 'active', 'dark'],
-    },
-  ],
+  // Sicherungsliste für die Palette: seit tailwind 4 in src/styles/index.css
+  // als @source inline(…). tailwind 4 liest `safelist` aus dieser Datei nicht
+  // mehr — am 2026-10-06 gemessen fehlten danach 312 Klassen im Bündel.
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
+        // Standardfarben wie unter tailwind 3 (siehe tailwind.compat-v3.js)
+        ...farbenV3,
         // ── Palette „Adria", 2026-08-25 ───────────────────────────────
         //
         // Vorher: Indigo #6366F1 + Amber #F59E0B — die Vorgabefarben, die
@@ -85,6 +67,8 @@ export default {
       //   Tabellenziffern fuer das Budget. Bewusst NICHT Inter.
       // Newsreader: redaktionelle Serifenschrift mit optischen Groessen —
       //   ein Reisetagebuch ist ein Lesetext, keine Systemsteuerung.
+      // Schriftgroessen mit festen Zeilenhoehen wie unter tailwind 3
+      fontSize: schriftgroessenV3,
       fontFamily: {
         sans: ['"Public Sans Variable"', 'system-ui', 'sans-serif'],
         display: ['"Newsreader Variable"', 'Georgia', 'serif'],

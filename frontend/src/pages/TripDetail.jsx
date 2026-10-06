@@ -449,11 +449,11 @@ export default function TripDetail() {
         {trip.cover_image ? (
           <img src={trip.cover_image} alt={trip.title} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-br/srgb from-primary-400 to-secondary-400 flex items-center justify-center">
             <MapPin className="w-24 h-24 text-white/50" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t/srgb from-black/70 to-transparent" />
         <div className="absolute bottom-6 left-6 text-white">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">{trip.title}</h1>
           <div className="flex items-center gap-2 text-lg">
@@ -864,7 +864,7 @@ export default function TripDetail() {
                                   lazy geladen und auf dieser Seite gar nicht aktiv. */}
                               {place.position_unsicher === true && (
                                 <p className="mb-1 flex items-start gap-1 text-xs text-amber-700">
-                                  <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                                   <span>{t('map:positionUnsicher')}</span>
                                 </p>
                               )}

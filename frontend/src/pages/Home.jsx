@@ -78,7 +78,7 @@ export default function Home() {
                   alt={trip.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t/srgb from-black/60 to-transparent" />
                 <div className="absolute bottom-4 left-4 text-white">
                   <h3 className="text-2xl font-bold">{trip.title}</h3>
                   <p className="text-sm opacity-90">{trip.destination}</p>
@@ -102,7 +102,7 @@ export default function Home() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.5 }}
-        className="card bg-gradient-to-br from-primary-500 to-secondary-500 text-white text-center py-12"
+        className="card bg-linear-to-br/srgb from-primary-500 to-secondary-500 text-white text-center py-12"
       >
         <h2 className="text-3xl font-bold mb-4">{t('home:readyForNextAdventure')}</h2>
         <p className="text-xl mb-6 opacity-90">{t('home:letAiHelp')}</p>

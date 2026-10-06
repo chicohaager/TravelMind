@@ -298,7 +298,7 @@ export default function PlaceModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-9998"
             onClick={onClose}
           />
 
@@ -307,7 +307,7 @@ export default function PlaceModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[9998] flex items-center justify-center p-2 sm:p-4 pointer-events-none"
+            className="fixed inset-0 z-9998 flex items-center justify-center p-2 sm:p-4 pointer-events-none"
           >
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto pointer-events-auto">
               {/* Header */}
@@ -368,7 +368,7 @@ export default function PlaceModal({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-xs hover:shadow-md transition-shadow cursor-pointer"
                         onClick={() => handleSelectSuggestion(suggestion)}
                       >
                         <div className="font-semibold text-sm">{suggestion.name}</div>
@@ -665,7 +665,7 @@ export default function PlaceModal({
                           >
                             <X className="w-4 h-4" />
                           </button>
-                          <span className="absolute bottom-1 left-1 px-2 py-1 bg-blue-500 text-white text-xs rounded">
+                          <span className="absolute bottom-1 left-1 px-2 py-1 bg-blue-500 text-white text-xs rounded-sm">
                             {t('places:newPhotoLabel')}
                           </span>
                         </div>
@@ -701,7 +701,7 @@ export default function PlaceModal({
                     name="visited"
                     checked={formData.visited}
                     onChange={handleChange}
-                    className="w-4 h-4 rounded border-gray-300"
+                    className="w-4 h-4 rounded-sm border-gray-300"
                   />
                   <label className="text-sm font-medium">{t('places:alreadyVisited')}</label>
                 </div>

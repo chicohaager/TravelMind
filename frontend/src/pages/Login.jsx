@@ -43,7 +43,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br/srgb from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -57,7 +57,7 @@ export default function Login() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4"
+              className="w-16 h-16 bg-linear-to-br/srgb from-primary-500 to-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4"
             >
               <LogIn className="w-8 h-8 text-white" />
             </motion.div>

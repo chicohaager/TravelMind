@@ -33,7 +33,7 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
         {/* Drag Handle */}
         <div
           {...dragHandleProps}
-          className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <GripVertical className="w-5 h-5" />
         </div>
@@ -77,7 +77,7 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
             {/* Delete Button */}
             <button
               onClick={() => onDelete(entry.id)}
-              className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-all"
+              className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900 rounded-sm transition-all"
               title={t('timeline:removeFromTimeline')}
             >
               <Trash2 className="w-4 h-4 text-red-600" />
