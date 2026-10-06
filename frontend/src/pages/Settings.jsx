@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Lock,
@@ -43,23 +43,23 @@ export default function Settings() {
 
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
-  // Load AI settings on mount
-  useEffect(() => {
-    loadAISettings()
-  }, [])
-
-  const loadAISettings = async () => {
+  const loadAISettings = useCallback(async () => {
     try {
       const response = await userSettingsService.getAISettings()
-      setAISettings({
-        ...aiSettings,
+      setAISettings((prev) => ({
+        ...prev,
         ai_provider: response.data.ai_provider || 'GROQ',
         has_api_key: response.data.has_api_key,
-      })
+      }))
     } catch (error) {
       console.error('Failed to load AI settings:', error)
     }
-  }
+  }, [])
+
+  // Load AI settings on mount
+  useEffect(() => {
+    loadAISettings()
+  }, [loadAISettings])
 
   const handleValidateAPIKey = async () => {
     if (!aiSettings.api_key) {

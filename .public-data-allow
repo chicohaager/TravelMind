@@ -1,0 +1,3 @@
+# Platzhalterpfad im Test, der prueft, dass interne Pfade NICHT in der
+# Fehlerantwort landen ("jemand" = beliebiger Benutzer, kein echtes Konto).
+backend/tests/test_error_handlers_analytics.py:/home/jemand
