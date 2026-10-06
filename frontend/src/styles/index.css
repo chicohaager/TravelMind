@@ -6,13 +6,127 @@
  * die falsche Abhaengigkeit — beim ersten Aufruf ohne Netz gaebe es keine
  * Schrift. Als npm-Paket landen sie im Buendel und damit im Precache des
  * Service Workers.
+ *
+ * Die Schrift-CSS wird in main.jsx importiert, NICHT hier per @import: seit
+ * tailwind 4 bettet @tailwindcss/postcss die @import-Dateien selbst ein, ihre
+ * relativen url(./files/…) loest Vite dann nicht mehr auf. Am 2026-10-06
+ * gemessen: 0 woff2 im Build, jede Schriftdatei 404, Ersatzschrift sichtbar.
  */
-@import '@fontsource-variable/public-sans/index.css';
-@import '@fontsource-variable/newsreader/index.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* Theme, Farben und Schriften stehen weiter in tailwind.config.js. */
+@config '../../tailwind.config.js';
+
+/*
+ * Sicherungsliste fuer die Palette (bis tailwind 3 `safelist` in
+ * tailwind.config.js, das v4 nicht mehr liest). Tailwind liefert nur aus,
+ * was im Quelltext VORKOMMT. Am 2026-08-26 gemessen: `bg-secondary-500` stand
+ * in keiner ausgelieferten CSS, weil die Anwendung die Signalfarbe kaum als
+ * Flaeche benutzt. Fuer das Design-System nach claude.ai/design ist das eine
+ * Falle: der Agent schreibt Klassen, die ins Leere laufen. Die Schrift-
+ * Utilities braucht er fuer eigene Ueberschriften. Kosten: .design-sync/NOTES.md.
+ */
+@source inline("{bg,text,border,ring,from,to,via}-{primary,secondary}-{50,{100..900..100},950}");
+@source inline("font-display font-sans font-mono tabular-nums");
+@source inline("{hover:,focus:,active:,dark:,}{bg,text,border}-{primary,secondary}-{100..800..100}");
+
+/*
+ * Dark Mode per Klasse am <html> (Navbar setzt `dark`). Derselbe Selektor wie
+ * tailwind 3 mit `darkMode: 'class'` (`:is(.dark *)`) — auch dieselbe
+ * Spezifitaet; das v4-Muster `:where(…)` haette sie gesenkt und die Kaskade
+ * gegenueber v3 verschoben.
+ */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Kompatibilitaet zu tailwind 3 (offizieller Upgrade-Leitfaden v4): v4 hat
+ * Standardwerte geaendert, die hier ausdruecklich auf das alte Aussehen und
+ * Verhalten zurueckgesetzt werden.
+ */
+@layer base {
+  /* Rahmen ohne Farbangabe: v3 gray-200, v4 currentColor */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: theme('colors.gray.200');
+  }
+
+  /* Platzhalter: v3 gray-400, v4 50 % der Textfarbe */
+  input::placeholder,
+  textarea::placeholder {
+    color: theme('colors.gray.400');
+  }
+
+  /*
+   * Formularelemente: v4 setzt `font: inherit` und erbt damit auch
+   * tabular-nums vom body; v3 setzte die Schriftwerte einzeln, die
+   * Ziffernform blieb beim Browser-Standard.
+   */
+  button,
+  input,
+  select,
+  optgroup,
+  textarea,
+  ::file-selector-button {
+    font-variant-numeric: normal;
+  }
+
+  /*
+   * Eingabefelder: v4 macht ihren Hintergrund transparent, v3 liess den
+   * Browser-Standard stehen (Chromium: Eingabe weiss, Auswahlliste #efefef).
+   * Knoepfe waren schon unter v3 transparent und bleiben es.
+   */
+  input:not([type='button'], [type='reset'], [type='submit']),
+  select,
+  optgroup,
+  textarea {
+    background-color: revert;
+  }
+
+  /*
+   * Datums-/Zeitfelder: der v4-Preflight entfernt Innenabstaende der
+   * Datumsteile und setzt eine Mindesthoehe; das Feld wurde dadurch 2 px
+   * niedriger als unter v3 (gemessen 2026-10-06, PlaceModal). Zurueck auf den
+   * Browser-Standard wie unter v3.
+   */
+  ::-webkit-date-and-time-value {
+    min-height: revert;
+    text-align: revert;
+  }
+
+  ::-webkit-datetime-edit {
+    display: revert;
+  }
+
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: revert;
+  }
+
+  ::-webkit-datetime-edit,
+  ::-webkit-datetime-edit-year-field,
+  ::-webkit-datetime-edit-month-field,
+  ::-webkit-datetime-edit-day-field,
+  ::-webkit-datetime-edit-hour-field,
+  ::-webkit-datetime-edit-minute-field,
+  ::-webkit-datetime-edit-second-field,
+  ::-webkit-datetime-edit-millisecond-field,
+  ::-webkit-datetime-edit-meridiem-field {
+    padding-block: revert;
+  }
+
+  ::-webkit-calendar-picker-indicator {
+    line-height: revert;
+  }
+
+  /* Knoepfe: v3 cursor pointer, v4 default */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 @layer base {
   * {
@@ -111,18 +225,12 @@
     @apply bg-white rounded-xl shadow-soft p-6 transition-shadow duration-200 hover:shadow-soft-lg;
   }
 
-  .dark .card {
-    @apply bg-gray-800 shadow-gray-900/20;
-  }
 
   /* Input styles */
   .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
   }
 
-  .dark .input {
-    @apply bg-gray-700 border-gray-600 text-white;
-  }
 
   /* Badge styles */
   .badge {
@@ -144,12 +252,129 @@
 }
 
 @layer utilities {
+  /*
+   * space-x/y wie unter tailwind 3. v4 setzt den Abstand als margin-bottom
+   * an jedes Kind ausser dem letzten (Spezifitaet 0); v3 setzte margin-top an
+   * jedes Kind ausser dem ersten, mit Spezifitaet (0,3,0) — und schlug damit
+   * z. B. `.card { margin-bottom }` aus mobile.css. Gemessen 2026-10-06: die
+   * Tagebuchkarte rutschte auf dem Handy um 12 px. Hier steht die v3-Regel
+   * fuer jeden verwendeten Wert; src/test/space-compat.test.js verlangt fuer
+   * jeden Wert im Quelltext eine Zeile hier.
+   */
+  :where(.space-y-0\.5 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-0\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.125rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-1 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-1\.5 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-1\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.375rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-2 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-3 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-4 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-5 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.25rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-6 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.5rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-8 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 2rem;
+    margin-bottom: 0;
+  }
+  :where(.space-y-12 > :not(:last-child)) {
+    margin-block-end: 0;
+  }
+  .space-y-12 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 3rem;
+    margin-bottom: 0;
+  }
+  :where(.space-x-4 > :not(:last-child)) {
+    margin-inline-end: 0;
+  }
+  .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-right: 0;
+    margin-left: 1rem;
+  }
+  @media (min-width: 640px) {
+    :where(.sm\:space-y-6 > :not(:last-child)) {
+      margin-block-end: 0;
+    }
+    .sm\:space-y-6 > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1.5rem;
+      margin-bottom: 0;
+    }
+  }
+
+  /*
+   * Dunkelmodus der Komponenten. Unter tailwind 3 standen diese Regeln bei den
+   * Komponenten und schlugen einfache Utilities ueber die Spezifitaet (0,2,0),
+   * z. B. `card bg-primary-50` im Dunkelmodus. In v4 gewinnt die Utility-
+   * Schicht immer, deshalb stehen sie hier, HINTER den Utilities, mit
+   * Spezifitaet (0,1,0): sie schlagen einfache Utilities ueber die Reihenfolge
+   * und verlieren gegen `dark:`-Utilities (0,2,0) — wie unter v3
+   * (Transcribe.jsx: `card dark:bg-primary-900/20`).
+   */
+  :where(.dark) .card {
+    @apply bg-gray-800 shadow-gray-900/20;
+  }
+
+  :where(.dark) .input {
+    @apply bg-gray-700 border-gray-600 text-white;
+  }
+
+  :where(.dark) .glass {
+    @apply bg-gray-800/80 border-gray-700/20;
+  }
+
   /* Text gradients */
   .text-gradient {
     /* Kein Regenbogen quer durch die Palette: der Verlauf bleibt INNERHALB
        des Teals. Ein Verlauf von der einen Akzentfarbe in die andere ist
        genau der Vorgabe-Look, den diese Gestaltung ersetzt. */
-    @apply bg-gradient-to-br from-primary-600 to-primary-400 bg-clip-text text-transparent;
+    @apply bg-linear-to-br/srgb from-primary-600 to-primary-400 bg-clip-text text-transparent;
   }
 
   /* Animations */
@@ -166,54 +391,60 @@
     @apply bg-white/80 backdrop-blur-md border border-white/20;
   }
 
-  .dark .glass {
-    @apply bg-gray-800/80 border-gray-700/20;
+}
+
+/*
+ * Eigene Regeln HINTER den Utilities, in derselben Schicht. In tailwind 3 war
+ * das ungeschichtetes CSS nach @tailwind utilities: Spezifitaet und Reihenfolge
+ * entschieden. In v4 liegen die Utilities in einer nativen @layer, und
+ * ungeschichtetes CSS gewaenne IMMER gegen sie. Mit @layer utilities bleibt
+ * es bei der v3-Kaskade (gemessen 2026-10-06, Screenshot-Vergleich).
+ */
+@layer utilities {
+  /* Leaflet map container */
+  .leaflet-container {
+    @apply h-full w-full rounded-xl;
   }
-}
 
-/* Leaflet map container */
-.leaflet-container {
-  @apply h-full w-full rounded-xl;
-}
+  /* Markdown content */
+  .markdown {
+    @apply max-w-none;
+  }
 
-/* Markdown content */
-.markdown {
-  @apply max-w-none;
-}
+  .markdown h1 {
+    @apply text-3xl font-bold mb-4;
+  }
 
-.markdown h1 {
-  @apply text-3xl font-bold mb-4;
-}
+  .markdown h2 {
+    @apply text-2xl font-bold mb-3;
+  }
 
-.markdown h2 {
-  @apply text-2xl font-bold mb-3;
-}
+  .markdown h3 {
+    @apply text-xl font-semibold mb-2;
+  }
 
-.markdown h3 {
-  @apply text-xl font-semibold mb-2;
-}
+  .markdown p {
+    @apply mb-4 leading-relaxed;
+  }
 
-.markdown p {
-  @apply mb-4 leading-relaxed;
-}
+  .markdown ul,
+  .markdown ol {
+    @apply mb-4 ml-6;
+  }
 
-.markdown ul,
-.markdown ol {
-  @apply mb-4 ml-6;
-}
+  .markdown li {
+    @apply mb-2;
+  }
 
-.markdown li {
-  @apply mb-2;
-}
+  .markdown a {
+    @apply text-primary-500 hover:text-primary-600 underline;
+  }
 
-.markdown a {
-  @apply text-primary-500 hover:text-primary-600 underline;
-}
+  .markdown code {
+    @apply bg-gray-100 px-2 py-1 rounded-sm text-sm font-mono;
+  }
 
-.markdown code {
-  @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono;
-}
-
-.dark .markdown code {
-  @apply bg-gray-800;
+  .dark .markdown code {
+    @apply bg-gray-800;
+  }
 }

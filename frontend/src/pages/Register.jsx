@@ -98,7 +98,7 @@ export default function Register() {
   const isRegistrationClosed = registrationStatus && !registrationStatus.registration_open
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br/srgb from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 px-4 py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -114,8 +114,8 @@ export default function Register() {
               transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
               className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
                 isRegistrationClosed
-                  ? 'bg-gradient-to-br from-red-500 to-orange-500'
-                  : 'bg-gradient-to-br from-primary-500 to-secondary-500'
+                  ? 'bg-linear-to-br/srgb from-red-500 to-orange-500'
+                  : 'bg-linear-to-br/srgb from-primary-500 to-secondary-500'
               }`}
             >
               {isRegistrationClosed ? (
@@ -139,7 +139,7 @@ export default function Register() {
             <div className="space-y-4">
               <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
                   <div className="text-sm text-orange-600 dark:text-orange-400">
                     <p className="font-medium mb-1">{t('auth:registrationNotPossible')}</p>
                     <p>{t('auth:registrationClosedMessage')}</p>

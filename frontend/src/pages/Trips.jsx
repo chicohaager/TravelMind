@@ -200,11 +200,11 @@ export default function Trips() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center">
+                  <div className="w-full h-full bg-linear-to-br/srgb from-primary-400 to-secondary-400 flex items-center justify-center">
                     <MapPin className="w-16 h-16 text-white/50" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t/srgb from-black/70 to-transparent" />
 
                 {/* Action Buttons */}
                 <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

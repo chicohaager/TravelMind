@@ -440,7 +440,7 @@ export default function Settings() {
 
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
               <div className="flex gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800 dark:text-red-300">
                   <p className="font-semibold mb-1">{t('settings:deleteWarningTitle')}</p>
                   <p>{t('settings:deleteWarningText')}</p>

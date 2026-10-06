@@ -254,7 +254,7 @@ export default function Diary() {
               className="card cursor-pointer hover:shadow-lg transition-all"
             >
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                <div className="w-12 h-12 bg-linear-to-br/srgb from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white shrink-0">
                   <MapIcon className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
@@ -325,7 +325,7 @@ export default function Diary() {
                   >
                     <div className="flex gap-4">
                       <div className="relative z-10">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+                        <div className="w-12 h-12 bg-linear-to-br/srgb from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
                           {moodEmojis[entry.mood] || '📝'}
                         </div>
                       </div>
@@ -390,13 +390,13 @@ export default function Diary() {
             >
               {/* Timeline Line */}
               {index < entries.length - 1 && (
-                <div className="absolute left-6 top-16 w-0.5 h-full bg-gradient-to-b from-primary-500 to-secondary-500" />
+                <div className="absolute left-6 top-16 w-0.5 h-full bg-linear-to-b/srgb from-primary-500 to-secondary-500" />
               )}
 
               <div className="flex gap-4">
                 {/* Timeline Dot */}
                 <div className="relative z-10">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+                  <div className="w-12 h-12 bg-linear-to-br/srgb from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
                     {moodEmojis[entry.mood] || '📝'}
                   </div>
                 </div>

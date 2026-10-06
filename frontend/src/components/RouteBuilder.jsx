@@ -333,7 +333,7 @@ export default function RouteBuilder({
                                 onClick={() => addPlace(place.id)}
                                 title={t('routes:addPlaceToRoute')}
                                 aria-label={`${t('routes:addPlaceToRoute')}: ${place.name}`}
-                                className="shrink-0 p-1 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded"
+                                className="shrink-0 p-1 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-sm"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>

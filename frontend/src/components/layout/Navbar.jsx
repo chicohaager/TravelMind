@@ -63,7 +63,7 @@ export default function Navbar({ onMenuClick }) {
             </button>
 
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-linear-to-br/srgb from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">🌍</span>
               </div>
               {/* Der Schriftzug kostet 149 px — auf dem Telefon bleibt das
@@ -117,7 +117,7 @@ export default function Navbar({ onMenuClick }) {
                         {user?.email}
                       </p>
                       {user?.is_superuser && (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded text-xs font-medium">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 rounded-sm text-xs font-medium">
                           Admin
                         </span>
                       )}

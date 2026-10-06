@@ -165,7 +165,7 @@ export default function ImportFromGuideModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -234,7 +234,7 @@ export default function ImportFromGuideModal({
 
               {error && (
                 <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                   <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>
               )}
@@ -242,7 +242,7 @@ export default function ImportFromGuideModal({
               {/* Info Box */}
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-600 dark:text-blue-400">
                     <p className="font-medium mb-1">{t('places:howItWorks')}</p>
                     <ul className="list-disc list-inside space-y-0.5 text-xs">
@@ -328,7 +328,7 @@ export default function ImportFromGuideModal({
                           </div>
 
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-medium">
+                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-sm text-xs font-medium">
                               {place.category}
                             </span>
                           </div>
@@ -355,7 +355,7 @@ export default function ImportFromGuideModal({
 
           {/* Footer - Fixed at Bottom */}
           {extractedPlaces.length > 0 && (
-            <div className="flex-shrink-0 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div className="shrink-0 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {t('places:selectedCountPrefix')} <strong>{selectedPlaces.size}</strong>{' '}

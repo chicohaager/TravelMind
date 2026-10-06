@@ -34,7 +34,7 @@ const OfflineIndicator = () => {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
-          className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 ${
+          className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-100 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 ${
             isOnline ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
           }`}
         >

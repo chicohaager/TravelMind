@@ -201,7 +201,7 @@ export default function Lightbox({
               }}
               placeholder={t('diary:captionPlaceholder', 'Bildunterschrift hinzufügen…')}
               maxLength={500}
-              className="flex-1 px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50 text-sm"
+              className="flex-1 px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-hidden focus:border-white/50 text-sm"
             />
             <button
               onClick={saveCaption}

@@ -45,7 +45,7 @@ export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Colo
             style={{ backgroundColor: color }}
             title={color}
           >
-            {value === color && <Check className="w-5 h-5 text-white mx-auto drop-shadow" />}
+            {value === color && <Check className="w-5 h-5 text-white mx-auto drop-shadow-sm" />}
           </button>
         ))}
       </div>
@@ -67,7 +67,7 @@ export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Colo
             type="color"
             value={value}
             onChange={(e) => handleColorChange(e.target.value)}
-            className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
+            className="w-16 h-10 rounded-sm border border-gray-300 cursor-pointer"
           />
           <input
             type="text"
@@ -84,7 +84,7 @@ export default function ColorPicker({ value = '#1F7A7D', onChange, label = 'Colo
       <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
         <span>{t('common:selectedColor')}</span>
         <div
-          className="w-6 h-6 rounded border border-gray-300"
+          className="w-6 h-6 rounded-sm border border-gray-300"
           style={{ backgroundColor: value }}
         />
         <span className="font-mono">{value}</span>
