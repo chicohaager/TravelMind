@@ -38,13 +38,7 @@ from routes import (
     public,
 )
 from routes import routes as route_routes
-from routes import (
-    search,
-    timeline,
-    trips,
-    user_settings,
-    users,
-)
+from routes import search, timeline, trips, user_settings, users
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError

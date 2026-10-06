@@ -342,7 +342,11 @@ Ausgabe als JSON:
         self, destination: str, duration: int, interests: List[str], accommodation_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate a detailed trip itinerary"""
-        prompt = f"""Du bist ein erfahrener Reiseplaner. Erstelle einen detaillierten {duration}-tägigen Reiseplan für {destination}.
+        einleitung = (
+            f"Du bist ein erfahrener Reiseplaner. "
+            f"Erstelle einen detaillierten {duration}-tägigen Reiseplan für {destination}."
+        )
+        prompt = f"""{einleitung}
 
 Interessen: {', '.join(interests)}
 {f"Unterkunft: {accommodation_type}" if accommodation_type else ""}
