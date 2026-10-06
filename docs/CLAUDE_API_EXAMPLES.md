@@ -339,7 +339,7 @@ Du kannst auch GPS-Koordinaten für Orte bereitstellen wenn relevant."""
 
 ### Response
 
-```
+```text
 Großartige Frage! Lissabon ist ein Traum für Fotografen - hier sind meine Top-Aussichtspunkte:
 
 🌅 **Miradouro da Senhora do Monte**
@@ -461,6 +461,7 @@ prompt += "\n\nAusgabe als JSON: { ... }"
 ### 2. Klare Anweisungen
 
 Sei spezifisch mit deinen Anforderungen:
+
 - Welche Informationen?
 - Welches Format?
 - Welcher Ton/Stil?
@@ -506,10 +507,12 @@ except json.JSONDecodeError:
 ## Rate Limits & Kosten
 
 **Anthropic Claude Pricing (Stand 2024):**
+
 - Input: ~$3 / 1M tokens
 - Output: ~$15 / 1M tokens
 
 **Empfohlene Limits:**
+
 - `max_tokens`: 2048 für Pläne, 1024 für Chat
 - Rate Limit: ~50 Requests/Minute
 - Caching: Häufige Antworten cachen

@@ -1,0 +1,17 @@
+{
+  "title": "Analytics",
+  "subtitle": "Statistiken über alle deine Reisen",
+  "loading": "Statistiken werden geladen…",
+  "empty": "Noch keine Daten — erstelle Reisen, Einträge und Ausgaben.",
+  "error": "Statistiken konnten nicht geladen werden.",
+  "trips": "Reisen",
+  "entries": "Tagebucheinträge",
+  "photos": "Fotos",
+  "travelDays": "Reisetage",
+  "totalSpend": "Gesamtausgaben",
+  "spendByCategory": "Ausgaben nach Kategorie",
+  "spendByCurrency": "Ausgaben nach Währung",
+  "photosByTrip": "Fotos pro Reise",
+  "entriesByTrip": "Einträge pro Reise",
+  "tripsByYear": "Reisen pro Jahr"
+}

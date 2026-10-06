@@ -6,24 +6,28 @@ This directory contains the test suite for the TravelMind backend API. Tests are
 
 ## Running Tests
 
-### Run all tests:
+### Run all tests
+
 ```bash
 cd backend
 pytest tests/ -v
 ```
 
-### Run specific test file:
+### Run specific test file
+
 ```bash
 pytest tests/test_auth.py -v
 pytest tests/test_trips.py -v
 ```
 
-### Run with coverage:
+### Run with coverage
+
 ```bash
 pytest tests/ --cov=. --cov-report=html
 ```
 
-### Run specific test:
+### Run specific test
+
 ```bash
 pytest tests/test_auth.py::test_register_success -v
 ```
@@ -31,7 +35,9 @@ pytest tests/test_auth.py::test_register_success -v
 ## Test Structure
 
 ### conftest.py
+
 Contains pytest fixtures and configuration:
+
 - `db_session`: Fresh database session for each test (in-memory SQLite)
 - `client`: Async HTTP test client with database override
 - `test_user`: Fixture that creates a test user
@@ -39,7 +45,9 @@ Contains pytest fixtures and configuration:
 - `auth_headers`: Fixture that provides authorization headers
 
 ### test_auth.py
+
 Tests for authentication endpoints (`/api/auth/*`):
+
 - User registration (success, duplicate username/email, weak password)
 - User login (success, wrong password, non-existent user)
 - Getting current user info (with/without auth)
@@ -48,7 +56,9 @@ Tests for authentication endpoints (`/api/auth/*`):
 **Total:** 13 tests
 
 ### test_trips.py
+
 Tests for trip endpoints (`/api/trips/*`):
+
 - Creating trips (with auth, without auth, demo mode)
 - Pagination (skip/limit parameters)
 - Getting trips (own trips, other user's trips)
@@ -62,6 +72,7 @@ Tests for trip endpoints (`/api/trips/*`):
 ## Test Database
 
 Tests use an in-memory SQLite database that is:
+
 - Created fresh for each test
 - Automatically cleaned up after each test
 - Fast (no disk I/O)
@@ -69,7 +80,8 @@ Tests use an in-memory SQLite database that is:
 
 ## Writing New Tests
 
-### Example test structure:
+### Example test structure
+
 ```python
 import pytest
 from httpx import AsyncClient
@@ -83,7 +95,8 @@ async def test_something(client: AsyncClient, auth_headers: dict):
     assert "expected_field" in data
 ```
 
-### Available fixtures:
+### Available fixtures
+
 - `client`: Async HTTP client
 - `db_session`: Database session
 - `test_user`: Pre-created test user
@@ -96,6 +109,7 @@ async def test_something(client: AsyncClient, auth_headers: dict):
 ## Test Coverage Goals
 
 Current coverage focuses on:
+
 - ✅ Authentication flows
 - ✅ Authorization and ownership checks
 - ✅ CRUD operations
@@ -103,6 +117,7 @@ Current coverage focuses on:
 - ✅ Security vulnerabilities
 
 Future coverage should include:
+
 - ⏳ Places endpoints
 - ⏳ Diary endpoints
 - ⏳ Budget/expense endpoints
@@ -112,7 +127,8 @@ Future coverage should include:
 
 ## CI/CD Integration
 
-### GitHub Actions example:
+### GitHub Actions example
+
 ```yaml
 name: Tests
 
@@ -138,17 +154,20 @@ jobs:
 
 ## Debugging Tests
 
-### Run tests with print statements:
+### Run tests with print statements
+
 ```bash
 pytest tests/ -v -s
 ```
 
-### Run tests with debugger:
+### Run tests with debugger
+
 ```bash
 pytest tests/ --pdb
 ```
 
-### Show test duration:
+### Show test duration
+
 ```bash
 pytest tests/ -v --durations=10
 ```
@@ -156,32 +175,40 @@ pytest tests/ -v --durations=10
 ## Performance
 
 Typical test run time:
+
 - **Full suite:** ~2-5 seconds
 - **Single test file:** ~1-2 seconds
 - **Single test:** ~0.1-0.5 seconds
 
 Fast execution is achieved through:
+
 - In-memory database
 - Async operations
 - Minimal test setup
 
 ## Troubleshooting
 
-### Import errors:
+### Import errors
+
 Make sure you're running pytest from the `backend` directory:
+
 ```bash
 cd backend
 pytest tests/
 ```
 
-### Database errors:
+### Database errors
+
 Tests create a fresh database each time. If you see database errors:
+
 1. Check that models are imported in `models/database.py`
 2. Verify SQLAlchemy relationships are correct
 3. Ensure `Base.metadata.create_all()` is called in fixtures
 
-### Async errors:
+### Async errors
+
 All test functions must be marked with `@pytest.mark.asyncio`:
+
 ```python
 @pytest.mark.asyncio
 async def test_something():
@@ -191,6 +218,7 @@ async def test_something():
 ## Contributing
 
 When adding new features:
+
 1. Write tests first (TDD approach recommended)
 2. Ensure tests cover success and error cases
 3. Test authorization/ownership checks for protected endpoints

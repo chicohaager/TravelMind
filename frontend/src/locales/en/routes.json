@@ -29,5 +29,11 @@
   "routeUpdated": "Route updated!",
   "routeCreated": "Route created!",
   "updateRoute": "Update route",
-  "saveRoute": "Save route"
+  "saveRoute": "Save route",
+  "addPlaceToRoute": "Add to route",
+  "removePlaceFromRoute": "Remove from route",
+  "tapOrDragPlacesHere": "Tap ➕ on a place — or drag it here.",
+  "whyCantISave": "Still needed to save:",
+  "missingRouteName": "a route name",
+  "missingTwoPlaces": "at least two places in the route"
 }

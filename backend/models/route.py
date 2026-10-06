@@ -2,10 +2,10 @@
 Route model - Connecting places to create itineraries
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float, Boolean
+from models.database import Base
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
 
 
 class Route(Base):

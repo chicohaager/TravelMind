@@ -1,6 +1,7 @@
-import { MapPin, Star, Check, Calendar, DollarSign, Edit, Trash2, ExternalLink } from 'lucide-react'
+import { MapPin, Star, Check, Calendar, Euro, Edit, Trash2, ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 const CATEGORY_ICONS = {
   restaurant: '🍽️',
@@ -15,14 +16,14 @@ const CATEGORY_ICONS = {
   sight: '🏛️',
   activity: '⚡',
   transport: '🚗',
-  other: '📍'
+  other: '📍',
 }
 
 const CATEGORY_COLORS = {
   restaurant: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300',
   attraction: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300',
   beach: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300',
-  hotel: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300',
+  hotel: 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300',
   viewpoint: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300',
   museum: 'bg-slate-100 text-slate-700 dark:bg-slate-900/20 dark:text-slate-300',
   park: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',
@@ -31,7 +32,7 @@ const CATEGORY_COLORS = {
   sight: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300',
   activity: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300',
   transport: 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300',
-  other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300'
+  other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300',
 }
 
 export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, onClick }) {
@@ -50,7 +51,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
       } ${onClick ? 'cursor-pointer' : ''}`}
     >
       {/* Visited Checkbox */}
-      <div className="flex-shrink-0 pt-1">
+      <div className="shrink-0 pt-1">
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -69,11 +70,13 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className={`font-semibold text-base truncate ${place.visited ? 'line-through opacity-75' : ''}`}>
+          <h3
+            className={`font-semibold text-base truncate ${place.visited ? 'line-through opacity-75' : ''}`}
+          >
             {place.name}
           </h3>
           {(place.rating || place.external_rating) && (
-            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 flex-shrink-0">
+            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 shrink-0">
               <Star className="w-4 h-4 fill-current" />
               <span className="font-medium">{place.external_rating || place.rating}</span>
             </div>
@@ -89,7 +92,9 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
         {/* Tags & Info */}
         <div className="flex flex-wrap gap-2 mb-2">
           {place.category && (
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${categoryClass}`}>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${categoryClass}`}
+            >
               <span>{CATEGORY_ICONS[place.category] || '📍'}</span>
               {place.category}
             </span>
@@ -97,15 +102,15 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
           {place.visit_date && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 rounded-full text-xs font-medium">
               <Calendar className="w-3 h-3" />
-              {new Date(place.visit_date).toLocaleDateString('de-DE', {
+              {new Date(place.visit_date).toLocaleDateString(aktuelleLocale(), {
                 day: '2-digit',
-                month: 'short'
+                month: 'short',
               })}
             </span>
           )}
           {place.cost && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300 rounded-full text-xs font-medium">
-              <DollarSign className="w-3 h-3" />
+              <Euro className="w-3 h-3" />
               {place.cost} {place.currency}
             </span>
           )}
@@ -121,14 +126,14 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
 
         {/* Notes - Only show if present */}
         {place.notes && (
-          <div className="mt-2 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded inline-block">
+          <div className="mt-2 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded-sm inline-block">
             💡 {place.notes}
           </div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex-shrink-0 flex flex-col gap-2">
+      <div className="shrink-0 flex flex-col gap-2">
         {place.website && (
           <a
             href={place.website}

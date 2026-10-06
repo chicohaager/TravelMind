@@ -1,0 +1,10 @@
+{
+  "//": "Vier Regeln sind fuer dieses Repository unbrauchbar und wuerden bei jedem Commit anschlagen: MD013 (80 Zeichen) trifft jede Tabelle und jede laengere URL; MD024 (doppelte Ueberschriften) trifft die wiederkehrenden Abschnitte 'Request'/'Response' in den API-Beispielen; MD060 verlangt handausgerichtete Tabellenstriche, die kein Werkzeug hier setzt; MD033/MD041 stoeren bei HTML und Titelzeilen. Ein Gate, das immer rot ist, wird weggeklickt.",
+  "MD013": false,
+  "MD024": {
+    "siblings_only": true
+  },
+  "MD033": false,
+  "MD041": false,
+  "MD060": false
+}

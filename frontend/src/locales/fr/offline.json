@@ -1,9 +1,4 @@
 {
-  "title": "Mode hors ligne",
-  "syncNow": "Synchroniser maintenant",
-  "lastSync": "Dernière synchronisation",
-  "pendingChanges": "Modifications en attente",
-  "noConnection": "Pas de connexion internet",
   "changeWillSync": "Hors ligne : Le changement sera synchronisé une fois connecté",
   "dataDeleted": "Données hors ligne supprimées",
   "errorDeleting": "Erreur lors de la suppression des données hors ligne",

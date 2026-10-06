@@ -1,6 +1,7 @@
 import { Clock, Trash2, GripVertical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { aktuelleLocale } from '@/utils/format'
 
 const categoryIcons = {
   sight: '🏛️',
@@ -8,16 +9,16 @@ const categoryIcons = {
   hotel: '🏨',
   activity: '🎯',
   shopping: '🛍️',
-  transport: '🚌'
+  transport: '🚌',
 }
 
 export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) {
   const { t } = useTranslation()
   const formatTime = (timeStr) => {
     if (!timeStr) return null
-    return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString('de-DE', {
+    return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString(aktuelleLocale(), {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
@@ -32,7 +33,7 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
         {/* Drag Handle */}
         <div
           {...dragHandleProps}
-          className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="shrink-0 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <GripVertical className="w-5 h-5" />
         </div>
@@ -61,7 +62,9 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
 
                 {entry.duration_minutes && (
                   <div className="flex items-center gap-1">
-                    <span className="font-medium">{entry.duration_minutes} {t('timeline:minutes')}</span>
+                    <span className="font-medium">
+                      {entry.duration_minutes} {t('timeline:minutes')}
+                    </span>
                   </div>
                 )}
               </div>
@@ -74,7 +77,7 @@ export default function TimelineEntryCard({ entry, onDelete, dragHandleProps }) 
             {/* Delete Button */}
             <button
               onClick={() => onDelete(entry.id)}
-              className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-all"
+              className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900 rounded-sm transition-all"
               title={t('timeline:removeFromTimeline')}
             >
               <Trash2 className="w-4 h-4 text-red-600" />

@@ -1,5 +1,6 @@
 {
   "title": "Map",
+  "showPhotos": "Show photos on map",
   "noPlacesYet": "No places yet",
   "addPlacesToSeeOnMap": "Add places to your trip to see them on the map",
   "addPlaces": "Add Places",
@@ -15,5 +16,8 @@
   "legend": "Legend",
   "places": "Places",
   "routes": "Routes",
-  "moreRoutes": "+{{count}} more"
+  "moreRoutes": "+{{count}} more",
+  "ohnePosition_one": "{{count}} place without a location — not on the map",
+  "ohnePosition_other": "{{count}} places without a location — not on the map",
+  "positionUnsicher": "Approximate position — not certainly this place"
 }

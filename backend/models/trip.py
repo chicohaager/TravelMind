@@ -2,10 +2,10 @@
 Trip model
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float
+from models.database import Base
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
 
 
 class Trip(Base):
@@ -33,6 +33,11 @@ class Trip(Base):
 
     # Cover image
     cover_image = Column(String(500), nullable=True)
+
+    # Public read-only sharing of this trip's diary. When is_public is True, the
+    # diary is reachable without authentication at /share/<share_token>.
+    is_public = Column(Boolean, nullable=False, default=False, server_default="false")
+    share_token = Column(String(64), unique=True, nullable=True, index=True)
 
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())

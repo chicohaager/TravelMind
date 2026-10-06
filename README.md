@@ -1,409 +1,229 @@
-# 🌍 TravelMind
+# TravelMind
 
-<div align="center">
+Selbst gehostete Webanwendung zum Planen, Organisieren und Dokumentieren von
+Reisen — mit Reisetagebuch, Fotogalerie, Karte, Budget und KI-Unterstützung
+über vier Anbieter (Groq, Anthropic, OpenAI, Google).
 
-![TravelMind Logo](frontend/public/icon-192.png)
-
-**Your intelligent travel planning and diary app with AI assistance**
-
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/chicohaager/TravelMind/releases)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://hub.docker.com/u/chicohaager)
-[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
-[![React](https://img.shields.io/badge/react-18-blue)](https://reactjs.org/)
-
-[🇬🇧 English](#english) | [🇩🇪 Deutsch](#deutsch) | [🇫🇷 Français](#français) | [🇪🇸 Español](#español)
-
-</div>
+Oberflächensprachen: Deutsch, English, Español, Français.
 
 ---
 
-<a name="english"></a>
+## Was drin ist
 
-## 🇬🇧 English
+| | |
+| --- | --- |
+| **Backend** | FastAPI, PostgreSQL 16, SQLAlchemy 2 (async), Alembic — 127 Endpunkte in 21 Modulen |
+| **Frontend** | React 18, Vite 5, TailwindCSS, React Query, Leaflet, PWA |
+| **Betrieb** | Strukturiertes JSON-Logging (structlog), Sentry, Request-IDs, Metriken, Security-Header, Rate-Limiting auf 72 Endpunkten |
+| **Sprachen** | de · en · es · fr, je 955 Schlüssel, deckungsgleich (durch einen Test erzwungen) |
 
-### 📖 About TravelMind
+Funktionen: Reisen mit Zielen, Terminen und Budget · Orte sammeln, kategorisieren
+und auf einer Karte anzeigen · Routen bauen · Reisetagebuch mit Markdown und
+Fotos · Fotogalerie und Zeitleiste · Ausgaben erfassen und aufteilen ·
+Mitreisende einladen · Sprachaufnahmen transkribieren · Tagebuch öffentlich
+teilen · Offline-Betrieb als PWA.
 
-TravelMind is a **self-hosted web application** for planning, organizing and documenting your travels. With **multi-provider AI support** (Groq FREE, Claude, OpenAI, Gemini), you get personalized recommendations and intelligent travel suggestions.
+---
 
-### 📸 Screenshots
+## Schnellstart (Entwicklung)
 
-<table>
-  <tr>
-    <td width="50%">
-      <img src=".github/screenshots/dashboard.png" alt="Dashboard" />
-      <p align="center"><b>Dashboard - Trip Overview</b></p>
-    </td>
-    <td width="50%">
-      <img src=".github/screenshots/trip-overview.png" alt="Trip Detail" />
-      <p align="center"><b>Trip Detail - Places & Recommendations</b></p>
-    </td>
-  </tr>
-</table>
-
-### ✨ Key Features
-
-🗺️ **Trip Planning**
-- Create and manage trips with destinations, dates, and budgets
-- Select interests for personalized recommendations
-- Upload cover images and add participants
-- Track expenses and budget progress
-
-🤖 **AI Assistant (Multi-Provider)**
-- **Choose your AI provider**: Groq (FREE!), Claude, OpenAI, or Gemini
-- **Your own API key**: Each user configures their own provider
-- **Encrypted storage**: API keys are securely encrypted
-- Personalized recommendations based on interests
-- Automatic place suggestions with descriptions
-- Intelligent travel tips adapted to budget and duration
-
-📍 **Places & Attractions**
-- Collect places with descriptions and categories
-- GPS coordinates for map view
-- Google Maps integration
-- Import from travel guides (TripAdvisor, Lonely Planet)
-- Mark as visited and estimate costs
-
-📓 **Travel Diary**
-- Write diary entries with Markdown support
-- Upload multiple photos per entry
-- Set mood and ratings (1-5 stars)
-- Add tags for organization
-- Export as PDF or Markdown
-
-💰 **Budget Tracker**
-- Track expenses by category
-- Multiple currencies supported
-- Cost sharing for group trips
-- Visual budget overview with charts
-
-🌐 **Multi-Language Support**
-- 4 languages: English, German, French, Spanish
-- Automatic browser language detection
-- Easy language switching in the app
-- Namespace-based translations for easy extension
-
-### 🚀 Quick Start
-
-#### Option 1: Docker Hub (Recommended)
-
-```bash
-# Download configuration
-curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
-curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/.env.example
-
-# Configure environment
-cp .env.example .env
-nano .env  # Edit with your settings
-
-# Start application
-docker-compose -f docker-compose.hub.yml up -d
-
-# Create admin user
-docker exec -it travelmind-backend-prod python create_admin.py
-```
-
-**Default credentials:**
-- Username: `admin`
-- Password: `admin123`
-- ⚠️ **Change password after first login!**
-
-**Access:**
-- Frontend: http://localhost
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-
-#### Option 2: From Source
+Voraussetzungen: Docker mit Compose v2, oder Node ≥ 18 und Python 3.11.
 
 ```bash
 git clone https://github.com/chicohaager/TravelMind.git
 cd TravelMind
 cp .env.example .env
-# Edit .env with your settings
-docker-compose up -d
 ```
 
-#### Option 3: ZimaOS
+`.env` bearbeiten — **zwei Werte müssen gesetzt sein**, sonst bricht das Backend
+beim Start ab (mit genau dieser Meldung):
 
 ```bash
-git clone https://github.com/chicohaager/TravelMind.git
-cd TravelMind
-docker-compose -f docker-compose.zimaos.yml up -d
+python3 -c "import secrets; print('JWT_SECRET=' + secrets.token_urlsafe(32))"
+python3 -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
 ```
 
-### 🛠️ Technology Stack
+Datenbank-Volume anlegen — die Entwicklungs-Compose bindet es **extern** ein,
+damit ein `docker compose down -v` bestehende Reisedaten nicht mitnimmt:
 
-**Backend:**
-- FastAPI (Python 3.11)
-- SQLAlchemy 2.0 (Async ORM)
-- SQLite / PostgreSQL
-- Multi-AI Provider Support
+```bash
+docker volume create travelmind_postgres_data
+```
 
-**Frontend:**
-- React 18 + Vite
-- TanStack Query
-- Tailwind CSS
-- Framer Motion
-- Leaflet Maps
+Starten:
 
-**Infrastructure:**
-- Docker & Docker Compose
-- Nginx (Production)
+```bash
+docker compose up -d
+```
 
-### 📚 Documentation
+Oberfläche: <http://localhost:5173> · API-Doku: <http://localhost:8003/docs>
+(gemessen: liefert die FastAPI-Oberfläche; in der Produktion **nicht**
+erreichbar, weil nginx nur `/api/` und `/uploads/` weiterreicht).
 
-- [Deployment Guide](DEPLOYMENT.md) - Standard production deployment
-- [Docker Hub Guide](DOCKER_HUB.md) - Quick deployment with pre-built images
-- [ZimaOS Deployment](ZIMAOS_DEPLOYMENT.md) - Deploy on ZimaOS/NAS
-- [API Documentation](http://localhost:8000/docs) - Interactive API docs
+Erstes Konto anlegen — es gibt kein Standardkonto, die Anwendung legt beim
+Start keinen Benutzer an:
 
-### 🤝 Contributing
+```bash
+docker compose exec backend python create_admin.py
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Ohne Docker
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```bash
+# Backend
+python3.11 -m venv venv && source venv/bin/activate
+pip install -r backend/requirements.txt
+cd backend && uvicorn main:app --reload --port 8003
 
-### 📄 License
+# Frontend (zweites Terminal)
+cd frontend && npm ci && npm run dev
+```
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-### 🙏 Acknowledgments
-
-- **Groq** for free AI inference
-- **Anthropic** for Claude AI API
-- **OpenAI** for GPT API
-- **Google** for Gemini API
-- FastAPI, React, and all open-source contributors
+Die Oberfläche spricht die API in der Entwicklung über den Vite-Proxy an —
+`VITE_API_URL` bleibt dabei **leer**. Gesetzt wird sie nur, wenn API und
+Oberfläche getrennt betrieben werden.
 
 ---
 
-<a name="deutsch"></a>
+## Tests und Prüfungen
 
-## 🇩🇪 Deutsch
-
-### 📖 Über TravelMind
-
-TravelMind ist eine **selbst gehostete Webanwendung** zur Planung, Organisation und Dokumentation deiner Reisen. Mit **Multi-Provider KI-Unterstützung** (Groq KOSTENLOS, Claude, OpenAI, Gemini) erhältst du personalisierte Empfehlungen und intelligente Reisevorschläge.
-
-### 📸 Screenshots
-
-<table>
-  <tr>
-    <td width="50%">
-      <img src=".github/screenshots/dashboard.png" alt="Dashboard" />
-      <p align="center"><b>Dashboard - Reise-Übersicht</b></p>
-    </td>
-    <td width="50%">
-      <img src=".github/screenshots/trip-overview.png" alt="Reise-Detail" />
-      <p align="center"><b>Reise-Detail - Orte & Empfehlungen</b></p>
-    </td>
-  </tr>
-</table>
-
-### ✨ Hauptfunktionen
-
-🗺️ **Reiseplanung**
-- Reisen erstellen mit Ziel, Datum und Budget
-- Interessen auswählen für personalisierte Empfehlungen
-- Cover-Bilder hochladen und Teilnehmer hinzufügen
-- Ausgaben tracken und Budget-Fortschritt verfolgen
-
-🤖 **KI-Assistent (Multi-Provider)**
-- **Wähle deinen AI-Provider**: Groq (KOSTENLOS!), Claude, OpenAI oder Gemini
-- **Eigener API-Key**: Jeder Nutzer konfiguriert seinen eigenen Provider
-- **Verschlüsselte Speicherung**: API-Keys werden sicher verschlüsselt
-- Personalisierte Empfehlungen basierend auf Interessen
-- Automatische Ortsvorschläge mit Beschreibungen
-- Intelligente Reisetipps angepasst an Budget und Dauer
-
-📍 **Orte & Sehenswürdigkeiten**
-- Orte sammeln mit Beschreibungen und Kategorien
-- GPS-Koordinaten für Kartenansicht
-- Google Maps Integration
-- Import aus Reiseführern (TripAdvisor, Lonely Planet)
-- Als besucht markieren und Kosten schätzen
-
-📓 **Reisetagebuch**
-- Tagebucheinträge mit Markdown-Support schreiben
-- Mehrere Fotos pro Eintrag hochladen
-- Stimmung und Bewertungen (1-5 Sterne) festhalten
-- Tags zur Organisation hinzufügen
-- Export als PDF oder Markdown
-
-💰 **Budget-Tracker**
-- Ausgaben nach Kategorie erfassen
-- Mehrere Währungen unterstützt
-- Kostenteilung für Gruppenreisen
-- Visuelle Budget-Übersicht mit Diagrammen
-
-🌐 **Mehrsprachige Unterstützung**
-- 4 Sprachen: Englisch, Deutsch, Französisch, Spanisch
-- Automatische Browserspracherkennung
-- Einfacher Sprachwechsel in der App
-- Namespace-basierte Übersetzungen für einfache Erweiterung
-
-### 🚀 Schnellstart
-
-#### Option 1: Docker Hub (Empfohlen)
+Alle vier laufen auch in CI, und **jede kann rot werden**:
 
 ```bash
-# Konfiguration herunterladen
-curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
-curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/.env.example
+# Backend: Formatierung, Linting, Tests mit Abdeckungsschwelle
+flake8 backend/
+black --line-length=120 --check backend/
+isort --profile=black --line-length=120 --check-only backend/
+cd backend && pytest tests -q --cov=. --cov-fail-under=50
 
-# Umgebung konfigurieren
-cp .env.example .env
-nano .env  # Mit deinen Einstellungen bearbeiten
+# Frontend
+cd frontend && npx eslint . && npx vitest run && npm run build
 
-# Anwendung starten
-docker-compose -f docker-compose.hub.yml up -d
-
-# Admin-User erstellen
-docker exec -it travelmind-backend-prod python create_admin.py
+# End-to-End (Playwright, benötigt eine laufende Instanz)
+cd frontend && npx playwright test
 ```
 
-**Standard-Zugangsdaten:**
-- Benutzername: `admin`
-- Passwort: `admin123`
-- ⚠️ **Passwort nach erstem Login ändern!**
+Stand 2026-08-25: **53 Backend-Tests**, **46 Frontend-Tests**, Backend-Abdeckung
+**53 %**, 0 Lint-Fehler auf beiden Seiten.
 
-**Zugriff:**
-- Frontend: http://localhost
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+Einige Tests sind Wächter gegen Fehlerklassen, die schon einmal in der
+Produktion standen — sie prüfen nicht nur, dass etwas funktioniert, sondern dass
+eine bestimmte Art von Fehler nicht zurückkommen kann:
 
-#### Option 2: Aus dem Quellcode
-
-```bash
-git clone https://github.com/chicohaager/TravelMind.git
-cd TravelMind
-cp .env.example .env
-# .env mit deinen Einstellungen bearbeiten
-docker-compose up -d
-```
-
-#### Option 3: ZimaOS
-
-```bash
-git clone https://github.com/chicohaager/TravelMind.git
-cd TravelMind
-docker-compose -f docker-compose.zimaos.yml up -d
-```
-
-### 🛠️ Technologie-Stack
-
-**Backend:**
-- FastAPI (Python 3.11)
-- SQLAlchemy 2.0 (Async ORM)
-- SQLite / PostgreSQL
-- Multi-AI Provider Support
-
-**Frontend:**
-- React 18 + Vite
-- TanStack Query
-- Tailwind CSS
-- Framer Motion
-- Leaflet Maps
-
-**Infrastruktur:**
-- Docker & Docker Compose
-- Nginx (Production)
-
-### 📚 Dokumentation
-
-- [Deployment-Anleitung](DEPLOYMENT.md) - Standard Production Deployment
-- [Docker Hub Anleitung](DOCKER_HUB.md) - Schnell-Deployment mit fertigen Images
-- [ZimaOS Deployment](ZIMAOS_DEPLOYMENT.md) - Deployment auf ZimaOS/NAS
-- [API-Dokumentation](http://localhost:8000/docs) - Interaktive API-Docs
-
-### 🤝 Mitwirken
-
-Beiträge sind willkommen! Erstelle gerne einen Pull Request.
-
-1. Repository forken
-2. Feature Branch erstellen (`git checkout -b feature/NeuesFunktion`)
-3. Änderungen committen (`git commit -m 'Füge neue Funktion hinzu'`)
-4. Branch pushen (`git push origin feature/NeuesFunktion`)
-5. Pull Request öffnen
-
-### 📄 Lizenz
-
-Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe [LICENSE](LICENSE) Datei für Details.
-
-### 🙏 Danksagungen
-
-- **Groq** für kostenlose KI-Inferenz
-- **Anthropic** für Claude AI API
-- **OpenAI** für GPT API
-- **Google** für Gemini API
-- FastAPI, React und alle Open-Source-Mitwirkenden
+- `frontend/src/test/i18n-integrity.test.js` — Namensräume mit Doppelpunkt,
+  deckungsgleiche Sprachdateien, `<html lang>`, keine fest verdrahteten Locales.
+- `frontend/src/utils/format.test.js` — Datums-, Zahl- und Währungsformate in
+  allen vier Sprachen, auch in der Form **mit** Region (`de-DE`).
 
 ---
 
-<a name="français"></a>
+## Produktivbetrieb
 
-## 🇫🇷 Français
-
-### 📖 À propos de TravelMind
-
-TravelMind est une **application web auto-hébergée** pour planifier, organiser et documenter vos voyages. Avec **support IA multi-fournisseurs** (Groq GRATUIT, Claude, OpenAI, Gemini), vous obtenez des recommandations personnalisées et des suggestions de voyage intelligentes.
-
-### ✨ Fonctionnalités principales
-
-🗺️ **Planification de voyage** - Créer des voyages avec destinations, dates et budgets
-🤖 **Assistant IA** - Choisissez votre fournisseur : Groq (GRATUIT!), Claude, OpenAI ou Gemini
-📍 **Lieux** - Collecter des lieux avec GPS et intégration Google Maps
-📓 **Journal de voyage** - Écrire des entrées avec photos et humeur
-💰 **Suivi budgétaire** - Suivre les dépenses par catégorie
-🌐 **4 langues** - Anglais, Allemand, Français, Espagnol
-
-### 🚀 Démarrage rapide
+Gebaut wird **außerhalb** des Zielsystems; ausgeliefert werden getaggte Images.
+Der Tag ist der Commit-SHA — dadurch gibt es einen Rückweg.
 
 ```bash
-# Docker Hub (Recommandé)
-curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
-docker-compose -f docker-compose.hub.yml up -d
+SHA=$(git rev-parse --short HEAD)
+
+docker build -f backend/Dockerfile.prod  -t travelmind-backend:$SHA  backend/
+docker build -f frontend/Dockerfile.prod -t travelmind-frontend:$SHA frontend/
+
+# Auf den Zielrechner übertragen
+docker save travelmind-backend:$SHA travelmind-frontend:$SHA | gzip -1 \
+  | ssh <benutzer>@<host> 'gunzip | docker load'
+```
+
+Auf dem Zielrechner liegen neben `docker-compose.prod.yml` zwei Dateien:
+
+| Datei | Inhalt |
+| --- | --- |
+| `.env` | **Nur Geheimnisse**: `POSTGRES_PASSWORD`, `JWT_SECRET`, `SECRET_KEY` |
+| `deploy-params.conf` | Alles andere: `TRAVELMIND_TAG`, `TRAVELMIND_DATA`, `TRAVELMIND_PORT`, `CORS_ORIGINS`, `TZ` |
+
+```bash
+docker compose -f docker-compose.prod.yml \
+  --env-file .env --env-file deploy-params.conf up -d
+```
+
+Bequemer geht beides mit `deploy/ausrollen.sh` — es baut, überträgt (mit
+Prüfsummenvergleich), aktualisiert Compose und Skripte, wartet auf gesunde
+Container und prüft am Ende **von außen**, dass Oberfläche und API antworten:
+
+```bash
+./deploy/ausrollen.sh              # HEAD ausrollen
+./deploy/ausrollen.sh --staende    # was liegt auf dem Host?
+./deploy/ausrollen.sh --zurueck    # auf den vorigen Stand zurück
+```
+
+**Rollback** ist auch von Hand eine Zeile: `TRAVELMIND_TAG` in
+`deploy-params.conf` auf den vorherigen Commit-SHA setzen und `up -d`
+wiederholen. Die alten Images bleiben unter ihrem Tag liegen.
+
+### Sicherung und Überwachung
+
+Zwei weitere Container laufen im Verbund:
+
+| Container | Was er tut |
+|---|---|
+| `travelmind-backup` | Täglich 03:00 Datenbank **und** Fotos, danach eine **Restore-Probe**: der Stand wird in eine Wegwerf-Datenbank zurückgespielt und die Zeilen mit der laufenden verglichen. Eine Sicherung, die nie zurückgespielt wurde, ist eine Behauptung. |
+| `travelmind-waechter` | Fragt Oberfläche und API im Minutentakt und prüft den **Inhalt**, nicht den Statuscode. Alarm über Pushover nach drei Fehlversuchen, Entwarnung bei Rückkehr. |
+
+Einzelheiten: [`docs/BACKUP.md`](docs/BACKUP.md).
+
+Die Bind-Mounts `uploads/` und `backups/` müssen **uid/gid 1001** gehören — das
+ist die im Image festgenagelte Kennung, unter der die Container laufen:
+
+```bash
+chown -R 1001:1001 <datenverzeichnis>/uploads <datenverzeichnis>/backups
+```
+
+Alle drei Container laufen non-root, mit `cap_drop: ALL` und
+`no-new-privileges`; das Frontend zusätzlich mit schreibgeschütztem
+Dateisystem.
+
+---
+
+## Konfiguration
+
+`.env.example` listet alle Variablen mit Erläuterung. Die wichtigsten:
+
+| Variable | Bedeutung |
+| --- | --- |
+| `JWT_SECRET`, `SECRET_KEY` | **Pflicht.** Ohne sichere Werte startet das Backend nicht. |
+| `DATABASE_URL` | `postgresql+asyncpg://…` für PostgreSQL |
+| `CORS_ORIGINS` | Komma-getrennte Liste erlaubter Herkünfte — **mit Port** |
+| `ENABLE_DEMO_MODE` | Steuert Demo-Reisen in `routes/trips.py`. In der Produktion `false`. |
+| `VITE_API_URL` | Nur setzen, wenn API und Oberfläche getrennt laufen. Sonst leer lassen — die Oberfläche spricht dann den relativen Pfad `/api` an. |
+
+KI-Anbieter werden **pro Benutzer** in den Einstellungen der Oberfläche
+hinterlegt, nicht über Umgebungsvariablen.
+
+---
+
+## Dokumentation
+
+| Datei | Inhalt |
+| --- | --- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Aufbau von Backend und Frontend |
+| [`docs/BACKUP.md`](docs/BACKUP.md) | Sicherung und Wiederherstellung |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Gemessener Zustand und Umbauplan |
+| [`docs/CLAUDE_API_EXAMPLES.md`](docs/CLAUDE_API_EXAMPLES.md) | Beispiele zur KI-Anbindung |
+| `/docs` (nur Entwicklung) | OpenAPI-Oberfläche der API unter `http://localhost:8003/docs`. Hinter dem Produktions-nginx **nicht** erreichbar — dort beantwortet der SPA-Fallback den Pfad. |
+
+---
+
+## Mitarbeit
+
+Vor einem Pull Request müssen die Prüfungen oben lokal grün sein. Die
+`pre-commit`-Hooks nehmen einem den größten Teil davon ab:
+
+```bash
+pip install pre-commit && pre-commit install
+pre-commit run --all-files
 ```
 
 ---
 
-<a name="español"></a>
+## Lizenz
 
-## 🇪🇸 Español
-
-### 📖 Acerca de TravelMind
-
-TravelMind es una **aplicación web autoalojada** para planificar, organizar y documentar tus viajes. Con **soporte de IA multi-proveedor** (Groq GRATIS, Claude, OpenAI, Gemini), obtienes recomendaciones personalizadas y sugerencias de viaje inteligentes.
-
-### ✨ Características principales
-
-🗺️ **Planificación de viajes** - Crear viajes con destinos, fechas y presupuestos
-🤖 **Asistente de IA** - Elige tu proveedor: Groq (¡GRATIS!), Claude, OpenAI o Gemini
-📍 **Lugares** - Coleccionar lugares con GPS e integración de Google Maps
-📓 **Diario de viaje** - Escribir entradas con fotos y estado de ánimo
-💰 **Control de presupuesto** - Seguir gastos por categoría
-🌐 **4 idiomas** - Inglés, Alemán, Francés, Español
-
-### 🚀 Inicio rápido
-
-```bash
-# Docker Hub (Recomendado)
-curl -O https://raw.githubusercontent.com/chicohaager/TravelMind/main/docker-compose.hub.yml
-docker-compose -f docker-compose.hub.yml up -d
-```
-
----
-
-<div align="center">
-
-**Made with ❤️ by the TravelMind Team**
-
-[GitHub](https://github.com/chicohaager/TravelMind) • [Docker Hub](https://hub.docker.com/u/chicohaager) • [Issues](https://github.com/chicohaager/TravelMind/issues)
-
-*Happy Travels! 🌍✈️*
-
-</div>
+MIT — siehe [LICENSE](LICENSE).

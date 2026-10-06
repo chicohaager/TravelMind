@@ -20,7 +20,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
       const response = await timelineService.getTimeline(tripId)
       return response.data
     },
-    enabled: !!tripId
+    enabled: !!tripId,
   })
 
   // Create timeline entry mutation
@@ -36,7 +36,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     },
     onError: (error) => {
       toast.error(error.response?.data?.detail || t('timeline:errorAdding'))
-    }
+    },
   })
 
   // Delete timeline entry mutation
@@ -50,7 +50,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     },
     onError: () => {
       toast.error(t('timeline:errorDeleting'))
-    }
+    },
   })
 
   // Reorder mutation
@@ -60,7 +60,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['timeline', tripId])
-    }
+    },
   })
 
   // Optimize mutation
@@ -75,7 +75,7 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
     },
     onError: () => {
       toast.error(t('timeline:errorOptimizing'))
-    }
+    },
   })
 
   const handleAddEntry = async (data) => {
@@ -148,14 +148,9 @@ export default function TimelineView({ tripId, places, tripStartDate, tripEndDat
         {timeline.length === 0 ? (
           <div className="text-center py-12">
             <CalendarDays className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {t('timeline:noEntriesYet')}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{t('timeline:noEntriesYet')}</p>
             {places && places.length > 0 ? (
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="btn btn-primary"
-              >
+              <button onClick={() => setIsAddModalOpen(true)} className="btn btn-primary">
                 <Plus className="w-4 h-4" />
                 {t('timeline:addFirstEntry')}
               </button>

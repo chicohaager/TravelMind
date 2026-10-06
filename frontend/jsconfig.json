@@ -1,0 +1,18 @@
+{
+  "//": "Pfad-Aliase für Werkzeuge, die kein Vite sind. Angelegt am 2026-08-25 für den design-sync-Konverter: er löst Imports über compilerOptions.paths auf, und ohne diese Datei scheitert jeder '@components/...'-Import. Die Werte müssen mit den `resolve.alias`-Einträgen in vite.config.js übereinstimmen — ein Test hält das fest.",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@pages/*": ["src/pages/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@services/*": ["src/services/*"],
+      "@styles/*": ["src/styles/*"],
+      "@assets/*": ["src/assets/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

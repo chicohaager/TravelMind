@@ -18,7 +18,7 @@ export function formatError(error, defaultMessage = 'Ein Fehler ist aufgetreten'
   // If detail is an array (Pydantic validation errors)
   if (Array.isArray(detail)) {
     // Format validation errors into readable messages
-    const messages = detail.map(err => {
+    const messages = detail.map((err) => {
       const field = err.loc?.join('.') || 'unknown'
       const message = err.msg || 'Invalid value'
       return `${field}: ${message}`

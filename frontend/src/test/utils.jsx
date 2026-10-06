@@ -42,9 +42,7 @@ function AllProviders({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )
@@ -63,9 +61,7 @@ function customRender(ui, options = {}) {
 function renderWithQueryClient(ui, queryClient) {
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {ui}
-      </BrowserRouter>
+      <BrowserRouter>{ui}</BrowserRouter>
     </QueryClientProvider>
   )
 }
@@ -136,7 +132,7 @@ function createMockDiaryEntry(overrides = {}) {
  * Wait for async operations to complete
  */
 async function waitForLoadingToFinish() {
-  return new Promise(resolve => setTimeout(resolve, 0))
+  return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
 /**

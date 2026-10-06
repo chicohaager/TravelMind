@@ -2,11 +2,12 @@
 Pagination utilities for API endpoints
 """
 
-from pydantic import BaseModel, Field
-from typing import TypeVar, Generic, List, Optional
-from fastapi import Query
+from typing import Generic, List, TypeVar
 
-T = TypeVar('T')
+from fastapi import Query
+from pydantic import BaseModel, Field
+
+T = TypeVar("T")
 
 
 class PaginationParams:
@@ -23,7 +24,7 @@ class PaginationParams:
     def __init__(
         self,
         skip: int = Query(0, ge=0, description="Number of records to skip"),
-        limit: int = Query(50, ge=1, le=100, description="Maximum number of records to return (max 100)")
+        limit: int = Query(50, ge=1, le=100, description="Maximum number of records to return (max 100)"),
     ):
         self.skip = skip
         self.limit = min(limit, 100)  # Enforce max limit
@@ -35,6 +36,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
     Provides metadata about the pagination state along with the data.
     """
+
     items: List[T]
     total: int = Field(..., description="Total number of items available")
     skip: int = Field(..., description="Number of items skipped")
@@ -45,12 +47,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
         from_attributes = True
 
 
-def paginate_response(
-    items: List[T],
-    total: int,
-    skip: int,
-    limit: int
-) -> dict:
+def paginate_response(items: List[T], total: int, skip: int, limit: int) -> dict:
     """
     Helper function to create a paginated response dict.
 
@@ -63,10 +60,4 @@ def paginate_response(
     Returns:
         Dictionary with pagination metadata
     """
-    return {
-        "items": items,
-        "total": total,
-        "skip": skip,
-        "limit": limit,
-        "has_more": skip + len(items) < total
-    }
+    return {"items": items, "total": total, "skip": skip, "limit": limit, "has_more": skip + len(items) < total}

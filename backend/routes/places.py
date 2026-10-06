@@ -3,26 +3,29 @@ Places Router
 CRUD operations for places/POIs in trips
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request, status, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from pydantic import BaseModel, Field
-from typing import List, Optional
+import asyncio
 from datetime import datetime, timezone
-from utils.rate_limits import limiter, RateLimits
-import structlog
-import uuid
-import magic
 from pathlib import Path
+from typing import List, Optional
 
+import structlog
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from models.database import get_db
+from models.media import Media
 from models.place import Place
 from models.place_list import PlaceList
 from models.trip import Trip
 from models.user import User
-from routes.auth import get_optional_user, get_current_active_user
+from pydantic import BaseModel, ConfigDict, Field, computed_field
+from routes.auth import get_current_active_user
+from routes.media import MediaResponse
 from services.guide_parser import guide_parser_service
-from utils.geocoding import geocode_if_missing
+from sqlalchemy import func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from utils.geocoding import anker_fuer_ziel, geocode_if_missing
+from utils.images import delete_upload_file, derive_thumb_url, process_and_save, validate_image
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -31,23 +34,7 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/places")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-
-def validate_photo_type(contents: bytes, filename: str) -> bool:
-    """
-    Validate photo file type by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
 
 
 async def verify_trip_access(trip_id: int, user: User, db: AsyncSession) -> Trip:
@@ -64,8 +51,7 @@ async def verify_trip_access(trip_id: int, user: User, db: AsyncSession) -> Trip
     if trip.owner_id != user.id:
         logger.warning("unauthorized_trip_access", trip_id=trip_id, user_id=user.id, owner_id=trip.owner_id)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this trip"
+            status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this trip"
         )
 
     return trip
@@ -96,6 +82,19 @@ class PlaceCreate(BaseModel):
     name: str = Field(..., example="Castelo de São Jorge")
     description: Optional[str] = Field(None, example="Historische Burg mit Aussicht")
     address: Optional[str] = None
+    # Die Ortsangabe, die das KI-Modell zu diesem Ort behauptet hat — getrennt
+    # vom Namen. Sie wird nicht gespeichert, sondern geprueft: liegt die
+    # gefundene Sache weiter als 25 km von diesem Ort entfernt, ist die
+    # Zuordnung widerlegt und steht als Warnung im Protokoll. Am 2026-08-26
+    # war genau das der Fall ("Terme Jezerčica in Popovača", 69,2 km).
+    behaupteter_ort: Optional[str] = Field(None, example="Donja Stubica")
+    # PFLICHT — und das bleibt so.
+    #
+    # `PUT /places/{id}` ersetzt vollstaendig. Waeren die Koordinaten hier
+    # optional, verloere ein Teil-Update sie STILL; genau davor schuetzt
+    # tests/test_places_lists.py::test_put_ohne_koordinaten_wird_abgewiesen.
+    # Der Massenimport, bei dem Koordinaten legitim fehlen, benutzt deshalb
+    # ein eigenes Schema (PlaceImport) statt dieses aufzuweichen.
     latitude: float = Field(..., example=38.7139, ge=-90, le=90)
     longitude: float = Field(..., example=-9.1334, ge=-180, le=180)
     category: Optional[str] = Field(None, example="sight")
@@ -121,8 +120,9 @@ class PlaceResponse(BaseModel):
     name: str
     description: Optional[str]
     address: Optional[str]
-    latitude: float
-    longitude: float
+    latitude: Optional[float]
+    longitude: Optional[float]
+    position_unsicher: Optional[bool] = None
     category: Optional[str]
     list_id: Optional[int]
     visit_date: Optional[datetime]
@@ -133,7 +133,7 @@ class PlaceResponse(BaseModel):
     currency: str
     rating: Optional[int]
     notes: Optional[str]
-    photos: List[str]
+    media: List[MediaResponse] = []
     order: int
     created_at: datetime
     external_rating: Optional[float]
@@ -141,8 +141,13 @@ class PlaceResponse(BaseModel):
     opening_hours: Optional[str]
     external_links: Optional[dict]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+    @computed_field
+    @property
+    def photos(self) -> List[str]:
+        """Backward-compatible URL list, derived from `media` (the source of truth)."""
+        return [m.url for m in self.media]
 
 
 @router.get("/{trip_id}/places", response_model=List[PlaceResponse])
@@ -153,7 +158,7 @@ async def get_places(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Get all places for a trip with pagination.
@@ -167,9 +172,10 @@ async def get_places(
     # Verify trip access
     await verify_trip_access(trip_id, current_user, db)
 
-    # Get places with pagination
+    # Get places with pagination (media eager-loaded for the response)
     result = await db.execute(
         select(Place)
+        .options(selectinload(Place.media))
         .where(Place.trip_id == trip_id)
         .order_by(Place.order)
         .offset(skip)
@@ -182,6 +188,27 @@ async def get_places(
     return places
 
 
+async def _load_place_with_media(place_id: int, db: AsyncSession) -> Place:
+    """Re-fetch a place with its media eager-loaded for the response."""
+    result = await db.execute(select(Place).options(selectinload(Place.media)).where(Place.id == place_id))
+    return result.scalar_one()
+
+
+async def _create_place_media(place_id: int, trip_id: int, urls, owner_id: int, db: AsyncSession) -> None:
+    """Register a list of photo URLs as media rows for a place (used on create/import)."""
+    for i, url in enumerate(urls or []):
+        db.add(
+            Media(
+                owner_id=owner_id,
+                trip_id=trip_id,
+                place_id=place_id,
+                url=url,
+                thumb_url=derive_thumb_url(url),
+                order_index=i,
+            )
+        )
+
+
 @router.post("/{trip_id}/places", response_model=PlaceResponse, status_code=201)
 @limiter.limit(RateLimits.PLACE_CREATE)
 async def create_place(
@@ -189,26 +216,25 @@ async def create_place(
     trip_id: int,
     place: PlaceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Add a new place to a trip. Requires authentication and trip ownership."""
     # Verify trip access
     trip = await verify_trip_access(trip_id, current_user, db)
 
     # Geocode if coordinates are missing
-    latitude, longitude = await geocode_if_missing(
+    position = await geocode_if_missing(
         name=place.name,
         latitude=place.latitude,
         longitude=place.longitude,
         address=place.address,
-        destination=trip.destination if hasattr(trip, 'destination') else None
+        destination=trip.destination if hasattr(trip, "destination") else None,
+        behaupteter_ort=place.behaupteter_ort,
     )
+    latitude, longitude = position.lat, position.lon
 
     # Get max order for this trip
-    result = await db.execute(
-        select(func.max(Place.order))
-        .where(Place.trip_id == trip_id)
-    )
+    result = await db.execute(select(func.max(Place.order)).where(Place.trip_id == trip_id))
     max_order = result.scalar() or 0
 
     # Create new place
@@ -219,6 +245,7 @@ async def create_place(
         address=place.address,
         latitude=latitude,
         longitude=longitude,
+        position_unsicher=position.nur_ort,
         category=place.category,
         list_id=place.list_id,
         visit_date=place.visit_date,
@@ -229,21 +256,26 @@ async def create_place(
         currency=place.currency,
         rating=place.rating,
         notes=place.notes,
-        photos=place.photos,
+        photos=[],
         order=max_order + 1,
         external_rating=place.external_rating,
         review_count=place.review_count,
         opening_hours=place.opening_hours,
-        external_links=place.external_links
+        external_links=place.external_links,
     )
 
     db.add(new_place)
     await db.commit()
     await db.refresh(new_place)
 
+    # Register any provided photo URLs as media (source of truth).
+    if place.photos:
+        await _create_place_media(new_place.id, trip_id, place.photos, current_user.id, db)
+        await db.commit()
+
     logger.info("place_created", place_id=new_place.id, trip_id=trip_id, user_id=current_user.id)
 
-    return new_place
+    return await _load_place_with_media(new_place.id, db)
 
 
 @router.put("/places/{place_id}", response_model=PlaceResponse)
@@ -253,7 +285,7 @@ async def update_place(
     place_id: int,
     place: PlaceCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Update a place. Requires authentication and trip ownership."""
     # Get existing place
@@ -282,19 +314,30 @@ async def update_place(
     existing_place.currency = place.currency
     existing_place.rating = place.rating
     existing_place.notes = place.notes
-    existing_place.photos = place.photos
     existing_place.external_rating = place.external_rating
     existing_place.review_count = place.review_count
     existing_place.opening_hours = place.opening_hours
     existing_place.external_links = place.external_links
     existing_place.updated_at = datetime.now(timezone.utc)
 
+    # Reconcile media with the retained photo set: the frontend sends the list of
+    # existing photos it wants to keep (removals dropped), and uploads new ones
+    # via the upload endpoint. Delete media (and files) no longer in that list.
+    retained = set(place.photos or [])
+    media_result = await db.execute(select(Media).where(Media.place_id == place_id))
+    for m in media_result.scalars().all():
+        if m.url not in retained:
+            url, thumb_url = m.url, m.thumb_url
+            await db.delete(m)
+            delete_upload_file(url)
+            if thumb_url and thumb_url != url:
+                delete_upload_file(thumb_url)
+
     await db.commit()
-    await db.refresh(existing_place)
 
     logger.info("place_updated", place_id=place_id, trip_id=existing_place.trip_id, user_id=current_user.id)
 
-    return existing_place
+    return await _load_place_with_media(place_id, db)
 
 
 @router.delete("/places/{place_id}", status_code=204)
@@ -303,7 +346,7 @@ async def delete_place(
     request: Request,
     place_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Delete a place. Requires authentication and trip ownership."""
     # Get existing place
@@ -331,7 +374,7 @@ async def mark_as_visited(
     place_id: int,
     visited: bool = True,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Mark a place as visited or not visited. Requires authentication and trip ownership."""
     # Get existing place
@@ -361,7 +404,7 @@ async def reorder_places(
     trip_id: int,
     place_ids: List[int],
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Reorder places for a trip. Requires authentication and trip ownership."""
     # Verify trip access
@@ -369,11 +412,7 @@ async def reorder_places(
 
     # Update order for each place
     for index, place_id in enumerate(place_ids):
-        result = await db.execute(
-            select(Place)
-            .where(Place.id == place_id)
-            .where(Place.trip_id == trip_id)
-        )
+        result = await db.execute(select(Place).where(Place.id == place_id).where(Place.trip_id == trip_id))
         place = result.scalar_one_or_none()
         if place:
             place.order = index
@@ -388,45 +427,48 @@ async def reorder_places(
 
 # ============ Custom Place Lists Endpoints ============
 
+
 @router.get("/{trip_id}/lists", response_model=List[PlaceListResponse])
 @limiter.limit(RateLimits.PLACE_LIST)
 async def get_place_lists(
     request: Request,
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get all custom place lists for a trip. Requires authentication and trip ownership."""
     # Verify trip access
     await verify_trip_access(trip_id, current_user, db)
 
     # Get lists with place counts
-    result = await db.execute(
-        select(PlaceList)
-        .where(PlaceList.trip_id == trip_id)
-        .order_by(PlaceList.created_at)
-    )
+    result = await db.execute(select(PlaceList).where(PlaceList.trip_id == trip_id).order_by(PlaceList.created_at))
     lists = result.scalars().all()
+
+    # Fetch all place counts in a single grouped query (avoids N+1 COUNTs).
+    counts_result = await db.execute(
+        select(Place.list_id, func.count(Place.id))
+        .where(Place.list_id.in_([lst.id for lst in lists]) if lists else False)
+        .group_by(Place.list_id)
+    )
+    counts = {list_id: count for list_id, count in counts_result.all()}
 
     # Add place count for each list
     response_lists = []
     for lst in lists:
-        result = await db.execute(
-            select(func.count(Place.id))
-            .where(Place.list_id == lst.id)
-        )
-        place_count = result.scalar() or 0
+        place_count = counts.get(lst.id, 0)
 
-        response_lists.append(PlaceListResponse(
-            id=lst.id,
-            trip_id=lst.trip_id,
-            title=lst.title,
-            icon=lst.icon,
-            color=lst.color,
-            is_collapsed=lst.is_collapsed,
-            place_count=place_count,
-            created_at=lst.created_at
-        ))
+        response_lists.append(
+            PlaceListResponse(
+                id=lst.id,
+                trip_id=lst.trip_id,
+                title=lst.title,
+                icon=lst.icon,
+                color=lst.color,
+                is_collapsed=lst.is_collapsed,
+                place_count=place_count,
+                created_at=lst.created_at,
+            )
+        )
 
     logger.info("place_lists_fetched", trip_id=trip_id, count=len(response_lists), user_id=current_user.id)
 
@@ -440,7 +482,7 @@ async def create_place_list(
     trip_id: int,
     place_list: PlaceListCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Create a new custom place list. Requires authentication and trip ownership."""
     # Verify trip access
@@ -452,7 +494,7 @@ async def create_place_list(
         title=place_list.title,
         icon=place_list.icon or "📍",
         color=place_list.color or "#6366F1",
-        is_collapsed=place_list.is_collapsed
+        is_collapsed=place_list.is_collapsed,
     )
 
     db.add(new_list)
@@ -469,7 +511,7 @@ async def create_place_list(
         color=new_list.color,
         is_collapsed=new_list.is_collapsed,
         place_count=0,
-        created_at=new_list.created_at
+        created_at=new_list.created_at,
     )
 
 
@@ -480,7 +522,7 @@ async def update_place_list(
     list_id: int,
     place_list: PlaceListCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Update a custom place list. Requires authentication and trip ownership."""
     # Get existing list
@@ -504,10 +546,7 @@ async def update_place_list(
     await db.refresh(existing_list)
 
     # Get place count
-    result = await db.execute(
-        select(func.count(Place.id))
-        .where(Place.list_id == list_id)
-    )
+    result = await db.execute(select(func.count(Place.id)).where(Place.list_id == list_id))
     place_count = result.scalar() or 0
 
     logger.info("place_list_updated", list_id=list_id, trip_id=existing_list.trip_id, user_id=current_user.id)
@@ -520,7 +559,7 @@ async def update_place_list(
         color=existing_list.color,
         is_collapsed=existing_list.is_collapsed,
         place_count=place_count,
-        created_at=existing_list.created_at
+        created_at=existing_list.created_at,
     )
 
 
@@ -530,7 +569,7 @@ async def delete_place_list(
     request: Request,
     list_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Delete a custom place list. Requires authentication and trip ownership."""
     # Get existing list
@@ -543,7 +582,11 @@ async def delete_place_list(
     # Verify ownership via trip
     await verify_trip_access(existing_list.trip_id, current_user, db)
 
-    # Set list_id to NULL for all places in this list (handled by foreign key ON DELETE SET NULL)
+    # Die Orte werden AUSDRUECKLICH von der Liste geloest, nicht der
+    # Fremdschluesselregel ueberlassen: SQLite erzwingt `ON DELETE SET NULL`
+    # nur mit eingeschaltetem `PRAGMA foreign_keys`, und eine Zusicherung, die
+    # von einer Datenbankeinstellung abhaengt, ist keine.
+    await db.execute(update(Place).where(Place.list_id == list_id).values(list_id=None))
     await db.delete(existing_list)
     await db.commit()
 
@@ -558,7 +601,7 @@ async def toggle_list_collapse(
     request: Request,
     list_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Toggle collapse state of a place list. Requires authentication and trip ownership."""
     # Get existing list
@@ -584,12 +627,16 @@ async def toggle_list_collapse(
 
 # ============ Guide Import Models ============
 class GuideUrlRequest(BaseModel):
-    url: str = Field(..., example="https://www.tripadvisor.com/Attractions-g187467-Activities-La_Palma_Canary_Islands.html")
+    url: str = Field(
+        ..., example="https://www.tripadvisor.com/Attractions-g187467-Activities-La_Palma_Canary_Islands.html"
+    )
     destination: str = Field(..., example="La Palma")
 
 
 class GuideSearchRequest(BaseModel):
-    destination: str = Field(..., example="La Palma", description="Destination to search for (e.g., 'Paris', 'Tokyo', 'Bali')")
+    destination: str = Field(
+        ..., example="La Palma", description="Destination to search for (e.g., 'Paris', 'Tokyo', 'Bali')"
+    )
 
 
 class ExtractedPlace(BaseModel):
@@ -619,17 +666,36 @@ class GuideSearchResponse(BaseModel):
     errors: Optional[List[str]] = None
 
 
+class PlaceImport(PlaceCreate):
+    """
+    Ort aus einer Quelle, die keine Koordinaten liefert.
+
+    KI-Ortsvorschlaege und geparste Reisefuehrer nennen Namen, keine
+    Positionen. Hier duerfen die Koordinaten deshalb fehlen und werden
+    nachgeschlagen (utils/geocoding.py). Findet die Suche nichts, bleibt der
+    Ort OHNE Position — bis 2026-08-26 wurden stattdessen 0/0 gespeichert,
+    und acht kroatische Orte lagen auf der Karte im Golf von Guinea.
+
+    Bewusst ein eigenes Schema und keine Lockerung von PlaceCreate: dort
+    haengt der Schutz vor stillem Koordinatenverlust beim PUT dran.
+    """
+
+    latitude: Optional[float] = Field(None, example=38.7139, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, example=-9.1334, ge=-180, le=180)
+
+
 class BulkPlaceImport(BaseModel):
-    places: List[PlaceCreate]
+    places: List[PlaceImport]
 
 
 # Guide Import Endpoints
 @router.post("/{trip_id}/search-guides", response_model=GuideSearchResponse)
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def search_guides_auto(
     trip_id: int,
     request: GuideSearchRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     AI-powered destination place discovery
@@ -643,40 +709,29 @@ async def search_guides_auto(
 
     This is the easiest and most reliable way to find places for your trip!
     """
-    # Verify trip exists
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # If authenticated, verify ownership
-    if current_user and trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Require authentication and verify the user owns the trip.
+    trip = await verify_trip_access(trip_id, current_user, db)
 
     # Get user's AI service (needed for place discovery)
-    from routes.auth import get_current_active_user
+    import asyncio
+    import json
+
     from routes.ai import get_user_ai_service
     from services.pexels_service import get_place_photo
-    import json
-    import asyncio
-
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required for AI features")
 
     ai_service = get_user_ai_service(current_user)
 
     try:
         # Use AI to generate places for the destination
-        prompt = f"""Du bist ein Reiseexperte. Erstelle eine Liste der besten Orte und Attraktionen für {request.destination}.
+        prompt = f"""Du bist ein Reiseexperte. Erstelle eine Liste der besten Orte und Attraktionen für {request.destination}.  # noqa: E501
 
 Gib eine umfassende Liste mit verschiedenen Kategorien:
-- Top-Sehenswürdigkeiten (5-7)
-- Beliebte Restaurants (3-4)
-- Aussichtspunkte (2-3)
-- Parks und Natur (2-3)
-- Museen oder kulturelle Orte (2-3)
-- Strände (falls zutreffend) (2-3)
+- Top-Sehenswürdigkeiten (4-5)
+- Beliebte Restaurants (2-3)
+- Aussichtspunkte (1-2)
+- Parks und Natur (1-2)
+- Museen oder kulturelle Orte (1-2)
+- Strände (falls zutreffend) (1-2)
 
 Antworte AUSSCHLIESSLICH mit einem validen JSON-Array in diesem Format:
 [
@@ -693,7 +748,7 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Array in diesem Format:
 ]
 
 Wichtig:
-- Maximal 20-25 Orte
+- Maximal 15 Orte
 - Deutsche Sprache für name, description
 - image_search in ENGLISCH für Bildsuche
 - **ECHTE GPS-Koordinaten (latitude, longitude) für jeden Ort - NICHT 0,0!**
@@ -702,9 +757,11 @@ Wichtig:
 - Verschiedene Kategorien mischen
 - Reale, existierende Orte mit korrekten Koordinaten"""
 
+        # Need a high token budget: ~15 places with descriptions, addresses and
+        # GPS easily exceed the 2048 default and would truncate the JSON array
+        # before its closing bracket ("No JSON array found in AI response").
         response = await ai_service.chat(
-            user_message=prompt,
-            context={"destination": request.destination}
+            user_message=prompt, context={"destination": request.destination}, max_tokens=8192
         )
 
         # Parse AI response - handle markdown code blocks and extra text
@@ -713,7 +770,7 @@ Wichtig:
         # Remove markdown code blocks if present
         if response_cleaned.startswith("```"):
             # Extract content between ``` markers
-            lines = response_cleaned.split('\n')
+            lines = response_cleaned.split("\n")
             # Remove first line (```json or just ```)
             lines = lines[1:]
             # Find closing ```
@@ -724,24 +781,24 @@ Wichtig:
                     break
             if closing_idx >= 0:
                 lines = lines[:closing_idx]
-            response_cleaned = '\n'.join(lines).strip()
+            response_cleaned = "\n".join(lines).strip()
 
         # Find JSON array in response (handle cases where AI adds text before/after)
-        json_start = response_cleaned.find('[')
-        json_end = response_cleaned.rfind(']')
+        json_start = response_cleaned.find("[")
+        json_end = response_cleaned.rfind("]")
 
         if json_start == -1 or json_end == -1:
             raise ValueError("No JSON array found in AI response")
 
-        json_str = response_cleaned[json_start:json_end+1]
+        json_str = response_cleaned[json_start : json_end + 1]
         places_data = json.loads(json_str)
 
         # Fetch photos in parallel
         photo_tasks = [
             get_place_photo(
-                place_name=place.get('image_search', place['name']),
-                category=place.get('category', 'other'),
-                destination=request.destination
+                place_name=place.get("image_search", place["name"]),
+                category=place.get("category", "other"),
+                destination=request.destination,
             )
             for place in places_data
         ]
@@ -750,21 +807,23 @@ Wichtig:
         # Build ExtractedPlace objects
         places = []
         for i, place_data in enumerate(places_data):
-            places.append(ExtractedPlace(
-                name=place_data['name'],
-                description=place_data.get('description', ''),
-                address=place_data.get('address'),
-                latitude=place_data.get('latitude', 0),
-                longitude=place_data.get('longitude', 0),
-                category=place_data.get('category', 'other')
-            ))
+            places.append(
+                ExtractedPlace(
+                    name=place_data["name"],
+                    description=place_data.get("description", ""),
+                    address=place_data.get("address"),
+                    latitude=place_data.get("latitude", 0),
+                    longitude=place_data.get("longitude", 0),
+                    category=place_data.get("category", "other"),
+                )
+            )
 
         return GuideSearchResponse(
             success=True,
             destination=request.destination,
             places_found=len(places),
             places=places,
-            sources_searched=["AI-powered discovery"]
+            sources_searched=["AI-powered discovery"],
         )
 
     except json.JSONDecodeError as e:
@@ -772,37 +831,35 @@ Wichtig:
             "guide_search_json_parse_error",
             destination=request.destination,
             error=str(e),
-            response_preview=response[:500] if 'response' in locals() else 'N/A'
+            response_preview=response[:500] if "response" in locals() else "N/A",
         )
         return GuideSearchResponse(
             success=False,
             destination=request.destination,
             error=f"AI returned invalid JSON: {str(e)}",
             places_found=0,
-            places=[]
+            places=[],
         )
     except Exception as e:
         logger.exception(
-            "guide_search_error",
-            destination=request.destination,
-            error_type=type(e).__name__,
-            error=str(e)
+            "guide_search_error", destination=request.destination, error_type=type(e).__name__, error=str(e)
         )
         return GuideSearchResponse(
             success=False,
             destination=request.destination,
             error=f"{type(e).__name__}: {str(e)}",
             places_found=0,
-            places=[]
+            places=[],
         )
 
 
 @router.post("/{trip_id}/import-from-guide", response_model=GuideParseResponse)
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def parse_guide_url(
     trip_id: int,
     request: GuideUrlRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Parse a travel guide URL and extract places
@@ -816,75 +873,64 @@ async def parse_guide_url(
 
     Uses AI to intelligently extract places from the page content.
     """
-    # Verify trip exists
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # If authenticated, verify ownership
-    if current_user and trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Require authentication and verify the user owns the trip.
+    await verify_trip_access(trip_id, current_user, db)
 
     try:
-        result = await guide_parser_service.parse_guide_url(
-            url=request.url,
-            destination=request.destination
-        )
+        result = await guide_parser_service.parse_guide_url(url=request.url, destination=request.destination)
 
         return GuideParseResponse(**result)
 
     except Exception as e:
-        return GuideParseResponse(
-            success=False,
-            error=str(e),
-            places_found=0,
-            places=[]
-        )
+        return GuideParseResponse(success=False, error=str(e), places_found=0, places=[])
 
 
 @router.post("/{trip_id}/import-places-bulk", response_model=List[PlaceResponse])
+@limiter.limit(RateLimits.PLACE_CREATE)
 async def import_places_bulk(
+    request: Request,
     trip_id: int,
     import_data: BulkPlaceImport,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Import multiple places at once
 
     Used after parsing a guide URL to add selected places to the trip.
     """
-    # Verify trip exists
-    result = await db.execute(select(Trip).where(Trip.id == trip_id))
-    trip = result.scalar_one_or_none()
-
-    if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
-
-    # If authenticated, verify ownership
-    if current_user and trip.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Require authentication and verify the user owns the trip.
+    trip = await verify_trip_access(trip_id, current_user, db)
 
     # Get current max order
-    result = await db.execute(
-        select(func.max(Place.order))
-        .where(Place.trip_id == trip_id)
-    )
+    result = await db.execute(select(func.max(Place.order)).where(Place.trip_id == trip_id))
     max_order = result.scalar() or 0
 
     imported_places = []
 
+    # Das Reiseziel EINMAL zum Bezugspunkt aufloesen, nicht je Ort: das spart
+    # bei acht Orten sieben Anfragen an einen Dienst, der eine pro Sekunde
+    # erlaubt — und alle Orte werden gegen denselben Anker geprueft.
+    ziel = trip.destination if hasattr(trip, "destination") else None
+    anker = await anker_fuer_ziel(ziel)
+    ohne_position = []
+
     for idx, place_data in enumerate(import_data.places):
-        # Geocode if coordinates are missing
-        latitude, longitude = await geocode_if_missing(
+        # Fehlende Koordinaten ergaenzen. Findet die Suche nichts, kommt
+        # (None, None) zurueck — frueher standen hier 0.0/0.0, und der Ort
+        # landete im Atlantik statt als "Position unbekannt" erkennbar zu
+        # sein. Deshalb hier auch KEIN `or 0.0` mehr.
+        position = await geocode_if_missing(
             name=place_data.name,
-            latitude=place_data.latitude or 0.0,
-            longitude=place_data.longitude or 0.0,
+            latitude=place_data.latitude,
+            longitude=place_data.longitude,
             address=place_data.address,
-            destination=trip.destination if hasattr(trip, 'destination') else None
+            destination=ziel,
+            anker=anker,
         )
+        latitude, longitude = position.lat, position.lon
+        if latitude is None or longitude is None:
+            ohne_position.append(place_data.name)
 
         new_place = Place(
             trip_id=trip_id,
@@ -893,6 +939,7 @@ async def import_places_bulk(
             address=place_data.address,
             latitude=latitude,
             longitude=longitude,
+            position_unsicher=position.nur_ort,
             category=place_data.category,
             list_id=place_data.list_id,
             visit_date=place_data.visit_date,
@@ -903,23 +950,40 @@ async def import_places_bulk(
             currency=place_data.currency,
             rating=place_data.rating,
             notes=place_data.notes,
-            photos=place_data.photos,
-            order=max_order + idx + 1
+            photos=[],
+            order=max_order + idx + 1,
         )
 
         db.add(new_place)
-        imported_places.append(new_place)
+        imported_places.append((new_place, place_data.photos))
 
     await db.commit()
 
-    # Refresh all places
-    for place in imported_places:
+    # Register imported photo URLs as media (source of truth).
+    for place, photos in imported_places:
         await db.refresh(place)
+        if photos:
+            await _create_place_media(place.id, trip_id, photos, current_user.id, db)
+    await db.commit()
 
-    return imported_places
+    # Was keine Position bekam, wird LAUT vermerkt. Frueher war das der
+    # stillste Teil des Fehlers: die Orte wurden angelegt, sahen vollstaendig
+    # aus und lagen im Golf von Guinea.
+    if ohne_position:
+        logger.warning(
+            "import_orte_ohne_position",
+            trip_id=trip_id,
+            anzahl=len(ohne_position),
+            von=len(import_data.places),
+            namen=ohne_position,
+        )
+
+    # Reload with media for the response.
+    return [await _load_place_with_media(place.id, db) for place, _ in imported_places]
 
 
 # ==================== PHOTO UPLOAD ENDPOINTS ====================
+
 
 @router.post("/places/{place_id}/upload-photo")
 @limiter.limit(RateLimits.PLACE_BULK_IMPORT)
@@ -928,7 +992,7 @@ async def upload_place_photo(
     place_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Upload a photo to a place.
@@ -941,51 +1005,61 @@ async def upload_place_photo(
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
-    # Verify trip ownership
-    trip = await verify_trip_access(place.trip_id, current_user, db)
+    # Verify trip ownership — verify_trip_access wirft bei fehlendem Zugriff,
+    # die Rueckgabe wird hier nicht gebraucht.
+    await verify_trip_access(place.trip_id, current_user, db)
 
     # Read file content
     content = await file.read()
 
     # Check file size
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
-        )
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB")
 
     # CRITICAL: Validate file type by content (security check)
-    if not validate_photo_type(content, file.filename):
+    if not validate_image(content, file.filename):
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid file type. Only images allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            status_code=400, detail=f"Invalid file type. Only images allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # Generate unique filename
-    file_ext = file.filename.split('.')[-1].lower()
-    unique_filename = f"{uuid.uuid4()}.{file_ext}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Normalize, compress to WebP and generate a thumbnail.
+    try:
+        processed = await asyncio.to_thread(process_and_save, content, UPLOAD_DIR, "/uploads/places")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Could not process image: {exc}")
 
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(content)
+    # Append after existing media (preserve order).
+    count_result = await db.execute(select(func.count()).select_from(Media).where(Media.place_id == place_id))
+    next_index = count_result.scalar() or 0
 
-    # Add photo to place
-    photo_url = f"/uploads/places/{unique_filename}"
-    if place.photos is None:
-        place.photos = []
-    place.photos = place.photos + [photo_url]  # Create new list for SQLAlchemy change tracking
+    new_media = Media(
+        owner_id=current_user.id,
+        trip_id=place.trip_id,
+        place_id=place_id,
+        url=processed.url,
+        thumb_url=processed.thumb_url,
+        mime_type="image/webp",
+        width=processed.width,
+        height=processed.height,
+        size_bytes=processed.size_bytes,
+        taken_at=processed.taken_at,
+        latitude=processed.latitude,
+        longitude=processed.longitude,
+        order_index=next_index,
+    )
+    db.add(new_media)
     place.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
-    await db.refresh(place)
+    await db.refresh(new_media)
 
-    logger.info("place_photo_uploaded", place_id=place_id, filename=unique_filename, user_id=current_user.id)
+    logger.info("place_photo_uploaded", place_id=place_id, media_id=new_media.id, user_id=current_user.id)
 
     return {
         "message": "Photo uploaded successfully",
-        "photo_url": photo_url,
-        "place": place
+        "photo_url": processed.url,
+        "thumb_url": processed.thumb_url,
+        "media": MediaResponse.model_validate(new_media),
     }
 
 
@@ -996,9 +1070,13 @@ async def delete_place_photo(
     place_id: int,
     photo_url: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Delete a photo from a place"""
+    """Delete a photo (by URL) from a place.
+
+    Kept URL-based for backward compatibility; internally it removes the
+    corresponding media row (the source of truth) and its files.
+    """
     # Get place
     result = await db.execute(select(Place).where(Place.id == place_id))
     place = result.scalar_one_or_none()
@@ -1006,29 +1084,25 @@ async def delete_place_photo(
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
-    # Verify trip ownership
-    trip = await verify_trip_access(place.trip_id, current_user, db)
+    # Verify trip ownership — verify_trip_access wirft bei fehlendem Zugriff,
+    # die Rueckgabe wird hier nicht gebraucht.
+    await verify_trip_access(place.trip_id, current_user, db)
 
-    # Remove photo from list
-    if place.photos and photo_url in place.photos:
-        place.photos = [p for p in place.photos if p != photo_url]
-        place.updated_at = datetime.now(timezone.utc)
-
-        # Delete physical file
-        try:
-            filename = photo_url.split('/')[-1]
-            file_path = UPLOAD_DIR / filename
-            if file_path.exists():
-                file_path.unlink()
-        except Exception as e:
-            logger.warning("failed_to_delete_file", error=str(e), photo_url=photo_url)
-
-        await db.commit()
-        await db.refresh(place)
-
-        logger.info("place_photo_deleted", place_id=place_id, photo_url=photo_url, user_id=current_user.id)
-
-        return {"message": "Photo deleted successfully", "place": place}
-    else:
+    # Find the media row for this URL
+    media_result = await db.execute(select(Media).where(Media.place_id == place_id, Media.url == photo_url))
+    media = media_result.scalar_one_or_none()
+    if not media:
         raise HTTPException(status_code=404, detail="Photo not found in place")
 
+    thumb_url = media.thumb_url
+    await db.delete(media)
+    place.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    delete_upload_file(photo_url)
+    if thumb_url and thumb_url != photo_url:
+        delete_upload_file(thumb_url)
+
+    logger.info("place_photo_deleted", place_id=place_id, user_id=current_user.id)
+
+    return {"message": "Photo deleted successfully"}

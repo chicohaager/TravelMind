@@ -7,6 +7,9 @@
   "edit": "Bearbeiten",
   "create": "Erstellen",
   "search": "Suchen",
+  "searchPlaceholder": "Reisen, Einträge, Orte…",
+  "noResults": "Keine Treffer",
+  "clear": "Löschen",
   "close": "Schließen",
   "yes": "Ja",
   "no": "Nein",
@@ -51,6 +54,25 @@
     "copyFailed": "Kopieren fehlgeschlagen",
     "email": "E-Mail",
     "tripTo": "Meine Reise nach {{destination}}",
-    "checkOutTrip": "Schau dir meine Reise an!"
-  }
+    "checkOutTrip": "Schau dir meine Reise an!",
+    "public": {
+      "title": "Öffentlich teilen",
+      "hint": "Erzeuge einen schreibgeschützten Link zu diesem Reisetagebuch. Jeder mit dem Link kann es ohne Konto lesen.",
+      "enabled": "Öffentlich – jeder mit dem Link kann das Tagebuch lesen",
+      "disabled": "Privat – nur du und Mitreisende",
+      "toggle": "Tagebuch öffentlich machen",
+      "regenerate": "Neuen Link erzeugen",
+      "regenerateHint": "Der bisherige Link wird sofort ungültig.",
+      "linkLabel": "Öffentlicher Link",
+      "pageFooter": "Erstellt mit TravelMind",
+      "notFound": "Dieses Reisetagebuch ist nicht (mehr) öffentlich verfügbar.",
+      "loading": "Tagebuch wird geladen…",
+      "empty": "Für diese Reise gibt es noch keine Tagebucheinträge."
+    }
+  },
+  "changeLanguage": "Sprache wechseln",
+  "toggleDarkMode": "Dunkelmodus umschalten",
+  "showCustomColor": "Eigene Farbe wählen",
+  "hideCustomColor": "Eigene Farbe ausblenden",
+  "selectedColor": "Gewählt:"
 }

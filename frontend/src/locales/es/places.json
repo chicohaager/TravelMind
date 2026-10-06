@@ -29,7 +29,8 @@
     "other": "Otro",
     "sight": "Lugar de interés",
     "activity": "Actividad",
-    "transport": "Transporte"
+    "transport": "Transporte",
+    "cafe": "Cafetería"
   },
   "coordinatesFound": "📍 Coordenadas encontradas",
   "coordinatesNotFound": "Coordenadas no encontradas",
@@ -118,5 +119,20 @@
   "selectAtLeastOne": "Por favor selecciona al menos un lugar",
   "placesImported": "¡{count} lugares importados!",
   "errorImporting": "Error al importar",
-  "openWebsite": "Abrir sitio web"
+  "openWebsite": "Abrir sitio web",
+  "iconTypes": {
+    "location": "Lugar",
+    "hotel": "Hotel",
+    "restaurant": "Restaurante",
+    "coffee": "Cafetería",
+    "camera": "Punto fotográfico",
+    "mountain": "Montaña",
+    "beach": "Playa",
+    "ship": "Puerto",
+    "plane": "Aeropuerto",
+    "shopping": "Compras",
+    "museum": "Museo",
+    "nature": "Naturaleza"
+  },
+  "iconType": "Tipo de icono"
 }

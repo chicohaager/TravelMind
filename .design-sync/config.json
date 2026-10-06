@@ -1,0 +1,114 @@
+{
+  "projectId": "664e1e82-1785-4db2-8e7e-13a236e1ad67",
+  "shape": "package",
+  "pkg": "travelmind-frontend",
+  "globalName": "TravelMind",
+  "srcDir": "src",
+  "tsconfig": "jsconfig.json",
+  "buildCmd": "cd frontend && npm run build && cp \"$(ls -t dist/assets/index-*.css | head -1)\" .ds-css/travelmind.css",
+  "cssEntry": ".ds-css/travelmind.css",
+  "extraFonts": [
+    "node_modules/@fontsource-variable/public-sans/index.css",
+    "node_modules/@fontsource-variable/newsreader/index.css"
+  ],
+  "componentSrcMap": {
+    "AddToTimelineModal": "src/components/AddToTimelineModal.jsx",
+    "AudioRecorder": "src/components/AudioRecorder.jsx",
+    "BudgetView": "src/components/BudgetView.jsx",
+    "ColorPicker": "src/components/ColorPicker.jsx",
+    "DiaryEntry": "src/components/DiaryEntry.jsx",
+    "DiaryModal": "src/components/DiaryModal.jsx",
+    "ErrorBoundary": "src/components/ErrorBoundary.jsx",
+    "ExpenseCard": "src/components/ExpenseCard.jsx",
+    "ExpenseModal": "src/components/ExpenseModal.jsx",
+    "GlobalSearch": "src/components/GlobalSearch.jsx",
+    "IconSelector": "src/components/IconSelector.jsx",
+    "ImportFromGuideModal": "src/components/ImportFromGuideModal.jsx",
+    "InteractiveMap": "src/components/InteractiveMap.jsx",
+    "LanguageSwitcher": "src/components/LanguageSwitcher.jsx",
+    "Lightbox": "src/components/Lightbox.jsx",
+    "NativeCamera": "src/components/NativeCamera.jsx",
+    "NotificationBell": "src/components/NotificationBell.jsx",
+    "OfflineIndicator": "src/components/OfflineIndicator.jsx",
+    "ParticipantsManager": "src/components/ParticipantsManager.jsx",
+    "PlaceCard": "src/components/PlaceCard.jsx",
+    "PlaceDetailModal": "src/components/PlaceDetailModal.jsx",
+    "PlaceListsSection": "src/components/PlaceListsSection.jsx",
+    "PlaceModal": "src/components/PlaceModal.jsx",
+    "ProtectedRoute": "src/components/ProtectedRoute.jsx",
+    "RecommendationsView": "src/components/RecommendationsView.jsx",
+    "RouteBuilder": "src/components/RouteBuilder.jsx",
+    "ShareButton": "src/components/ShareButton.jsx",
+    "SharePanel": "src/components/SharePanel.jsx",
+    "TimelineDay": "src/components/TimelineDay.jsx",
+    "TimelineEntryCard": "src/components/TimelineEntryCard.jsx",
+    "TimelineView": "src/components/TimelineView.jsx",
+    "TripModal": "src/components/TripModal.jsx",
+    "Layout": "src/components/layout/Layout.jsx",
+    "Navbar": "src/components/layout/Navbar.jsx",
+    "Sidebar": "src/components/layout/Sidebar.jsx",
+    "DesignSystemProvider": null
+  },
+  "libOverrides": {
+    "dts.mjs": "ParticipantsManager ist eine echte Komponente — die Manager-Endung darf nicht ausschliessen"
+  },
+  "provider": {
+    "component": "DesignSystemProvider"
+  },
+  "dtsPropsFor": {
+    "AddToTimelineModal": "isOpen?: boolean; onClose?: (...args: unknown[]) => void; onSubmit?: (...args: unknown[]) => void; places?: Array<{ id: number; name: string; category?: string; latitude: number; longitude: number }>; tripStartDate?: unknown; tripEndDate?: unknown;",
+    "AudioRecorder": "onTranscriptReceived?: (...args: unknown[]) => void; disabled?: boolean;",
+    "BudgetView": "tripId?: number | string; participants?: Array<{ id: number; name: string; email?: string; role?: string; permission?: 'owner' | 'editor' | 'viewer'; invitation_status?: 'pending' | 'accepted' | 'declined' }>;",
+    "ColorPicker": "value?: string; onChange?: (...args: unknown[]) => void; label?: string;",
+    "DiaryEntry": "entry: { id: number; title: string; content: string; entry_date?: string; location_name?: string; latitude?: number; longitude?: number; mood?: 'happy' | 'neutral' | 'sad'; rating?: number; tags?: string[]; photos?: string[] }; onEdit?: (...args: unknown[]) => void; onDelete?: (...args: unknown[]) => void;",
+    "DiaryModal": "isOpen?: boolean; onClose?: (...args: unknown[]) => void; onSubmit?: (...args: unknown[]) => void; initialData?: unknown; entryId?: unknown;",
+    "ExpenseCard": "expense: { id: number; title: string; amount: number; currency?: string; category?: string; date: string; paid_by?: number; paid_by_name?: string; notes?: string; splits?: Array<{ participant_id: number; amount: number }> }; participants?: Array<{ id: number; name: string; email?: string; role?: string; permission?: 'owner' | 'editor' | 'viewer'; invitation_status?: 'pending' | 'accepted' | 'declined' }>; onEdit?: (...args: unknown[]) => void; onDelete?: (...args: unknown[]) => void;",
+    "ExpenseModal": "isOpen?: boolean; onClose?: (...args: unknown[]) => void; onSubmit?: (...args: unknown[]) => void; initialData?: unknown; participants?: Array<{ id: number; name: string; email?: string; role?: string; permission?: 'owner' | 'editor' | 'viewer'; invitation_status?: 'pending' | 'accepted' | 'declined' }>;",
+    "IconSelector": "value?: string; onChange?: (...args: unknown[]) => void; label?: string;",
+    "ImportFromGuideModal": "isOpen?: boolean; onClose?: (...args: unknown[]) => void; tripId?: number | string; destination?: unknown; onImportComplete?: (...args: unknown[]) => void;",
+    "InteractiveMap": "places?: Array<{ id: number; name: string; category?: string; latitude: number; longitude: number }>; routes?: Array<{ id: number; name: string; color?: string; place_ids: number[] }>; photos?: unknown[]; onPlaceClick?: unknown; onRouteClick?: unknown; editable?: boolean; center?: unknown[]; zoom?: number;",
+    "Lightbox": "open?: unknown; items?: unknown[]; initialIndex?: number; onClose?: (...args: unknown[]) => void; onCaptionSaved?: (...args: unknown[]) => void; readOnly?: boolean;",
+    "NativeCamera": "onPhotoTaken?: (...args: unknown[]) => void; disabled?: boolean; className?: string;",
+    "ParticipantsManager": "tripId?: number | string; participants?: Array<{ id: number; name: string; email?: string; role?: string; permission?: 'owner' | 'editor' | 'viewer'; invitation_status?: 'pending' | 'accepted' | 'declined' }>; isEditing?: boolean;",
+    "PlaceCard": "place: { id: number; name: string; description?: string; address?: string; latitude: number; longitude: number; category?: string; visited?: boolean; visit_date?: string; rating?: number; cost?: number; currency?: string; notes?: string; photos?: string[]; image_url?: string; color?: string; icon_type?: string; tags?: string[]; order?: number }; onEdit?: (...args: unknown[]) => void; onDelete?: (...args: unknown[]) => void; onToggleVisited?: (...args: unknown[]) => void; onClick?: (...args: unknown[]) => void;",
+    "PlaceDetailModal": "place?: { id: number; name: string; description?: string; address?: string; latitude: number; longitude: number; category?: string; visited?: boolean; visit_date?: string; rating?: number; cost?: number; currency?: string; notes?: string; photos?: string[]; image_url?: string; color?: string; icon_type?: string; tags?: string[]; order?: number }; isOpen?: boolean; onClose?: (...args: unknown[]) => void; onAddToTrip?: (...args: unknown[]) => void;",
+    "PlaceListsSection": "tripId?: number | string; places?: Array<{ id: number; name: string; category?: string; latitude: number; longitude: number }>; onEditPlace?: (...args: unknown[]) => void; onDeletePlace?: (...args: unknown[]) => void; onToggleVisited?: (...args: unknown[]) => void; onPlaceClick?: (...args: unknown[]) => void;",
+    "PlaceModal": "isOpen?: boolean; onClose?: (...args: unknown[]) => void; onSubmit?: (...args: unknown[]) => void; initialData?: unknown; tripDestination?: unknown; placeId?: unknown;",
+    "ProtectedRoute": "children?: React.ReactNode;",
+    "RecommendationsView": "tripId?: number | string; trip?: { id: number; title: string; destination: string; description?: string; start_date?: string; end_date?: string; latitude?: number; longitude?: number; budget?: number; currency?: string; interests?: string[]; is_public?: boolean }; places?: Array<{ id: number; name: string; category?: string; latitude: number; longitude: number }>;",
+    "RouteBuilder": "tripId?: number | string; places?: Array<{ id: number; name: string; category?: string; latitude: number; longitude: number }>; onRoutesChange?: (...args: unknown[]) => void;",
+    "ShareButton": "trip?: { id: number; title: string; destination: string; description?: string; start_date?: string; end_date?: string; latitude?: number; longitude?: number; budget?: number; currency?: string; interests?: string[]; is_public?: boolean }; className?: string;",
+    "SharePanel": "trip?: { id: number; title: string; destination: string; description?: string; start_date?: string; end_date?: string; latitude?: number; longitude?: number; budget?: number; currency?: string; interests?: string[]; is_public?: boolean };",
+    "TimelineDay": "day: { day_date: string; total_duration_minutes?: number; entries: Array<{ id: number; place_id: number; place_name: string; place_category?: string; place_latitude: number; place_longitude: number; order: number; notes?: string }> }; onReorder?: (...args: unknown[]) => void; onDeleteEntry?: (...args: unknown[]) => void; onOptimize?: (...args: unknown[]) => void; isExpanded?: boolean; onToggleExpand?: (...args: unknown[]) => void;",
+    "TimelineEntryCard": "entry: { id: number; title: string; content: string; entry_date?: string; location_name?: string; latitude?: number; longitude?: number; mood?: 'happy' | 'neutral' | 'sad'; rating?: number; tags?: string[]; photos?: string[] }; onDelete?: (...args: unknown[]) => void; dragHandleProps?: unknown[];",
+    "TimelineView": "tripId?: number | string; places?: Array<{ id: number; name: string; category?: string; latitude: number; longitude: number }>; tripStartDate?: unknown; tripEndDate?: unknown;",
+    "TripModal": "isOpen?: boolean; onClose?: (...args: unknown[]) => void; onSubmit?: (...args: unknown[]) => void; initialData?: unknown; isEditing?: boolean;",
+    "Navbar": "onMenuClick?: (...args: unknown[]) => void;",
+    "Sidebar": "open?: unknown; onClose?: (...args: unknown[]) => void;",
+    "ErrorBoundary": "children?: React.ReactNode;"
+  },
+  "overrides": {
+    "PlaceDetailModal": {
+      "cardMode": "single",
+      "viewport": "820x900",
+      "primaryStory": "Geoeffnet"
+    },
+    "ExpenseModal": {
+      "cardMode": "single",
+      "viewport": "820x1150",
+      "primaryStory": "Neu"
+    },
+    "AddToTimelineModal": {
+      "cardMode": "single",
+      "viewport": "820x900",
+      "primaryStory": "Geoeffnet"
+    },
+    "InteractiveMap": {
+      "cardMode": "column"
+    },
+    "TimelineDay": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

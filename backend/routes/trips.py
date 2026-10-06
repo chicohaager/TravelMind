@@ -3,30 +3,32 @@ Trips Router
 CRUD operations for trips with SQLite persistence
 """
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime, timezone
+import asyncio
 import os
-import uuid
-import magic
+import secrets
+from datetime import datetime, timezone
 from pathlib import Path
-from services.geocoding import geocoding_service
-from utils.rate_limits import limiter, RateLimits
+from typing import List, Optional
+
+import structlog
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from models.database import get_db
-from models.trip import Trip
-from models.user import User
-from models.place import Place
 from models.diary import DiaryEntry
 from models.expense import Expense
-from models.participant import Participant, PermissionLevel, InvitationStatus
-from routes.auth import get_current_user, get_optional_user, get_current_active_user
+from models.participant import InvitationStatus, Participant, PermissionLevel
+from models.place import Place
+from models.trip import Trip
+from models.user import User
+from pydantic import BaseModel, Field
+from routes.auth import get_current_active_user, get_optional_user
+from services import notification_service
 from services.audit_service import audit_service
-from sqlalchemy import or_
-import structlog
+from services.geocoding import geocoding_service
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from utils.images import process_and_save, validate_image
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -35,7 +37,6 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/trips")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 # Demo mode configuration
@@ -74,7 +75,7 @@ class TripUpdate(BaseModel):
             "example": {
                 "title": "Portugal Abenteuer",
                 "budget": 2000.0,
-                "interests": ["wine", "architecture", "history"]
+                "interests": ["wine", "architecture", "history"],
             }
         }
 
@@ -92,6 +93,9 @@ class TripResponse(BaseModel):
     budget: Optional[float] = Field(None, example=1500.0)
     currency: str = Field(default="EUR", example="EUR")
     cover_image: Optional[str] = Field(None, example="/uploads/trips/1_abc123.jpg")
+    owner_id: int = Field(..., example=1)
+    is_public: bool = Field(False, example=False)
+    share_token: Optional[str] = Field(None, example="iX2k9...")
     created_at: datetime = Field(..., example="2025-01-15T10:30:00Z")
     updated_at: Optional[datetime] = Field(None, example="2025-01-16T14:45:00Z")
 
@@ -112,29 +116,12 @@ class TripResponse(BaseModel):
                 "currency": "EUR",
                 "cover_image": "/uploads/trips/1_abc123.jpg",
                 "created_at": "2025-01-15T10:30:00Z",
-                "updated_at": "2025-01-16T14:45:00Z"
+                "updated_at": "2025-01-16T14:45:00Z",
             }
         }
 
 
 # Helper functions
-def validate_file_type(contents: bytes, filename: str) -> bool:
-    """
-    Validate file type by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    # Check extension first
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    # Check actual MIME type using python-magic
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
-
-
 async def save_upload_file(upload_file: UploadFile, trip_id: int) -> str:
     """
     Save uploaded file and return the file path.
@@ -145,31 +132,24 @@ async def save_upload_file(upload_file: UploadFile, trip_id: int) -> str:
 
     # Check file size
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Datei zu groß. Maximum: {MAX_FILE_SIZE / (1024*1024)}MB"
-        )
+        raise HTTPException(status_code=400, detail=f"Datei zu groß. Maximum: {MAX_FILE_SIZE / (1024*1024)}MB")
 
     # Validate file type by content (security check)
-    if not validate_file_type(contents, upload_file.filename):
+    if not validate_image(contents, upload_file.filename):
         raise HTTPException(
-            status_code=400,
-            detail=f"Ungültiger Dateityp. Nur Bilder erlaubt: {', '.join(ALLOWED_EXTENSIONS)}"
+            status_code=400, detail=f"Ungültiger Dateityp. Nur Bilder erlaubt: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # Generate unique filename
-    extension = upload_file.filename.split(".")[-1].lower()
-    unique_filename = f"{trip_id}_{uuid.uuid4()}.{extension}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Normalize, auto-orient, compress to WebP and generate a thumbnail (used on trip cards).
+    try:
+        processed = await asyncio.to_thread(process_and_save, contents, UPLOAD_DIR, "/uploads/trips")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Ungültiges Bild: {exc}")
 
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(contents)
-
-    logger.info("file_uploaded", trip_id=trip_id, filename=unique_filename, size=len(contents))
+    logger.info("file_uploaded", trip_id=trip_id, filename=Path(processed.url).name, size=processed.size_bytes)
 
     # Return relative URL path
-    return f"/uploads/trips/{unique_filename}"
+    return processed.url
 
 
 async def get_or_create_demo_user(db: AsyncSession) -> Optional[User]:
@@ -195,7 +175,7 @@ async def get_or_create_demo_user(db: AsyncSession) -> Optional[User]:
             email="demo@travelmind.local",
             hashed_password=User.hash_password(demo_password),
             full_name="Demo User",
-            is_active=True
+            is_active=True,
         )
         db.add(user)
         try:
@@ -210,12 +190,7 @@ async def get_or_create_demo_user(db: AsyncSession) -> Optional[User]:
     return user
 
 
-async def check_trip_access(
-    trip: Trip,
-    user: User,
-    db: AsyncSession,
-    require_edit: bool = False
-) -> Optional[str]:
+async def check_trip_access(trip: Trip, user: User, db: AsyncSession, require_edit: bool = False) -> Optional[str]:
     """
     Check if user has access to the trip.
     Returns the permission level if access is granted, None otherwise.
@@ -242,7 +217,7 @@ async def check_trip_access(
         select(Participant).where(
             Participant.trip_id == trip.id,
             Participant.user_id == user.id,
-            Participant.invitation_status == InvitationStatus.ACCEPTED.value
+            Participant.invitation_status == InvitationStatus.ACCEPTED.value,
         )
     )
     participant = result.scalar_one_or_none()
@@ -255,12 +230,7 @@ async def check_trip_access(
     return None
 
 
-async def verify_trip_access(
-    trip: Trip,
-    user: User,
-    db: AsyncSession,
-    require_edit: bool = False
-) -> str:
+async def verify_trip_access(trip: Trip, user: User, db: AsyncSession, require_edit: bool = False) -> str:
     """
     Verify that the user has access to the trip.
     Raises HTTPException if access check fails.
@@ -274,11 +244,10 @@ async def verify_trip_access(
             trip_id=trip.id,
             user_id=user.id,
             owner_id=trip.owner_id,
-            require_edit=require_edit
+            require_edit=require_edit,
         )
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this trip"
+            status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this trip"
         )
 
     return permission
@@ -296,8 +265,7 @@ async def verify_trip_ownership(trip: Trip, user: User, db: AsyncSession = None)
     if trip.owner_id != user.id:
         logger.warning("unauthorized_trip_access", trip_id=trip.id, user_id=user.id, owner_id=trip.owner_id)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this trip"
+            status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this trip"
         )
 
 
@@ -310,7 +278,7 @@ async def get_trips(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Get all trips for current user with pagination.
@@ -337,12 +305,8 @@ async def get_trips(
             logger.info("admin_trips_fetched", user_id=current_user.id, count=len(trips))
         else:
             # Get trip IDs where user is participant with accepted status
-            participant_query = (
-                select(Participant.trip_id)
-                .where(
-                    Participant.user_id == current_user.id,
-                    Participant.invitation_status == InvitationStatus.ACCEPTED.value
-                )
+            participant_query = select(Participant.trip_id).where(
+                Participant.user_id == current_user.id, Participant.invitation_status == InvitationStatus.ACCEPTED.value
             )
             participant_result = await db.execute(participant_query)
             shared_trip_ids = [row[0] for row in participant_result.fetchall()]
@@ -352,10 +316,7 @@ async def get_trips(
                 select(Trip)
                 .options(selectinload(Trip.places))
                 .where(
-                    or_(
-                        Trip.owner_id == current_user.id,
-                        Trip.id.in_(shared_trip_ids) if shared_trip_ids else False
-                    )
+                    or_(Trip.owner_id == current_user.id, Trip.id.in_(shared_trip_ids) if shared_trip_ids else False)
                 )
                 .order_by(Trip.created_at.desc())
                 .offset(skip)
@@ -368,15 +329,10 @@ async def get_trips(
         # Return demo trips if demo mode enabled
         if not ENABLE_DEMO_MODE:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required. Demo mode is disabled."
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required. Demo mode is disabled."
             )
         query = (
-            select(Trip)
-            .options(selectinload(Trip.places))
-            .order_by(Trip.created_at.desc())
-            .offset(skip)
-            .limit(limit)
+            select(Trip).options(selectinload(Trip.places)).order_by(Trip.created_at.desc()).offset(skip).limit(limit)
         )
         result = await db.execute(query)
         trips = result.scalars().all()
@@ -386,45 +342,38 @@ async def get_trips(
 @router.get("/invitations/pending", response_model=List[dict])
 @limiter.limit(RateLimits.TRIP_LIST)
 async def get_pending_invitations(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    request: Request, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all pending trip invitations for the current user.
 
     Returns list of trips the user has been invited to but hasn't responded yet.
     """
-    # Get pending invitations
+    # Get pending invitations together with each trip's owner in a single query
+    # (avoids an N+1 lookup of the owner per invitation).
     result = await db.execute(
-        select(Participant, Trip)
+        select(Participant, Trip, User)
         .join(Trip, Participant.trip_id == Trip.id)
-        .where(
-            Participant.user_id == current_user.id,
-            Participant.invitation_status == InvitationStatus.PENDING.value
-        )
+        .join(User, Trip.owner_id == User.id)
+        .where(Participant.user_id == current_user.id, Participant.invitation_status == InvitationStatus.PENDING.value)
         .order_by(Participant.created_at.desc())
     )
     rows = result.all()
 
     invitations = []
-    for participant, trip in rows:
-        # Get owner info
-        owner_result = await db.execute(
-            select(User).where(User.id == trip.owner_id)
+    for participant, trip, owner in rows:
+        invitations.append(
+            {
+                "participant_id": participant.id,
+                "trip_id": trip.id,
+                "trip_title": trip.title,
+                "trip_destination": trip.destination,
+                "trip_cover_image": trip.cover_image,
+                "permission": participant.permission,
+                "invited_at": participant.invited_at,
+                "invited_by": owner.username if owner else "Unknown",
+            }
         )
-        owner = owner_result.scalar_one_or_none()
-
-        invitations.append({
-            "participant_id": participant.id,
-            "trip_id": trip.id,
-            "trip_title": trip.title,
-            "trip_destination": trip.destination,
-            "trip_cover_image": trip.cover_image,
-            "permission": participant.permission,
-            "invited_at": participant.invited_at,
-            "invited_by": owner.username if owner else "Unknown"
-        })
 
     return invitations
 
@@ -435,7 +384,7 @@ async def get_trip(
     request: Request,
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Get a specific trip by ID with eager-loaded relationships.
@@ -443,10 +392,14 @@ async def get_trip(
     Returns detailed information about a single trip including places.
     Access is granted if user is owner, participant, or admin.
     """
-    query = select(Trip).options(
-        selectinload(Trip.places),
-        selectinload(Trip.diary_entries),
-    ).where(Trip.id == trip_id)
+    query = (
+        select(Trip)
+        .options(
+            selectinload(Trip.places),
+            selectinload(Trip.diary_entries),
+        )
+        .where(Trip.id == trip_id)
+    )
 
     result = await db.execute(query)
     trip = result.scalar_one_or_none()
@@ -458,10 +411,7 @@ async def get_trip(
     if current_user:
         await verify_trip_access(trip, current_user, db, require_edit=False)
     elif not ENABLE_DEMO_MODE:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
     return trip
 
@@ -473,7 +423,7 @@ async def create_trip(
     request: Request,
     trip: TripCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Create a new trip.
@@ -490,7 +440,7 @@ async def create_trip(
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required. Demo mode is disabled or not configured."
+                detail="Authentication required. Demo mode is disabled or not configured.",
             )
 
     new_trip = Trip(
@@ -504,7 +454,7 @@ async def create_trip(
         interests=trip.interests,
         budget=trip.budget,
         currency=trip.currency,
-        owner_id=user.id
+        owner_id=user.id,
     )
 
     db.add(new_trip)
@@ -522,7 +472,7 @@ async def create_trip(
         user_id=user.id,
         username=user.username,
         request=request,
-        details={"destination": new_trip.destination, "title": new_trip.title}
+        details={"destination": new_trip.destination, "title": new_trip.title},
     )
 
     return new_trip
@@ -535,7 +485,7 @@ async def update_trip(
     trip_id: int,
     trip: TripUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Update an existing trip.
@@ -573,7 +523,7 @@ async def update_trip(
         user_id=current_user.id,
         username=current_user.username,
         request=request,
-        details={"updated_fields": list(update_data.keys())}
+        details={"updated_fields": list(update_data.keys())},
     )
 
     return existing_trip
@@ -585,7 +535,7 @@ async def delete_trip(
     request: Request,
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Delete a trip.
@@ -620,7 +570,7 @@ async def delete_trip(
         user_id=current_user.id,
         username=current_user.username,
         request=request,
-        details={"title": trip_title, "destination": trip_destination}
+        details={"title": trip_title, "destination": trip_destination},
     )
 
     return None
@@ -633,7 +583,7 @@ async def upload_trip_image(
     trip_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Upload a cover image for a trip.
@@ -671,7 +621,7 @@ async def get_trip_summary(
     request: Request,
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user)
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Get trip summary with statistics.
@@ -685,29 +635,23 @@ async def get_trip_summary(
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
-    # Verify ownership if authenticated
-    if current_user and trip.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this trip"
-        )
+    # Authenticated users must be owner or accepted participant; anonymous
+    # access is only allowed in demo mode (consistent with the other endpoints).
+    if current_user:
+        await verify_trip_access(trip, current_user, db, require_edit=False)
+    elif not ENABLE_DEMO_MODE:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
     # Count places
-    places_result = await db.execute(
-        select(func.count(Place.id)).where(Place.trip_id == trip_id)
-    )
+    places_result = await db.execute(select(func.count(Place.id)).where(Place.trip_id == trip_id))
     total_places = places_result.scalar() or 0
 
     # Count diary entries
-    diary_result = await db.execute(
-        select(func.count(DiaryEntry.id)).where(DiaryEntry.trip_id == trip_id)
-    )
+    diary_result = await db.execute(select(func.count(DiaryEntry.id)).where(DiaryEntry.trip_id == trip_id))
     total_diary_entries = diary_result.scalar() or 0
 
     # Calculate total expenses
-    expenses_result = await db.execute(
-        select(func.sum(Expense.amount)).where(Expense.trip_id == trip_id)
-    )
+    expenses_result = await db.execute(select(func.sum(Expense.amount)).where(Expense.trip_id == trip_id))
     total_cost = expenses_result.scalar() or 0.0
 
     # Calculate duration in days
@@ -724,7 +668,7 @@ async def get_trip_summary(
         "currency": trip.currency,
         "days_count": days_count,
         "budget": trip.budget,
-        "budget_remaining": (trip.budget - total_cost) if trip.budget else None
+        "budget_remaining": (trip.budget - total_cost) if trip.budget else None,
     }
 
 
@@ -740,10 +684,7 @@ async def geocode_location(request: Request, location: str):
     result = await geocoding_service.geocode(location)
 
     if not result:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Koordinaten für '{location}' nicht gefunden"
-        )
+        raise HTTPException(status_code=404, detail=f"Koordinaten für '{location}' nicht gefunden")
 
     logger.info("location_geocoded", location=location, success=True)
 
@@ -754,14 +695,17 @@ async def geocode_location(request: Request, location: str):
 # Trip Sharing / Invitation Endpoints
 # ============================================================
 
+
 class ShareTripRequest(BaseModel):
     """Request body for sharing a trip"""
+
     username_or_email: str = Field(..., description="Username or email of user to invite")
     permission: str = Field(default="viewer", description="Permission level: viewer, editor")
 
 
 class ShareParticipantResponse(BaseModel):
     """Response model for participant in sharing context"""
+
     id: int
     trip_id: int
     user_id: Optional[int]
@@ -777,6 +721,53 @@ class ShareParticipantResponse(BaseModel):
         from_attributes = True
 
 
+class PublishUpdate(BaseModel):
+    is_public: bool = Field(..., description="Whether the trip's diary is publicly readable")
+    regenerate: bool = Field(False, description="Mint a new share token, revoking any existing link")
+
+
+class PublishResponse(BaseModel):
+    is_public: bool
+    share_token: Optional[str] = None
+    share_path: Optional[str] = None  # e.g. /share/<token>
+
+
+@router.patch("/{trip_id}/publish", response_model=PublishResponse)
+@limiter.limit(RateLimits.TRIP_UPDATE)
+async def set_trip_publish(
+    request: Request,
+    trip_id: int,
+    update: PublishUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Enable/disable public read-only sharing of this trip's diary (owner only).
+
+    A token is minted on first publish and reused afterwards, so the public URL
+    stays stable across off/on toggles. `regenerate` mints a fresh token,
+    immediately revoking any previously shared link.
+    """
+    result = await db.execute(select(Trip).where(Trip.id == trip_id))
+    trip = result.scalar_one_or_none()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    await verify_trip_ownership(trip, current_user, db)
+
+    if update.is_public and (trip.share_token is None or update.regenerate):
+        trip.share_token = secrets.token_urlsafe(32)
+    trip.is_public = update.is_public
+
+    await db.commit()
+    await db.refresh(trip)
+    logger.info("trip_publish_set", trip_id=trip_id, is_public=trip.is_public, user_id=current_user.id)
+
+    return PublishResponse(
+        is_public=trip.is_public,
+        share_token=trip.share_token,
+        share_path=f"/share/{trip.share_token}" if trip.share_token else None,
+    )
+
+
 @router.post("/{trip_id}/share", response_model=ShareParticipantResponse, status_code=201)
 @limiter.limit(RateLimits.TRIP_CREATE)
 async def share_trip(
@@ -784,7 +775,7 @@ async def share_trip(
     trip_id: int,
     share_request: ShareTripRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Invite a user to a trip.
@@ -804,61 +795,62 @@ async def share_trip(
 
     # Validate permission level
     if share_request.permission not in [PermissionLevel.EDITOR.value, PermissionLevel.VIEWER.value]:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid permission level. Use 'editor' or 'viewer'."
-        )
+        raise HTTPException(status_code=400, detail="Invalid permission level. Use 'editor' or 'viewer'.")
 
     # Find user by username or email
     result = await db.execute(
         select(User).where(
-            or_(
-                User.username == share_request.username_or_email,
-                User.email == share_request.username_or_email
-            )
+            or_(User.username == share_request.username_or_email, User.email == share_request.username_or_email)
         )
     )
     invited_user = result.scalar_one_or_none()
 
     if not invited_user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found. Please check the username or email."
-        )
+        raise HTTPException(status_code=404, detail="User not found. Please check the username or email.")
 
     # Cannot invite yourself
     if invited_user.id == current_user.id:
-        raise HTTPException(
-            status_code=400,
-            detail="You cannot invite yourself to your own trip."
-        )
+        raise HTTPException(status_code=400, detail="You cannot invite yourself to your own trip.")
 
     # Check if user is already a participant
     result = await db.execute(
-        select(Participant).where(
-            Participant.trip_id == trip_id,
-            Participant.user_id == invited_user.id
-        )
+        select(Participant).where(Participant.trip_id == trip_id, Participant.user_id == invited_user.id)
     )
     existing_participant = result.scalar_one_or_none()
 
     if existing_participant:
-        raise HTTPException(
-            status_code=400,
-            detail="User is already invited to this trip."
+        # A previously declined invitation can be re-sent: reset it to pending
+        # instead of rejecting (otherwise the user can never be re-invited).
+        if existing_participant.invitation_status == InvitationStatus.DECLINED.value:
+            existing_participant.permission = share_request.permission
+            existing_participant.invitation_status = InvitationStatus.PENDING.value
+            existing_participant.invited_at = datetime.now(timezone.utc)
+            existing_participant.accepted_at = None
+            participant = existing_participant
+        else:
+            raise HTTPException(status_code=400, detail="User is already invited to this trip.")
+    else:
+        # Create participant invitation
+        participant = Participant(
+            trip_id=trip_id,
+            user_id=invited_user.id,
+            name=invited_user.full_name or invited_user.username,
+            email=invited_user.email,
+            permission=share_request.permission,
+            invitation_status=InvitationStatus.PENDING.value,
         )
+        db.add(participant)
 
-    # Create participant invitation
-    participant = Participant(
-        trip_id=trip_id,
+    # Notify the invited user.
+    notification_service.create_notification(
+        db,
         user_id=invited_user.id,
-        name=invited_user.full_name or invited_user.username,
-        email=invited_user.email,
-        permission=share_request.permission,
-        invitation_status=InvitationStatus.PENDING.value
+        type=notification_service.INVITE_RECEIVED,
+        trip_id=trip_id,
+        actor_name=current_user.full_name or current_user.username,
+        trip_title=trip.title,
     )
 
-    db.add(participant)
     await db.commit()
     await db.refresh(participant)
 
@@ -867,7 +859,7 @@ async def share_trip(
         trip_id=trip_id,
         inviter_id=current_user.id,
         invited_user_id=invited_user.id,
-        permission=share_request.permission
+        permission=share_request.permission,
     )
 
     # Audit log
@@ -879,10 +871,7 @@ async def share_trip(
         user_id=current_user.id,
         username=current_user.username,
         request=request,
-        details={
-            "invited_user": invited_user.username,
-            "permission": share_request.permission
-        }
+        details={"invited_user": invited_user.username, "permission": share_request.permission},
     )
 
     return participant
@@ -894,7 +883,7 @@ async def accept_trip_invitation(
     request: Request,
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Accept an invitation to a trip.
@@ -903,42 +892,40 @@ async def accept_trip_invitation(
     """
     # Find participant record for current user
     result = await db.execute(
-        select(Participant).where(
-            Participant.trip_id == trip_id,
-            Participant.user_id == current_user.id
-        )
+        select(Participant).where(Participant.trip_id == trip_id, Participant.user_id == current_user.id)
     )
     participant = result.scalar_one_or_none()
 
     if not participant:
-        raise HTTPException(
-            status_code=404,
-            detail="No invitation found for this trip."
-        )
+        raise HTTPException(status_code=404, detail="No invitation found for this trip.")
 
     if participant.invitation_status == InvitationStatus.ACCEPTED.value:
-        raise HTTPException(
-            status_code=400,
-            detail="Invitation already accepted."
-        )
+        raise HTTPException(status_code=400, detail="Invitation already accepted.")
 
     if participant.invitation_status == InvitationStatus.DECLINED.value:
         raise HTTPException(
-            status_code=400,
-            detail="Invitation was already declined. Contact the trip owner for a new invitation."
+            status_code=400, detail="Invitation was already declined. Contact the trip owner for a new invitation."
         )
 
     # Accept invitation
     participant.invitation_status = InvitationStatus.ACCEPTED.value
     participant.accepted_at = datetime.now(timezone.utc)
 
+    # Notify the trip owner that the invitation was accepted.
+    trip = (await db.execute(select(Trip).where(Trip.id == trip_id))).scalar_one_or_none()
+    if trip:
+        notification_service.create_notification(
+            db,
+            user_id=trip.owner_id,
+            type=notification_service.INVITE_ACCEPTED,
+            trip_id=trip_id,
+            actor_name=current_user.full_name or current_user.username,
+            trip_title=trip.title,
+        )
+
     await db.commit()
 
-    logger.info(
-        "trip_invitation_accepted",
-        trip_id=trip_id,
-        user_id=current_user.id
-    )
+    logger.info("trip_invitation_accepted", trip_id=trip_id, user_id=current_user.id)
 
     return {"success": True, "message": "Invitation accepted."}
 
@@ -949,7 +936,7 @@ async def decline_trip_invitation(
     request: Request,
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Decline an invitation to a trip.
@@ -958,35 +945,34 @@ async def decline_trip_invitation(
     """
     # Find participant record for current user
     result = await db.execute(
-        select(Participant).where(
-            Participant.trip_id == trip_id,
-            Participant.user_id == current_user.id
-        )
+        select(Participant).where(Participant.trip_id == trip_id, Participant.user_id == current_user.id)
     )
     participant = result.scalar_one_or_none()
 
     if not participant:
-        raise HTTPException(
-            status_code=404,
-            detail="No invitation found for this trip."
-        )
+        raise HTTPException(status_code=404, detail="No invitation found for this trip.")
 
     if participant.invitation_status != InvitationStatus.PENDING.value:
-        raise HTTPException(
-            status_code=400,
-            detail="Invitation is not pending."
-        )
+        raise HTTPException(status_code=400, detail="Invitation is not pending.")
 
     # Decline invitation
     participant.invitation_status = InvitationStatus.DECLINED.value
 
+    # Notify the trip owner that the invitation was declined.
+    trip = (await db.execute(select(Trip).where(Trip.id == trip_id))).scalar_one_or_none()
+    if trip:
+        notification_service.create_notification(
+            db,
+            user_id=trip.owner_id,
+            type=notification_service.INVITE_DECLINED,
+            trip_id=trip_id,
+            actor_name=current_user.full_name or current_user.username,
+            trip_title=trip.title,
+        )
+
     await db.commit()
 
-    logger.info(
-        "trip_invitation_declined",
-        trip_id=trip_id,
-        user_id=current_user.id
-    )
+    logger.info("trip_invitation_declined", trip_id=trip_id, user_id=current_user.id)
 
     return {"success": True, "message": "Invitation declined."}
 
@@ -998,7 +984,7 @@ async def remove_participant(
     trip_id: int,
     participant_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Remove a participant from a trip.
@@ -1015,10 +1001,7 @@ async def remove_participant(
 
     # Get participant
     result = await db.execute(
-        select(Participant).where(
-            Participant.id == participant_id,
-            Participant.trip_id == trip_id
-        )
+        select(Participant).where(Participant.id == participant_id, Participant.trip_id == trip_id)
     )
     participant = result.scalar_one_or_none()
 
@@ -1032,19 +1015,12 @@ async def remove_participant(
     if not is_owner and not is_self:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only remove yourself or participants if you're the owner."
+            detail="You can only remove yourself or participants if you're the owner.",
         )
 
     await db.delete(participant)
     await db.commit()
 
-    logger.info(
-        "participant_removed",
-        trip_id=trip_id,
-        participant_id=participant_id,
-        removed_by=current_user.id
-    )
+    logger.info("participant_removed", trip_id=trip_id, participant_id=participant_id, removed_by=current_user.id)
 
     return None
-
-

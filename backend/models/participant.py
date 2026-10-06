@@ -2,22 +2,25 @@
 Participant model - Trip sharing and collaboration
 """
 
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Enum
+import enum
+
+from models.database import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
-import enum
 
 
 class PermissionLevel(str, enum.Enum):
     """Permission levels for trip access"""
-    OWNER = "owner"      # Full access, can delete trip
-    EDITOR = "editor"    # Can edit trip, places, diary
-    VIEWER = "viewer"    # Read-only access
+
+    OWNER = "owner"  # Full access, can delete trip
+    EDITOR = "editor"  # Can edit trip, places, diary
+    VIEWER = "viewer"  # Read-only access
 
 
 class InvitationStatus(str, enum.Enum):
     """Status of trip invitation"""
+
     PENDING = "pending"
     ACCEPTED = "accepted"
     DECLINED = "declined"

@@ -1,9 +1,4 @@
 {
-  "title": "Modo sin conexión",
-  "syncNow": "Sincronizar ahora",
-  "lastSync": "Última sincronización",
-  "pendingChanges": "Cambios pendientes",
-  "noConnection": "Sin conexión a internet",
   "changeWillSync": "Sin conexión: El cambio se sincronizará cuando estés en línea",
   "dataDeleted": "Datos sin conexión eliminados",
   "errorDeleting": "Error al eliminar datos sin conexión",

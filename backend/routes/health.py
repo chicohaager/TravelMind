@@ -5,17 +5,22 @@ Provides detailed health status for monitoring and orchestration.
 Includes checks for database, external services, and system resources.
 """
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-from pydantic import BaseModel
-from typing import Dict, Optional, List
-from datetime import datetime, timezone
-import os
-import psutil
 import asyncio
+import os
+from datetime import datetime, timezone
+from typing import Dict, Optional
 
+import psutil
+import structlog
+from fastapi import APIRouter, Depends, Request
 from models.database import get_db
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.rate_limits import RateLimits, limiter
+from version import VERSION
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -55,23 +60,16 @@ async def check_database(db: AsyncSession) -> ComponentHealth:
         await db.execute(text("SELECT 1"))
         latency = (asyncio.get_event_loop().time() - start) * 1000
 
-        return ComponentHealth(
-            status="healthy",
-            latency_ms=round(latency, 2),
-            message="Database connection successful"
-        )
+        return ComponentHealth(status="healthy", latency_ms=round(latency, 2), message="Database connection successful")
     except Exception as e:
-        return ComponentHealth(
-            status="unhealthy",
-            message=f"Database connection failed: {str(e)}"
-        )
+        return ComponentHealth(status="unhealthy", message=f"Database connection failed: {str(e)}")
 
 
 async def check_disk_space() -> ComponentHealth:
     """Check available disk space."""
     try:
         disk = psutil.disk_usage("/")
-        free_gb = disk.free / (1024 ** 3)
+        free_gb = disk.free / (1024**3)
         percent_used = disk.percent
 
         if percent_used > 95:
@@ -85,22 +83,17 @@ async def check_disk_space() -> ComponentHealth:
             message = f"{free_gb:.1f}GB free ({percent_used}% used)"
 
         return ComponentHealth(
-            status=status,
-            message=message,
-            details={"free_gb": round(free_gb, 2), "percent_used": percent_used}
+            status=status, message=message, details={"free_gb": round(free_gb, 2), "percent_used": percent_used}
         )
     except Exception as e:
-        return ComponentHealth(
-            status="degraded",
-            message=f"Could not check disk: {str(e)}"
-        )
+        return ComponentHealth(status="degraded", message=f"Could not check disk: {str(e)}")
 
 
 async def check_memory() -> ComponentHealth:
     """Check available memory."""
     try:
         memory = psutil.virtual_memory()
-        available_mb = memory.available / (1024 ** 2)
+        available_mb = memory.available / (1024**2)
         percent_used = memory.percent
 
         if percent_used > 95:
@@ -116,13 +109,10 @@ async def check_memory() -> ComponentHealth:
         return ComponentHealth(
             status=status,
             message=message,
-            details={"available_mb": round(available_mb, 0), "percent_used": percent_used}
+            details={"available_mb": round(available_mb, 0), "percent_used": percent_used},
         )
     except Exception as e:
-        return ComponentHealth(
-            status="degraded",
-            message=f"Could not check memory: {str(e)}"
-        )
+        return ComponentHealth(status="degraded", message=f"Could not check memory: {str(e)}")
 
 
 async def check_uploads_directory() -> ComponentHealth:
@@ -130,26 +120,14 @@ async def check_uploads_directory() -> ComponentHealth:
     try:
         uploads_path = "./uploads"
         if not os.path.exists(uploads_path):
-            return ComponentHealth(
-                status="unhealthy",
-                message="Uploads directory does not exist"
-            )
+            return ComponentHealth(status="unhealthy", message="Uploads directory does not exist")
 
         if not os.access(uploads_path, os.W_OK):
-            return ComponentHealth(
-                status="unhealthy",
-                message="Uploads directory is not writable"
-            )
+            return ComponentHealth(status="unhealthy", message="Uploads directory is not writable")
 
-        return ComponentHealth(
-            status="healthy",
-            message="Uploads directory is accessible"
-        )
+        return ComponentHealth(status="healthy", message="Uploads directory is accessible")
     except Exception as e:
-        return ComponentHealth(
-            status="degraded",
-            message=f"Could not check uploads: {str(e)}"
-        )
+        return ComponentHealth(status="degraded", message=f"Could not check uploads: {str(e)}")
 
 
 def get_system_resources() -> SystemResources:
@@ -161,14 +139,15 @@ def get_system_resources() -> SystemResources:
     return SystemResources(
         cpu_percent=cpu,
         memory_percent=memory.percent,
-        memory_available_mb=round(memory.available / (1024 ** 2), 0),
+        memory_available_mb=round(memory.available / (1024**2), 0),
         disk_percent=disk.percent,
-        disk_free_gb=round(disk.free / (1024 ** 3), 2)
+        disk_free_gb=round(disk.free / (1024**3), 2),
     )
 
 
 @router.get("/health", response_model=HealthResponse, tags=["System"])
-async def detailed_health_check(db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def detailed_health_check(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Detailed health check endpoint.
 
@@ -189,20 +168,32 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
     - Load balancer health checks
     - Monitoring dashboards
     """
-    # Run all checks concurrently
-    db_check, disk_check, memory_check, uploads_check = await asyncio.gather(
+    # Run all checks concurrently.
+    #
+    # `return_exceptions=True` ist hier kein Verschlucken, sondern die
+    # Voraussetzung dafuer, dass die Auskunft ueberhaupt eine ist: ohne das
+    # reisst eine unerwartete Ausnahme in EINER Teilpruefung den ganzen
+    # Endpunkt auf 500 — also genau die Auskunft weg, die sagen soll, WAS
+    # kaputt ist. Der Ausfall wird unten in eine `unhealthy`-Komponente
+    # uebersetzt und faerbt damit den Gesamtstatus; still wird nichts.
+    ergebnisse = await asyncio.gather(
         check_database(db),
         check_disk_space(),
         check_memory(),
-        check_uploads_directory()
+        check_uploads_directory(),
+        return_exceptions=True,
     )
 
-    components = {
-        "database": db_check,
-        "disk": disk_check,
-        "memory": memory_check,
-        "uploads": uploads_check,
-    }
+    namen = ("database", "disk", "memory", "uploads")
+    components = {}
+    for name, ergebnis in zip(namen, ergebnisse):
+        if isinstance(ergebnis, BaseException):
+            logger.error("health_check_failed", component=name, error=str(ergebnis))
+            components[name] = ComponentHealth(
+                status="unhealthy", message=f"Check raised {type(ergebnis).__name__}: {ergebnis}"
+            )
+        else:
+            components[name] = ergebnis
 
     # Determine overall status
     statuses = [c.status for c in components.values()]
@@ -218,16 +209,17 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
 
     return HealthResponse(
         status=overall_status,
-        version=os.getenv("APP_VERSION", "1.0.0"),
+        version=VERSION,
         timestamp=datetime.now(timezone.utc),
         uptime_seconds=round(uptime, 2),
         components=components,
-        system=get_system_resources()
+        system=get_system_resources(),
     )
 
 
 @router.get("/health/live", tags=["System"])
-async def liveness_probe():
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def liveness_probe(request: Request):
     """
     Kubernetes liveness probe.
 
@@ -237,8 +229,18 @@ async def liveness_probe():
     return {"status": "alive"}
 
 
+@router.get("/capabilities", tags=["System"])
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def capabilities(request: Request):
+    """Server feature flags the frontend adapts to (e.g. HEIC/HEIF support)."""
+    from utils.images import heic_supported
+
+    return {"heic_supported": heic_supported()}
+
+
 @router.get("/health/ready", tags=["System"])
-async def readiness_probe(db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.HEALTH_CHECK)
+async def readiness_probe(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Kubernetes readiness probe.
 
@@ -250,4 +252,5 @@ async def readiness_probe(db: AsyncSession = Depends(get_db)):
         return {"status": "ready"}
     except Exception:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=503, detail="Service not ready")

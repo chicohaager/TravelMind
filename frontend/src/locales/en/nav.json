@@ -2,9 +2,15 @@
   "home": "Home",
   "trips": "Trips",
   "diary": "Diary",
+  "gallery": "Gallery",
+  "timeline": "Timeline",
+  "analytics": "Analytics",
   "ai": "AI Assistant",
   "settings": "Settings",
   "logout": "Logout",
   "login": "Login",
-  "register": "Register"
+  "register": "Register",
+  "transcribe": "Transcription",
+  "openMenu": "Open menu",
+  "userMenu": "User menu"
 }

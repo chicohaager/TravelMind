@@ -1,14 +1,13 @@
-name: Deploy to Production
+name: Production Images
 
-# Builds the production images (Dockerfile.prod — the same files docker-compose.prod.yml
-# and deploy.sh use).
+# Builds the production images (Dockerfile.prod — the same files deploy/ausrollen.sh
+# builds for docker-compose.prod.yml).
 #   pull_request  → build only, nothing is pushed
 #   main / v*     → build and push to GHCR
 #
-# The server deploy runs only when the repository variable DEPLOY_PATH is set.
-# It then also needs the secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY,
-# DEPLOY_HOST_FINGERPRINT and the variable HEALTH_URL; a missing value fails the run.
-# Without DEPLOY_PATH the deploy is skipped and reported as "not configured".
+# There is no server deploy here: rolling out to a host is deploy/ausrollen.sh
+# (commit-SHA tags, --zurueck for the way back). The target host is deliberately
+# not stored in this public repository.
 
 on:
   push:
@@ -80,75 +79,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
-
-  # ==================== Deploy to Server ====================
-  deploy:
-    name: Deploy to Server
-    runs-on: ubuntu-latest
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main' && vars.DEPLOY_PATH != ''
-
-    steps:
-      - name: Check deploy configuration
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_HOST_FINGERPRINT: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}
-          HEALTH_URL: ${{ vars.HEALTH_URL }}
-        run: |
-          missing=""
-          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_HOST_FINGERPRINT HEALTH_URL; do
-            [ -n "${!name}" ] || missing="$missing $name"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::DEPLOY_PATH is set, but these values are missing:$missing"
-            exit 1
-          fi
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.5
-        env:
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          fingerprint: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}
-          envs: DEPLOY_PATH
-          script: |
-            set -e
-            cd "$DEPLOY_PATH"
-            git pull --ff-only origin main
-            ./deploy.sh
-
-      - name: Health check
-        env:
-          HEALTH_URL: ${{ vars.HEALTH_URL }}
-        run: curl -fsS --retry 12 --retry-delay 5 --retry-all-errors "$HEALTH_URL"
-
-  # ==================== Report ====================
-  notify:
-    name: Deployment Status
-    runs-on: ubuntu-latest
-    needs: [ build-and-push, deploy ]
-    if: always() && github.event_name != 'pull_request'
-
-    steps:
-      - name: Deployment status
-        env:
-          BUILD_RESULT: ${{ needs.build-and-push.result }}
-          DEPLOY_RESULT: ${{ needs.deploy.result }}
-          DEPLOY_CONFIGURED: ${{ vars.DEPLOY_PATH != '' }}
-        run: |
-          echo "Images: $BUILD_RESULT"
-          case "$DEPLOY_RESULT" in
-            success) echo "✅ Deployment successful (health check passed)" ;;
-            skipped)
-              if [ "$DEPLOY_CONFIGURED" = "true" ]; then
-                echo "⏭️ Deployment skipped (not main, or the image build failed)"
-              else
-                echo "::notice::Server deploy not configured (repository variable DEPLOY_PATH is empty) — images only"
-              fi ;;
-            *) echo "❌ Deployment $DEPLOY_RESULT"; exit 1 ;;
-          esac
