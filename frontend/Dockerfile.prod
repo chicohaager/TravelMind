@@ -7,7 +7,7 @@
 # ============================================
 # Stage 1: Build
 # ============================================
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -46,9 +46,11 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create nginx pid and cache directories with proper permissions
-RUN mkdir -p /var/cache/nginx /var/run && \
-    chown -R travelmind:travelmind /var/cache/nginx /var/run /usr/share/nginx/html && \
+# nginx runs as travelmind: it needs a writable cache/temp dir; the pid file
+# goes to /tmp (see nginx.conf), logs go to stdout/stderr via the base
+# image's /var/log/nginx symlinks
+RUN mkdir -p /var/cache/nginx && \
+    chown -R travelmind:travelmind /var/cache/nginx /usr/share/nginx/html && \
     chmod -R 755 /var/cache/nginx
 
 # Remove default nginx config

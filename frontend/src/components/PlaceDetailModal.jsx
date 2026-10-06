@@ -54,7 +54,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
           >
             {/* Header Image */}
             {place.image_url && (
-              <div className="relative h-48 bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+              <div className="relative h-48 bg-gray-200 dark:bg-gray-700 shrink-0">
                 <img
                   src={getPhotoUrl(place.image_url)}
                   alt={place.name}
@@ -150,7 +150,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {place.address && (
                         <div className="flex items-start gap-3">
-                          <MapPin className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <MapPin className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:addressField')}
@@ -162,7 +162,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.opening_hours && (
                         <div className="flex items-start gap-3">
-                          <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:openingHours')}
@@ -174,7 +174,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.phone && (
                         <div className="flex items-start gap-3">
-                          <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:phoneField')}
@@ -191,7 +191,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.website && (
                         <div className="flex items-start gap-3">
-                          <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:websiteField')}
@@ -211,7 +211,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.cost && (
                         <div className="flex items-start gap-3">
-                          <Euro className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Euro className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:costField')}
@@ -225,7 +225,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.visit_date && (
                         <div className="flex items-start gap-3">
-                          <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:visitDateField')}
@@ -313,7 +313,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
             {/* Footer with Action Button */}
             {onAddToTrip && (
-              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 shrink-0">
                 <button
                   onClick={() => {
                     onAddToTrip(place)

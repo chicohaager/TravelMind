@@ -22,7 +22,8 @@
   `vite.config.js` übereinstimmen.
 
 - **Die CSS wird aus dem App-Build geholt.** `src/styles/index.css` enthält
-  rohe `@tailwind`-Direktiven und taugt nicht als `cssEntry`. `cfg.buildCmd`
+  ungebaute Tailwind-Anweisungen (`@import 'tailwindcss'`, `@config`, seit
+  tailwind 4) und taugt nicht als `cssEntry`. `cfg.buildCmd`
   baut die App und kopiert die kompilierte Datei nach
   `frontend/.ds-css/travelmind.css` — der Vite-Name trägt einen Hash und
   ändert sich bei jedem Bau.

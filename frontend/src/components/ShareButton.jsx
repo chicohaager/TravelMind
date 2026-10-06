@@ -186,7 +186,7 @@ export default function ShareButton({ trip, className = '' }) {
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="fixed w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-[9999]"
+          className="fixed w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-9999"
           style={{ top: dropdownPosition.top, right: dropdownPosition.right }}
         >
           <div className="px-4 py-2 border-b border-gray-100">

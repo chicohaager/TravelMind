@@ -98,7 +98,7 @@ export default function ExpenseCard({ expense, participants, onEdit, onDelete })
                   return (
                     <div
                       key={split.participant_id}
-                      className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/50 rounded px-2 py-1"
+                      className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/50 rounded-sm px-2 py-1"
                     >
                       <span>{participant?.name || t('budget:unknown')}</span>
                       <span className="font-medium">

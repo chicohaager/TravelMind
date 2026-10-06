@@ -87,5 +87,22 @@ export default [
         },
       ]
     }
+  },
+  {
+    // Build/tool configs are executed by Node, not in the browser
+    files: ['*.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    }
+  },
+  {
+    // Test helpers and specs are never hot-reloaded, so the Fast Refresh
+    // export rule does not apply to them
+    files: ['src/test/**/*.{js,jsx}', '**/*.test.{js,jsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off'
+    }
   }
 ]

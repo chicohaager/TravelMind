@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Lock,
@@ -43,23 +43,23 @@ export default function Settings() {
 
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
-  // Load AI settings on mount
-  useEffect(() => {
-    loadAISettings()
-  }, [])
-
-  const loadAISettings = async () => {
+  const loadAISettings = useCallback(async () => {
     try {
       const response = await userSettingsService.getAISettings()
-      setAISettings({
-        ...aiSettings,
+      setAISettings((prev) => ({
+        ...prev,
         ai_provider: response.data.ai_provider || 'GROQ',
         has_api_key: response.data.has_api_key,
-      })
+      }))
     } catch (error) {
       console.error('Failed to load AI settings:', error)
     }
-  }
+  }, [])
+
+  // Load AI settings on mount
+  useEffect(() => {
+    loadAISettings()
+  }, [loadAISettings])
 
   const handleValidateAPIKey = async () => {
     if (!aiSettings.api_key) {
@@ -440,7 +440,7 @@ export default function Settings() {
 
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
               <div className="flex gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800 dark:text-red-300">
                   <p className="font-semibold mb-1">{t('settings:deleteWarningTitle')}</p>
                   <p>{t('settings:deleteWarningText')}</p>

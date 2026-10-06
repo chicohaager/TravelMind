@@ -6,6 +6,9 @@ import { Toaster } from 'react-hot-toast'
 import App from './App.jsx'
 import { initSentry } from './utils/sentry'
 import { uebersetzungenBereit } from './i18n'
+// Schriften vor dem Tailwind-CSS (Begruendung in styles/index.css)
+import '@fontsource-variable/public-sans/index.css'
+import '@fontsource-variable/newsreader/index.css'
 import './styles/index.css'
 import './styles/mobile.css'
 

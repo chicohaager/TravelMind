@@ -492,7 +492,7 @@ export default function DiaryModal({
                           >
                             <X className="w-4 h-4" />
                           </button>
-                          <span className="absolute bottom-1 left-1 px-2 py-1 bg-blue-500 text-white text-xs rounded">
+                          <span className="absolute bottom-1 left-1 px-2 py-1 bg-blue-500 text-white text-xs rounded-sm">
                             {t('diary:newPhotoLabel')}
                           </span>
                         </div>

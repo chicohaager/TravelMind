@@ -274,7 +274,7 @@ export default function InteractiveMap({
                     Vorbehalt behauptet Genauigkeit, die es nicht gibt. */}
                 {place.position_unsicher === true && (
                   <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-500">
-                    <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                     <span>{t('map:positionUnsicher')}</span>
                   </p>
                 )}
@@ -326,7 +326,7 @@ export default function InteractiveMap({
 
       {/* Map Legend */}
       {(places.length > 0 || routes.length > 0) && (
-        <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-xl max-w-xs z-[1000] border border-gray-100">
+        <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-xs p-4 rounded-2xl shadow-xl max-w-xs z-1000 border border-gray-100">
           <h4 className="font-bold text-sm mb-3 text-gray-800">{t('map:legend')}</h4>
 
           {/* Places legend */}
@@ -341,7 +341,7 @@ export default function InteractiveMap({
                   .map((category) => (
                     <span
                       key={category}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-white rounded-full shadow-sm"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-white rounded-full shadow-xs"
                       style={{ backgroundColor: categoryColors[category] || '#6b7280' }}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-white/40" />

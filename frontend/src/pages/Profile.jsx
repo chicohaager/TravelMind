@@ -109,7 +109,7 @@ export default function Profile() {
                   className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-primary-100 dark:border-primary-900"
                 />
               ) : (
-                <div className="w-32 h-32 rounded-full mx-auto bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center border-4 border-primary-100 dark:border-primary-900">
+                <div className="w-32 h-32 rounded-full mx-auto bg-linear-to-br/srgb from-primary-400 to-secondary-400 flex items-center justify-center border-4 border-primary-100 dark:border-primary-900">
                   <User className="w-16 h-16 text-white" />
                 </div>
               )}

@@ -91,7 +91,7 @@ export default function PublicDiary() {
         )}
 
         {data.entries.map((entry, idx) => (
-          <article key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <article key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow-xs p-6">
             <div className="flex items-center justify-between gap-3 mb-2">
               <h2 className="text-xl font-semibold">{entry.title}</h2>
               {entry.rating ? (
