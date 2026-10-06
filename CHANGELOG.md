@@ -25,6 +25,27 @@ Fehlermeldung aus dem Betrieb sich nicht zuordnen lässt.
 - **Workflow „Production Images“** (`deploy.yml`, aus PR #4): baut die
   Produktions-Images, schiebt sie auf `main` und bei `v*`-Tags nach GHCR.
   Kein Server-Deploy — das bleibt `deploy/ausrollen.sh`.
+- **tailwindcss 4.3.3** statt 3.4.19 (`@tailwindcss/postcss` statt
+  `tailwindcss` + `autoprefixer`). Grund: `npm audit` meldete 7 Befunde, die
+  nur an tailwind 3 hingen — `braces` hat keine gepatchte Version
+  (GHSA-vfj7-8cjw-p6xm). Jetzt 0 Befunde.
+  **Neue Browser-Mindestversionen:** Chrome 111, Safari 16.4, Firefox 128
+  (laut tailwindcss.com/docs/compatibility). Ältere Browser bekommen die
+  Oberfläche nicht mehr vollständig gestaltet.
+  Das Aussehen ist unverändert: 52 Screenshot-Paare (13 Ansichten × hell/dunkel
+  × Desktop/Handy) vorher/nachher verglichen, 47 pixelgleich, die übrigen nur
+  mit Rundungsabweichungen oder dem Kartenrauschen, das auch zwei Läufe
+  desselben Stands zeigen. Dafür nötig waren:
+  - `tailwind.compat-v3.js`: Standardpalette und Schriftgrößen von v3 (v4 hat
+    die Farben auf oklch umgestellt und Zeilenhöhen relativ gemacht),
+  - Kompatibilitätsregeln in `styles/index.css` (Rahmenfarbe, Platzhalter,
+    Knopf-Zeiger, Ziffernform und Hintergrund in Formularfeldern, Datumsfelder,
+    `space-x/y` mit v3-Semantik, Dunkelmodus per `@custom-variant` mit
+    v3-Selektor, eigene Regeln und `mobile.css` in `@layer utilities`),
+  - Verläufe mit `/srgb` (v4 interpoliert sonst in oklab),
+  - Schrift-Imports in `main.jsx` statt `@import` in `index.css` — sonst
+    fehlten alle Schriftdateien im Build,
+  - `safelist` als `@source inline(…)` — v4 liest `safelist` nicht mehr.
 
 ## [1.1.0] — 2026-08-25
 

@@ -39,7 +39,7 @@ Varianten `hover:`, `focus:`, `active:`, `dark:`):
 |---|---|---|
 | `primary` — Tiefsee-Teal | Flächen, Knöpfe, Links, alles Normale | `bg-primary-500` (#1F7A7D), Text `text-primary-600` |
 | `secondary` — Signalorange | **sparsam**: was hervorsticht, wie eine Route auf der Karte | `bg-secondary-600`, Text `text-secondary-600` |
-| `gray-*` | Fließtext, Rahmen, Hintergründe | Tailwind-Vorgabe |
+| `gray-*` | Fließtext, Rahmen, Hintergründe | Tailwind-3-Vorgabe (`frontend/tailwind.compat-v3.js`) |
 
 🔴 **Weiße Schrift auf `bg-secondary-500` ist zu schwach** (3,82:1). Wo Weiß
 auf der Signalfarbe steht, gehört `bg-secondary-600` hin (5,28:1).
