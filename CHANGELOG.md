@@ -11,6 +11,21 @@ Fehlermeldung aus dem Betrieb sich nicht zuordnen lässt.
 
 ---
 
+## [Unveröffentlicht]
+
+### Geändert
+
+- **Node 24 LTS** statt Node 20 (Supportende 30.04.2026) in `Dockerfile`,
+  `Dockerfile.prod` und CI; `engines.node` jetzt `>=24.0.0`. Aus `main`
+  (PR #3) übernommen.
+- **`docker-compose.hub.yml` zurück**, passend zu diesem Stand: Backend auf
+  8137 ohne veröffentlichten Port (nginx leitet weiter), Gesundheitsprüfung
+  `/api/health/live`, benannte Volumes statt Bind-Mounts (aus PR #6),
+  `JWT_SECRET`/`SECRET_KEY` scheitern laut, wenn sie fehlen.
+- **Workflow „Production Images“** (`deploy.yml`, aus PR #4): baut die
+  Produktions-Images, schiebt sie auf `main` und bei `v*`-Tags nach GHCR.
+  Kein Server-Deploy — das bleibt `deploy/ausrollen.sh`.
+
 ## [1.1.0] — 2026-08-25
 
 Ein Tag Instandsetzung vor einer Reise. Die Anwendung war seit dem 26. Juni
