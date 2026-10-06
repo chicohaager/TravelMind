@@ -111,9 +111,9 @@ describe('Gestaltung: Farbwerte kommen aus den Token', () => {
 
   it('Positivkontrolle: der Verlaufs-Scanner erkennt den echten Fall', () => {
     const verlauf = /\b(from|via|to)-(blue|purple|violet|fuchsia|pink|indigo|sky|cyan|emerald|teal)-\d{2,3}\b/
-    expect(verlauf.test('bg-gradient-to-r from-blue-500 to-purple-600')).toBe(true)
+    expect(verlauf.test('bg-linear-to-r/srgb from-blue-500 to-purple-600')).toBe(true)
     // Gegenkontrolle: die Token-Schreibweise löst NICHT aus.
-    expect(verlauf.test('bg-gradient-to-br from-primary-600 to-primary-400')).toBe(false)
+    expect(verlauf.test('bg-linear-to-br/srgb from-primary-600 to-primary-400')).toBe(false)
   })
 
   it('Positivkontrolle: der Scanner erkennt einen künstlichen Verstoß', () => {
@@ -162,9 +162,14 @@ describe('Gestaltung: Schriften werden selbst ausgeliefert', () => {
   })
 
   it('die Schriften kommen als Paket, nicht als Verweis', () => {
-    const css = readFileSync(join(srcVerzeichnis, 'styles/index.css'), 'utf8')
-    expect(css).toMatch(/@import\s+'@fontsource-variable\/public-sans/)
-    expect(css).toMatch(/@import\s+'@fontsource-variable\/newsreader/)
+    // Seit tailwind 4 in main.jsx statt per @import in index.css: dort bettet
+    // @tailwindcss/postcss die Datei ein, und Vite loest ihre relativen
+    // url(./files/…) nicht mehr auf — am 2026-10-06 gemessen: 0 woff2 im Build.
+    const einstieg = readFileSync(join(srcVerzeichnis, 'main.jsx'), 'utf8')
+    expect(einstieg).toMatch(/import\s+'@fontsource-variable\/public-sans/)
+    expect(einstieg).toMatch(/import\s+'@fontsource-variable\/newsreader/)
+    const css = ohneKommentare(readFileSync(join(srcVerzeichnis, 'styles/index.css'), 'utf8'))
+    expect(css).not.toMatch(/@import\s+'@fontsource/)
     const paket = JSON.parse(readFileSync(join(wurzel, 'package.json'), 'utf8'))
     expect(paket.dependencies['@fontsource-variable/public-sans']).toBeTruthy()
     expect(paket.dependencies['@fontsource-variable/newsreader']).toBeTruthy()

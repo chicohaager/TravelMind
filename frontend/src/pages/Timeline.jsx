@@ -96,7 +96,7 @@ export default function Timeline() {
             animate={{ opacity: 1, y: 0 }}
             className="relative pl-6 border-l-2 border-primary-200 dark:border-primary-900"
           >
-            <span className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-primary-500" />
+            <span className="absolute left-[-7px] top-1.5 w-3 h-3 rounded-full bg-primary-500" />
             <div className="flex items-baseline gap-2 mb-3">
               <h2 className="text-lg font-semibold capitalize">{group.label}</h2>
               <span className="text-sm text-gray-500 dark:text-gray-400">

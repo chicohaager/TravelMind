@@ -131,7 +131,7 @@ export default function TripMap() {
                   type="checkbox"
                   checked={showPhotos}
                   onChange={(e) => setShowPhotos(e.target.checked)}
-                  className="rounded"
+                  className="rounded-sm"
                 />
                 <ImageIcon className="w-4 h-4 text-primary-600" />
                 {t('map:showPhotos', 'Fotos auf der Karte anzeigen')} ({geoPhotos.length})

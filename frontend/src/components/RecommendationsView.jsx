@@ -256,7 +256,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
               <button
                 onClick={handleAddSelectedPlaces}
                 disabled={isAddingMultiple}
-                className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium text-sm rounded-full flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
+                className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium text-sm rounded-full flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50"
               >
                 {isAddingMultiple ? (
                   <>
@@ -304,12 +304,12 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                 }`}
               >
                 {/* Checkbox */}
-                <div className="flex-shrink-0 pt-1">
+                <div className="shrink-0 pt-1">
                   <input
                     type="checkbox"
                     checked={selectedRecommendations.includes(rec.name)}
                     onChange={() => toggleSelection(rec.name)}
-                    className="w-5 h-5 rounded border-2 border-gray-300 text-primary-600 focus:ring-2 focus:ring-primary-500 cursor-pointer"
+                    className="w-5 h-5 rounded-sm border-2 border-gray-300 text-primary-600 focus:ring-2 focus:ring-primary-500 cursor-pointer"
                   />
                 </div>
 
@@ -318,7 +318,7 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <h3 className="font-semibold text-base truncate">{rec.name}</h3>
                     {rec.external_rating && (
-                      <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 flex-shrink-0">
+                      <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 shrink-0">
                         <Star className="w-4 h-4 fill-current" />
                         <span className="font-medium">{rec.external_rating}</span>
                       </div>
@@ -355,14 +355,14 @@ export default function RecommendationsView({ tripId, trip, places = [] }) {
 
                   {/* Reason */}
                   {rec.reason && (
-                    <div className="text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded inline-block">
+                    <div className="text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded-sm inline-block">
                       💡 {rec.reason}
                     </div>
                   )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex-shrink-0 flex flex-col gap-2">
+                <div className="shrink-0 flex flex-col gap-2">
                   {rec.google_maps_link && (
                     <a
                       href={rec.google_maps_link}

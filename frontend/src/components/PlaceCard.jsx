@@ -51,7 +51,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
       } ${onClick ? 'cursor-pointer' : ''}`}
     >
       {/* Visited Checkbox */}
-      <div className="flex-shrink-0 pt-1">
+      <div className="shrink-0 pt-1">
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -76,7 +76,7 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
             {place.name}
           </h3>
           {(place.rating || place.external_rating) && (
-            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 flex-shrink-0">
+            <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 shrink-0">
               <Star className="w-4 h-4 fill-current" />
               <span className="font-medium">{place.external_rating || place.rating}</span>
             </div>
@@ -126,14 +126,14 @@ export default function PlaceCard({ place, onEdit, onDelete, onToggleVisited, on
 
         {/* Notes - Only show if present */}
         {place.notes && (
-          <div className="mt-2 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded inline-block">
+          <div className="mt-2 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded-sm inline-block">
             💡 {place.notes}
           </div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex-shrink-0 flex flex-col gap-2">
+      <div className="shrink-0 flex flex-col gap-2">
         {place.website && (
           <a
             href={place.website}

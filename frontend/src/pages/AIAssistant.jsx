@@ -90,7 +90,7 @@ export default function AIAssistant() {
     <div className="space-y-6 h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center">
+        <div className="w-12 h-12 bg-linear-to-br/srgb from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center">
           <Sparkles className="w-6 h-6 text-white" />
         </div>
         <div>

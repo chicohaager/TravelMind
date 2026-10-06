@@ -32,9 +32,9 @@ export default function AddToTimelineModal({
         duration_minutes: '',
         notes: '',
       })
-    } else if (tripStartDate && !formData.day_date) {
-      // Set default date to trip start date
-      setFormData((prev) => ({ ...prev, day_date: tripStartDate }))
+    } else if (tripStartDate) {
+      // Set default date to trip start date (only if no date chosen yet)
+      setFormData((prev) => (prev.day_date ? prev : { ...prev, day_date: tripStartDate }))
     }
   }, [isOpen, tripStartDate])
 
