@@ -9,7 +9,7 @@ alembic==1.19.1
 psycopg2-binary==2.9.9  # PostgreSQL (sync)
 asyncpg==0.31.0          # PostgreSQL (async)
 # Authentication & Security
-PyJWT[crypto]==2.13.0
+PyJWT[crypto]==2.15.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.31
 bcrypt==4.0.1           # 4.0.1 compatible with passlib 1.7.4
@@ -68,5 +68,5 @@ sentry-sdk[fastapi]==2.68.1
 
 # Transitive Abhaengigkeiten, die der Aufloeser sonst auf verwundbaren
 # Fassungen laesst. Am 2026-08-25 mit pip-audit gemessen.
-urllib3==2.7.0
-soupsieve==2.8.4
+urllib3==2.8.0
+soupsieve==2.9.0
