@@ -8,12 +8,13 @@ The request ID is:
 - Available in request state for logging
 """
 
+import uuid
+from typing import Callable
+
+import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-from typing import Callable
-import uuid
-import structlog
 
 logger = structlog.get_logger(__name__)
 

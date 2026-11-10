@@ -1,0 +1,16 @@
+# Vorlage fuer scripts/private-werte.txt (NICHT getrackt, siehe .gitignore).
+#
+# Konkrete private Werte gehoeren nicht in ein oeffentliches Repo — auch nicht
+# als Suchmuster eines Waechters. Hier stehen deshalb nur Beispiele.
+#
+# Format:  <regex>  TAB  <probetext>
+# Der Probetext ist die Positivkontrolle. Waehle ihn in der Form, in der der
+# Wert TATSAECHLICH auftritt: am 2026-08-26 lautete das Muster
+# `(?<![\w-])name(?!...)` und traf `${VAR:-name@host}` NICHT, weil das
+# Lookbehind den Bindestrich der Shell-Vorgabesyntax ausschliesst.
+#
+# Ohne Probetext wird das Muster geladen, aber als UNGEPRUEFT gemeldet.
+
+(?<![\w])[Mm]ustermann(?![\w])	HOST="${DEPLOY_HOST:-Mustermann@server}"
+meine-domain\.example	kontakt@meine-domain.example
+198\.51\.100\.42	ssh 198.51.100.42

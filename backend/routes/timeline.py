@@ -3,20 +3,20 @@ Timeline/Tagesplaner Router
 Day-by-day schedule management for trips using Place visit_date
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime, date, time
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
-from sqlalchemy.orm import selectinload
 import math
+from datetime import date, datetime
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Request
 from models.database import get_db
 from models.place import Place
 from models.trip import Trip
 from models.user import User
+from pydantic import BaseModel
 from routes.auth import get_current_active_user
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.rate_limits import RateLimits, limiter
 
 router = APIRouter()
 
@@ -43,6 +43,7 @@ class TimelineEntryResponse(BaseModel):
 
 class DaySchedule(BaseModel):
     """Grouped schedule for one day"""
+
     day_date: date
     entries: List[TimelineEntryResponse]
     total_duration_minutes: int
@@ -70,16 +71,16 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 @router.get("/{trip_id}/timeline", response_model=List[DaySchedule])
+@limiter.limit(RateLimits.TIMELINE_READ)
 async def get_timeline(
+    request: Request,
     trip_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get timeline for a trip, grouped by day. Requires authentication and trip ownership."""
     # Verify trip exists and user has access
-    result = await db.execute(
-        select(Trip).where(Trip.id == trip_id)
-    )
+    result = await db.execute(select(Trip).where(Trip.id == trip_id))
     trip = result.scalar_one_or_none()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -119,7 +120,7 @@ async def get_timeline(
             duration_minutes=None,
             notes=place.notes,
             order=place.order or 0,
-            created_at=place.created_at or datetime.now()
+            created_at=place.created_at or datetime.now(),
         )
         days[day_str].append(entry)
 
@@ -131,22 +132,24 @@ async def get_timeline(
     result = []
     for day_date_str, entries in sorted(days.items()):
         total_duration = sum(e.duration_minutes or 0 for e in entries)
-        result.append(DaySchedule(
-            day_date=date.fromisoformat(day_date_str),
-            entries=entries,
-            total_duration_minutes=total_duration
-        ))
+        result.append(
+            DaySchedule(
+                day_date=date.fromisoformat(day_date_str), entries=entries, total_duration_minutes=total_duration
+            )
+        )
 
     return result
 
 
 @router.put("/{trip_id}/timeline/{place_id}")
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def update_timeline_entry(
+    request: Request,
     trip_id: int,
     place_id: int,
     update_data: TimelineEntryUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Update a place's timeline data (visit_date, order, notes). Requires authentication."""
     # Verify trip ownership first
@@ -157,9 +160,7 @@ async def update_timeline_entry(
     if trip.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    result = await db.execute(
-        select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id))
-    )
+    result = await db.execute(select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id)))
     place = result.scalar_one_or_none()
 
     if not place:
@@ -180,6 +181,7 @@ async def update_timeline_entry(
 
 class TimelineEntryCreate(BaseModel):
     """Request body for creating a timeline entry"""
+
     place_id: int
     day_date: date
     start_time: Optional[str] = None
@@ -190,11 +192,13 @@ class TimelineEntryCreate(BaseModel):
 
 
 @router.post("/{trip_id}/timeline", response_model=TimelineEntryResponse, status_code=201)
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def create_timeline_entry(
+    request: Request,
     trip_id: int,
     entry: TimelineEntryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Add a place to the timeline by setting its visit_date. Requires authentication."""
     # Verify trip ownership first
@@ -206,22 +210,14 @@ async def create_timeline_entry(
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Get the place
-    result = await db.execute(
-        select(Place).where(and_(Place.id == entry.place_id, Place.trip_id == trip_id))
-    )
+    result = await db.execute(select(Place).where(and_(Place.id == entry.place_id, Place.trip_id == trip_id)))
     place = result.scalar_one_or_none()
 
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
     # Get max order for this day
-    result = await db.execute(
-        select(Place)
-        .where(and_(
-            Place.trip_id == trip_id,
-            Place.visit_date.isnot(None)
-        ))
-    )
+    result = await db.execute(select(Place).where(and_(Place.trip_id == trip_id, Place.visit_date.isnot(None))))
     all_places = result.scalars().all()
 
     day_places = [p for p in all_places if p.visit_date and p.visit_date.date() == entry.day_date]
@@ -251,16 +247,18 @@ async def create_timeline_entry(
         duration_minutes=entry.duration_minutes,
         notes=place.notes,
         order=place.order or 0,
-        created_at=place.created_at or datetime.now()
+        created_at=place.created_at or datetime.now(),
     )
 
 
 @router.delete("/{trip_id}/timeline/{place_id}")
+@limiter.limit(RateLimits.TRIP_DELETE)
 async def remove_from_timeline(
+    request: Request,
     trip_id: int,
     place_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Remove a place from the timeline by clearing its visit_date. Requires authentication."""
     # Verify trip ownership first
@@ -271,9 +269,7 @@ async def remove_from_timeline(
     if trip.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    result = await db.execute(
-        select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id))
-    )
+    result = await db.execute(select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id)))
     place = result.scalar_one_or_none()
 
     if not place:
@@ -288,11 +284,13 @@ async def remove_from_timeline(
 
 
 @router.post("/{trip_id}/timeline/reorder")
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def reorder_timeline(
+    request: Request,
     trip_id: int,
     place_ids: List[int],
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """Reorder timeline entries (e.g., after drag & drop). Requires authentication."""
     # Verify trip ownership first
@@ -304,9 +302,7 @@ async def reorder_timeline(
         raise HTTPException(status_code=403, detail="Access denied")
 
     for index, place_id in enumerate(place_ids):
-        result = await db.execute(
-            select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id))
-        )
+        result = await db.execute(select(Place).where(and_(Place.id == place_id, Place.trip_id == trip_id)))
         place = result.scalar_one_or_none()
         if place:
             place.order = index
@@ -316,11 +312,13 @@ async def reorder_timeline(
 
 
 @router.post("/{trip_id}/timeline/optimize")
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def optimize_timeline(
+    request: Request,
     trip_id: int,
     day_date: date,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Optimize timeline order for a specific day based on geographic distance.
@@ -336,10 +334,7 @@ async def optimize_timeline(
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Get all places for this day
-    result = await db.execute(
-        select(Place)
-        .where(and_(Place.trip_id == trip_id, Place.visit_date.isnot(None)))
-    )
+    result = await db.execute(select(Place).where(and_(Place.trip_id == trip_id, Place.visit_date.isnot(None))))
     all_places = result.scalars().all()
 
     day_places = [p for p in all_places if p.visit_date and p.visit_date.date() == day_date]
@@ -350,12 +345,9 @@ async def optimize_timeline(
     # Get place coordinates
     places_with_coords = []
     for place in day_places:
-        places_with_coords.append({
-            "place": place,
-            "lat": place.latitude,
-            "lon": place.longitude,
-            "visited": place.visited
-        })
+        places_with_coords.append(
+            {"place": place, "lat": place.latitude, "lon": place.longitude, "visited": place.visited}
+        )
 
     if len(places_with_coords) <= 1:
         return {"success": True, "message": "Keine Koordinaten verfügbar"}
@@ -369,10 +361,7 @@ async def optimize_timeline(
 
     while remaining:
         current = ordered[-1]
-        nearest = min(
-            remaining,
-            key=lambda p: calculate_distance(current["lat"], current["lon"], p["lat"], p["lon"])
-        )
+        nearest = min(remaining, key=lambda p: calculate_distance(current["lat"], current["lon"], p["lat"], p["lon"]))
         ordered.append(nearest)
         remaining = [p for p in remaining if p["place"].id != nearest["place"].id]
 
@@ -382,8 +371,4 @@ async def optimize_timeline(
 
     await db.commit()
 
-    return {
-        "success": True,
-        "message": f"{len(ordered)} Einträge optimiert",
-        "reordered_count": len(ordered)
-    }
+    return {"success": True, "message": f"{len(ordered)} Einträge optimiert", "reordered_count": len(ordered)}

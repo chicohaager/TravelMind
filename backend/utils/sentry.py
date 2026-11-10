@@ -4,13 +4,15 @@ Sentry Error Tracking Integration
 Provides error tracking, performance monitoring, and user context for debugging.
 """
 
-import os
-import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
 import logging
+import os
+
+import sentry_sdk
 import structlog
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from version import VERSION
 
 logger = structlog.get_logger(__name__)
 
@@ -35,7 +37,7 @@ def init_sentry() -> bool:
         return False
 
     environment = os.getenv("SENTRY_ENVIRONMENT", "development")
-    release = os.getenv("SENTRY_RELEASE", "travelmind@1.0.0")
+    release = os.getenv("SENTRY_RELEASE") or f"travelmind@{VERSION}"
     traces_sample_rate = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
     profiles_sample_rate = float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1"))
 
@@ -43,29 +45,19 @@ def init_sentry() -> bool:
         dsn=dsn,
         environment=environment,
         release=release,
-
         # Performance Monitoring
         traces_sample_rate=traces_sample_rate,
         profiles_sample_rate=profiles_sample_rate,
-
         # Integrations
         integrations=[
-            FastApiIntegration(
-                transaction_style="endpoint"
-            ),
+            FastApiIntegration(transaction_style="endpoint"),
             SqlalchemyIntegration(),
-            LoggingIntegration(
-                level=logging.INFO,
-                event_level=logging.ERROR
-            ),
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
         ],
-
         # Data scrubbing - remove sensitive data
         send_default_pii=False,
-
         # Before send hook for additional filtering
         before_send=before_send_filter,
-
         # Ignore certain errors
         ignore_errors=[
             KeyboardInterrupt,
@@ -73,12 +65,7 @@ def init_sentry() -> bool:
         ],
     )
 
-    logger.info(
-        "sentry_initialized",
-        environment=environment,
-        release=release,
-        traces_sample_rate=traces_sample_rate
-    )
+    logger.info("sentry_initialized", environment=environment, release=release, traces_sample_rate=traces_sample_rate)
 
     return True
 
@@ -99,6 +86,7 @@ def before_send_filter(event, hint):
 
             # Filter out expected HTTP exceptions
             from fastapi import HTTPException
+
             if isinstance(exc_value, HTTPException):
                 if 400 <= exc_value.status_code < 500:
                     return None  # Don't send client errors
@@ -120,11 +108,13 @@ def set_user_context(user_id: int, username: str, email: str = None):
 
     Call this after successful authentication to attach user info to errors.
     """
-    sentry_sdk.set_user({
-        "id": str(user_id),
-        "username": username,
-        "email": email,
-    })
+    sentry_sdk.set_user(
+        {
+            "id": str(user_id),
+            "username": username,
+            "email": email,
+        }
+    )
 
 
 def clear_user_context():
@@ -138,7 +128,9 @@ def capture_message(message: str, level: str = "info", **extra):
 
     Useful for tracking non-exception events.
     """
-    with sentry_sdk.push_scope() as scope:
+    # new_scope() statt push_scope(): letzteres ist seit sentry-sdk 2.0
+    # veraltet und faellt in der naechsten Hauptversion weg.
+    with sentry_sdk.new_scope() as scope:
         for key, value in extra.items():
             scope.set_extra(key, value)
         sentry_sdk.capture_message(message, level=level)
@@ -148,7 +140,8 @@ def capture_exception(exception: Exception, **extra):
     """
     Capture an exception to Sentry with extra context.
     """
-    with sentry_sdk.push_scope() as scope:
+    # siehe capture_message oben
+    with sentry_sdk.new_scope() as scope:
         for key, value in extra.items():
             scope.set_extra(key, value)
         sentry_sdk.capture_exception(exception)
@@ -160,9 +153,4 @@ def add_breadcrumb(message: str, category: str = "custom", level: str = "info", 
 
     Breadcrumbs are logged events that lead up to an error.
     """
-    sentry_sdk.add_breadcrumb(
-        message=message,
-        category=category,
-        level=level,
-        data=data
-    )
+    sentry_sdk.add_breadcrumb(message=message, category=category, level=level, data=data)

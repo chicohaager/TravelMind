@@ -3,23 +3,23 @@ Participants Router
 Manage trip participants/travelers with photos using SQLite
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, Field
-from typing import List, Optional
+import asyncio
 from datetime import datetime, timezone
-import os
-import uuid
-import magic
 from pathlib import Path
-import structlog
+from typing import List, Optional
 
+import structlog
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from models.database import get_db
 from models.participant import Participant
 from models.trip import Trip
 from models.user import User
+from pydantic import BaseModel, Field
 from routes.auth import get_current_active_user
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.images import process_and_save, validate_image
+from utils.rate_limits import RateLimits, limiter
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -28,7 +28,6 @@ router = APIRouter()
 UPLOAD_DIR = Path("./uploads/participants")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
@@ -41,7 +40,9 @@ async def verify_trip_access(trip_id: int, current_user: User, db: AsyncSession)
         raise HTTPException(status_code=404, detail="Trip not found")
 
     if trip.owner_id != current_user.id:
-        logger.warning("unauthorized_participant_access", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id)
+        logger.warning(
+            "unauthorized_participant_access", trip_id=trip_id, user_id=current_user.id, owner_id=trip.owner_id
+        )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     return trip
@@ -79,21 +80,6 @@ class ParticipantResponse(BaseModel):
 
 
 # Helper functions
-def validate_file_type(contents: bytes, filename: str) -> bool:
-    """
-    Validate file type by checking actual content, not just extension.
-    Uses python-magic to detect MIME type from file content.
-    """
-    # Check extension first
-    extension = filename.split(".")[-1].lower()
-    if extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    # Check actual MIME type using file contents
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(contents)
-
-    return mime_type in ALLOWED_MIME_TYPES
 
 
 async def save_participant_photo(upload_file: UploadFile, participant_id: int) -> str:
@@ -103,39 +89,34 @@ async def save_participant_photo(upload_file: UploadFile, participant_id: int) -
 
     # Check file size
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Datei zu groß. Maximum: {MAX_FILE_SIZE / (1024*1024)}MB"
-        )
+        raise HTTPException(status_code=400, detail=f"Datei zu groß. Maximum: {MAX_FILE_SIZE / (1024*1024)}MB")
 
     # Validate file type (extension AND mime type)
-    if not validate_file_type(contents, upload_file.filename):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Ungültiger Dateityp. Erlaubt: {', '.join(ALLOWED_EXTENSIONS)}"
+    if not validate_image(contents, upload_file.filename):
+        raise HTTPException(status_code=400, detail=f"Ungültiger Dateityp. Erlaubt: {', '.join(ALLOWED_EXTENSIONS)}")
+
+    # Normalize, auto-orient and compress. Participant photos stay small; no thumbnail needed.
+    try:
+        processed = await asyncio.to_thread(
+            process_and_save, contents, UPLOAD_DIR, "/uploads/participants", make_thumb=False, full_max_edge=512
         )
-
-    # Generate unique filename
-    extension = upload_file.filename.split(".")[-1].lower()
-    unique_filename = f"participant_{participant_id}_{uuid.uuid4()}.{extension}"
-    file_path = UPLOAD_DIR / unique_filename
-
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Ungültiges Bild: {exc}")
 
     # Return relative URL path
-    return f"/uploads/participants/{unique_filename}"
+    return processed.url
 
 
 # Endpoints
 @router.get("/{trip_id}/participants", response_model=List[ParticipantResponse])
+@limiter.limit(RateLimits.TRIP_READ)
 async def get_participants(
+    request: Request,
     trip_id: int,
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Get all participants for a trip with pagination.
@@ -162,11 +143,13 @@ async def get_participants(
 
 
 @router.post("/{trip_id}/participants", response_model=ParticipantResponse, status_code=201)
+@limiter.limit(RateLimits.TRIP_CREATE)
 async def create_participant(
+    request: Request,
     trip_id: int,
     participant: ParticipantCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Add a participant to a trip.
@@ -176,10 +159,7 @@ async def create_participant(
     await verify_trip_access(trip_id, current_user, db)
 
     new_participant = Participant(
-        trip_id=trip_id,
-        name=participant.name,
-        email=participant.email,
-        role=participant.role
+        trip_id=trip_id, name=participant.name, email=participant.email, role=participant.role
     )
 
     db.add(new_participant)
@@ -190,19 +170,19 @@ async def create_participant(
 
 
 @router.put("/participants/{participant_id}", response_model=ParticipantResponse)
+@limiter.limit(RateLimits.TRIP_UPDATE)
 async def update_participant(
+    request: Request,
     participant_id: int,
     participant: ParticipantUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Update participant information.
     Requires authentication and trip ownership.
     """
-    result = await db.execute(
-        select(Participant).where(Participant.id == participant_id)
-    )
+    result = await db.execute(select(Participant).where(Participant.id == participant_id))
     existing_participant = result.scalar_one_or_none()
 
     if not existing_participant:
@@ -225,18 +205,18 @@ async def update_participant(
 
 
 @router.delete("/participants/{participant_id}", status_code=204)
+@limiter.limit(RateLimits.TRIP_DELETE)
 async def delete_participant(
+    request: Request,
     participant_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Remove a participant from a trip.
     Requires authentication and trip ownership.
     """
-    result = await db.execute(
-        select(Participant).where(Participant.id == participant_id)
-    )
+    result = await db.execute(select(Participant).where(Participant.id == participant_id))
     participant = result.scalar_one_or_none()
 
     if not participant:
@@ -252,11 +232,13 @@ async def delete_participant(
 
 
 @router.post("/participants/{participant_id}/upload-photo", response_model=ParticipantResponse)
+@limiter.limit(RateLimits.TRIP_CREATE)
 async def upload_participant_photo(
+    request: Request,
     participant_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Upload a photo for a participant.
@@ -265,9 +247,7 @@ async def upload_participant_photo(
     Accepts image files (jpg, jpeg, png, gif, webp) up to 5MB.
     Validates both file extension and MIME type for security.
     """
-    result = await db.execute(
-        select(Participant).where(Participant.id == participant_id)
-    )
+    result = await db.execute(select(Participant).where(Participant.id == participant_id))
     participant = result.scalar_one_or_none()
 
     if not participant:

@@ -1,0 +1,8 @@
+{
+  "title": "Benachrichtigungen",
+  "empty": "Keine Benachrichtigungen",
+  "markAllRead": "Alle als gelesen markieren",
+  "invite_received": "{{actor}} hat dich zur Reise „{{trip}}“ eingeladen.",
+  "invite_accepted": "{{actor}} hat deine Einladung zu „{{trip}}“ angenommen.",
+  "invite_declined": "{{actor}} hat deine Einladung zu „{{trip}}“ abgelehnt."
+}

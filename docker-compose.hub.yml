@@ -8,14 +8,14 @@ services:
   backend:
     image: chicohaager/travelmind-backend:latest
     container_name: travelmind-backend-prod
-    ports:
-      - "8000:8000"
+    # No published port: the frontend's nginx proxies /api and /uploads to
+    # backend:8137 inside the network (frontend/nginx.conf)
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://travelmind:travelmind@db:5432/travelmind}
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET missing in .env}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
-      - SECRET_KEY=${SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY missing in .env}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - UPLOAD_DIR=/app/uploads
@@ -32,7 +32,7 @@ services:
     networks:
       - travelmind-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8137/api/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3

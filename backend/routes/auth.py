@@ -3,21 +3,33 @@ Authentication Router
 User authentication and authorization with JWT
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt
 import os
-from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
+# PyJWT statt python-jose.
+#
+# python-jose 3.4.0 haelt pyasn1 unter 0.5 fest — dort stehen sechs bekannte
+# Schwachstellen — und zieht ecdsa mit, fuer das es UEBERHAUPT KEINE
+# behebende Version gibt. Beide waren am 2026-08-25 die letzten offenen
+# Findings von pip-audit und liessen sich nur durch den Wechsel schliessen.
+#
+# Die benutzte Schnittstelle ist identisch: encode(payload, key, algorithm=),
+# decode(token, key, algorithms=[]). PyJWT prueft "exp" ebenfalls von sich
+# aus und wirft dabei ExpiredSignatureError, eine Unterklasse von PyJWTError.
+import jwt
+from dotenv import load_dotenv
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jwt import PyJWTError as JWTError
 from models.database import get_db
 from models.user import User
+from pydantic import BaseModel, EmailStr, Field
 from services.audit_service import audit_service
-from utils.rate_limits import limiter, RateLimits
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.password_policy import MINDESTLAENGE, passwort_pruefen
+from utils.rate_limits import RateLimits, limiter
 
 load_dotenv()
 
@@ -34,7 +46,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, example="johndoe")
     email: EmailStr = Field(..., example="john@example.com")
-    password: str = Field(..., min_length=8, example="securepassword123")
+    password: str = Field(..., min_length=MINDESTLAENGE, example="securepassword123")
     full_name: Optional[str] = Field(None, example="John Doe")
 
     class Config:
@@ -42,8 +54,8 @@ class UserRegister(BaseModel):
             "example": {
                 "username": "johndoe",
                 "email": "john@example.com",
-                "password": "securepassword123",
-                "full_name": "John Doe"
+                "password": "securepassword123",  # nosec B105
+                "full_name": "John Doe",
             }
         }
 
@@ -60,8 +72,8 @@ class Token(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",
-                "token_type": "bearer"
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJqb2huZG9lIiwiZXhwIjoxNzA3MDAwMDAwfQ.signature",  # noqa: E501  # nosec B105
+                "token_type": "bearer",  # nosec B105
             }
         }
 
@@ -93,7 +105,7 @@ class UserResponse(BaseModel):
                 "bio": "Travel enthusiast and photographer",
                 "is_active": True,
                 "is_superuser": False,
-                "created_at": "2025-01-15T10:30:00Z"
+                "created_at": "2025-01-15T10:30:00Z",
             }
         }
 
@@ -106,14 +118,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
 async def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    token: Optional[str] = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
     """Get current authenticated user from JWT token"""
     if not token:
@@ -127,6 +138,11 @@ async def get_current_user(
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Reject non-access tokens (e.g. password-reset tokens are signed with
+        # the same secret). Tokens minted before this claim existed have no
+        # "type" and stay valid.
+        if payload.get("type") not in (None, "access"):
+            raise credentials_exception
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
@@ -153,8 +169,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 # Optional: For endpoints that don't require auth but benefit from it
 async def get_optional_user(
-    token: Optional[str] = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    token: Optional[str] = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
     """Get current user if token is provided, None otherwise"""
     if not token:
@@ -167,7 +182,8 @@ async def get_optional_user(
 
 # Endpoints
 @router.get("/registration-status")
-async def get_registration_status(db: AsyncSession = Depends(get_db)):
+@limiter.limit(RateLimits.USER_PROFILE_READ)
+async def get_registration_status(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Check if registration is currently allowed
     Public endpoint - no authentication required
@@ -180,17 +196,13 @@ async def get_registration_status(db: AsyncSession = Depends(get_db)):
     return {
         "registration_open": can_register,
         "message": reason if not can_register else "Registrierung ist geöffnet",
-        "app_name": app_name
+        "app_name": app_name,
     }
 
 
 @router.post("/register", response_model=Token, status_code=201)
 @limiter.limit(RateLimits.AUTH_REGISTER)
-async def register(
-    request: Request,
-    user_data: UserRegister,
-    db: AsyncSession = Depends(get_db)
-):
+async def register(request: Request, user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     """
     Register a new user
 
@@ -201,26 +213,23 @@ async def register(
 
     can_register, reason = await can_register_new_user(db)
     if not can_register:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=reason
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason)
+
+    # Passwortregeln: Laenge plus Abgleich mit bekannten Datenlecks.
+    # Bis 2026-08-25 stand hier nur Field(min_length=8) — kein Leak-Abgleich.
+    pruefung = await passwort_pruefen(user_data.password)
+    if not pruefung.gueltig:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=pruefung.grund)
 
     # Check if username exists
     result = await db.execute(select(User).where(User.username == user_data.username))
     if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="Username already registered"
-        )
+        raise HTTPException(status_code=400, detail="Username already registered")
 
     # Check if email exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered"
-        )
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     # Create new user
     new_user = User(
@@ -228,7 +237,7 @@ async def register(
         email=user_data.email,
         hashed_password=User.hash_password(user_data.password),
         full_name=user_data.full_name,
-        is_active=True
+        is_active=True,
     )
 
     db.add(new_user)
@@ -242,22 +251,18 @@ async def register(
         user_id=new_user.id,
         username=new_user.username,
         request=request,
-        details={"email": new_user.email}
+        details={"email": new_user.email},
     )
 
     # Generate access token
     access_token = create_access_token(data={"sub": new_user.username})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}  # nosec B105
 
 
 @router.post("/login", response_model=Token)
 @limiter.limit(RateLimits.AUTH_LOGIN)
-async def login(
-    request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db)
-):
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     """
     Login with username and password
 
@@ -276,7 +281,7 @@ async def login(
             username=form_data.username,
             request=request,
             status="failure",
-            details={"reason": "invalid_credentials"}
+            details={"reason": "invalid_credentials"},
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -294,30 +299,22 @@ async def login(
             username=user.username,
             request=request,
             status="failure",
-            details={"reason": "user_inactive"}
+            details={"reason": "user_inactive"},
         )
-        raise HTTPException(
-            status_code=400,
-            detail="Inactive user"
-        )
+        raise HTTPException(status_code=400, detail="Inactive user")
 
     # Audit log: successful login
-    await audit_service.log_auth_event(
-        db=db,
-        event="login",
-        user_id=user.id,
-        username=user.username,
-        request=request
-    )
+    await audit_service.log_auth_event(db=db, event="login", user_id=user.id, username=user.username, request=request)
 
     # Generate access token
     access_token = create_access_token(data={"sub": user.username})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}  # nosec B105
 
 
 @router.post("/logout")
-async def logout():
+@limiter.limit(RateLimits.AUTH_REFRESH)
+async def logout(request: Request):
     """
     Logout (invalidate token)
 
@@ -327,7 +324,8 @@ async def logout():
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
+@limiter.limit(RateLimits.USER_PROFILE_READ)
+async def get_current_user_info(request: Request, current_user: User = Depends(get_current_active_user)):
     """
     Get current user information
 
@@ -345,4 +343,4 @@ async def refresh_token(request: Request, current_user: User = Depends(get_curre
     Generates a new access token from a valid existing token.
     """
     access_token = create_access_token(data={"sub": current_user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}  # nosec B105

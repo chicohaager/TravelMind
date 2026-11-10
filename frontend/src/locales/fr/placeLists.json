@@ -12,9 +12,6 @@
   "deleteList": "Supprimer la liste",
   "noPlacesInList": "Pas encore de lieux dans cette liste",
   "createNewList": "Créer une nouvelle liste",
-  "createList": "Créer une liste",
-  "editList": "Modifier la liste",
-  "titleLabel": "Titre",
   "titlePlaceholder": "ex. \"Restaurants\", \"Musées\"",
   "icon": "Icône",
   "color": "Couleur"

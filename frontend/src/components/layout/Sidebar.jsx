@@ -1,12 +1,28 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Map, Sparkles, BookOpen, X, DollarSign, ChevronDown, ChevronRight, Mic } from 'lucide-react'
+import {
+  Home,
+  Map,
+  Sparkles,
+  BookOpen,
+  X,
+  Euro,
+  ChevronDown,
+  ChevronRight,
+  Mic,
+  GalleryThumbnails,
+  CalendarClock,
+  BarChart3,
+  ShieldCheck,
+} from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation()
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [openMenus, setOpenMenus] = useState({})
 
   const navigation = [
@@ -17,17 +33,34 @@ export default function Sidebar({ open, onClose }) {
       children: [
         { name: t('trips:title'), href: '/trips' },
         { name: t('nav:ai'), href: '/ai', icon: Sparkles },
-      ]
+      ],
     },
-    { name: t('budget:title'), href: '/budget', icon: DollarSign },
+    { name: t('budget:title'), href: '/budget', icon: Euro },
     { name: t('nav:diary'), href: '/diary', icon: BookOpen },
-    { name: 'Transcription', href: '/transcribe', icon: Mic },
+    { name: t('nav:gallery'), href: '/gallery', icon: GalleryThumbnails },
+    { name: t('nav:timeline'), href: '/timeline', icon: CalendarClock },
+    { name: t('nav:analytics'), href: '/analytics', icon: BarChart3 },
+    { name: t('nav:transcribe'), href: '/transcribe', icon: Mic },
   ]
 
+  // Die Benutzerverwaltung ist nur fuer Verwalter sichtbar — und war bis zum
+  // 2026-08-26 UEBERHAUPT nicht erreichbar: die Seite und ihre API gab es
+  // vollstaendig, verlinkt war sie aber nur im Benutzermenue der Navbar, und
+  // in der Datenbank hatte niemand das Verwalterrecht. Ein fertiges Feature,
+  // das niemand findet, ist kein Feature.
+  //
+  // `is_superuser` entscheidet hier NUR ueber die Sichtbarkeit. Die Rechte
+  // haengen nicht daran: `require_admin` im Backend prueft jede einzelne
+  // Anfrage erneut (routes/admin.py) — wer den Pfad von Hand eingibt,
+  // bekommt 403.
+  if (user?.is_superuser) {
+    navigation.push({ name: t('admin:title'), href: '/admin', icon: ShieldCheck })
+  }
+
   const toggleMenu = (itemName) => {
-    setOpenMenus(prev => ({
+    setOpenMenus((prev) => ({
       ...prev,
-      [itemName]: !prev[itemName]
+      [itemName]: !prev[itemName],
     }))
   }
 
@@ -36,7 +69,7 @@ export default function Sidebar({ open, onClose }) {
       return location.pathname === item.href
     }
     if (item.children) {
-      return item.children.some(child => location.pathname === child.href)
+      return item.children.some((child) => location.pathname === child.href)
     }
     return false
   }
@@ -44,12 +77,7 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       {/* Mobile overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {open && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />}
 
       {/* Sidebar */}
       <aside
@@ -154,7 +182,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Footer Info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            <p className="font-medium">TravelMind v1.0</p>
+            <p className="font-medium">TravelMind v1.1.0</p>
           </div>
         </div>
       </aside>

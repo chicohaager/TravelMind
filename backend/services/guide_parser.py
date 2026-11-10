@@ -3,15 +3,17 @@ Travel Guide Parser Service
 Extract places from travel guide URLs (TripAdvisor, Lonely Planet, etc.)
 """
 
-import httpx
-import re
-import json
 import asyncio
-from typing import List, Dict, Optional
-from bs4 import BeautifulSoup
-from anthropic import Anthropic
+import json
 import os
+import re
+from typing import Dict, List, Optional
 from urllib.parse import quote
+
+import httpx
+from anthropic import Anthropic
+from bs4 import BeautifulSoup
+from services.ai_service import modell_id
 
 
 class GuideParserService:
@@ -31,11 +33,7 @@ class GuideParserService:
         """
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(
-                    url,
-                    headers={"User-Agent": self.user_agent},
-                    follow_redirects=True
-                )
+                response = await client.get(url, headers={"User-Agent": self.user_agent}, follow_redirects=True)
                 response.raise_for_status()
                 return response.text
         except Exception as e:
@@ -53,7 +51,7 @@ class GuideParserService:
             Plain text content
         """
         try:
-            soup = BeautifulSoup(html, 'html.parser')
+            soup = BeautifulSoup(html, "html.parser")
 
             # Remove script and style elements
             for script in soup(["script", "style", "header", "footer", "nav"]):
@@ -65,7 +63,7 @@ class GuideParserService:
             # Clean up whitespace
             lines = (line.strip() for line in text.splitlines())
             chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text = '\n'.join(chunk for chunk in chunks if chunk)
+            text = "\n".join(chunk for chunk in chunks if chunk)
 
             return text
         except Exception as e:
@@ -122,22 +120,20 @@ Text to analyze:
 """
 
         try:
-            message = self.claude_client.messages.create(
-                model=os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022"),
+            # Run the synchronous Anthropic SDK call in a thread so it doesn't
+            # block the event loop for the multi-second Claude round-trip.
+            message = await asyncio.to_thread(
+                self.claude_client.messages.create,
+                model=modell_id("CLAUDE_MODEL"),
                 max_tokens=4096,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             # Parse Claude's response
             response_text = message.content[0].text
 
             # Try to extract JSON from response
-            json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
+            json_match = re.search(r"\[.*\]", response_text, re.DOTALL)
             if json_match:
                 places = json.loads(json_match.group(0))
                 return places
@@ -163,31 +159,17 @@ Text to analyze:
         # Fetch content
         html = await self.fetch_url_content(url)
         if not html:
-            return {
-                "success": False,
-                "error": "Failed to fetch URL",
-                "places": []
-            }
+            return {"success": False, "error": "Failed to fetch URL", "places": []}
 
         # Extract text
         text = self.extract_text_from_html(html)
         if not text:
-            return {
-                "success": False,
-                "error": "Failed to extract text from page",
-                "places": []
-            }
+            return {"success": False, "error": "Failed to extract text from page", "places": []}
 
         # Extract places with AI
         places = await self.extract_places_with_ai(text, destination)
 
-        return {
-            "success": True,
-            "url": url,
-            "destination": destination,
-            "places_found": len(places),
-            "places": places
-        }
+        return {"success": True, "url": url, "destination": destination, "places_found": len(places), "places": places}
 
     def detect_guide_type(self, url: str) -> Optional[str]:
         """
@@ -241,15 +223,9 @@ Text to analyze:
 
         # Try to get a direct URL, otherwise use search
         dest_lower = destination.lower().strip()
-        tripadvisor_url = tripadvisor_mapping.get(dest_lower,
-            f"https://www.tripadvisor.com/Search?q={dest_search}")
+        tripadvisor_url = tripadvisor_mapping.get(dest_lower, f"https://www.tripadvisor.com/Search?q={dest_search}")
 
-        urls = [
-            {
-                "source": "TripAdvisor",
-                "url": tripadvisor_url
-            }
-        ]
+        urls = [{"source": "TripAdvisor", "url": tripadvisor_url}]
 
         return urls
 
@@ -271,12 +247,7 @@ Text to analyze:
             return result
         except Exception as e:
             print(f"Error searching {source}: {e}")
-            return {
-                "source": source,
-                "success": False,
-                "error": str(e),
-                "places": []
-            }
+            return {"source": source, "success": False, "error": str(e), "places": []}
 
     def deduplicate_places(self, all_places: List[Dict]) -> List[Dict]:
         """
@@ -316,10 +287,7 @@ Text to analyze:
         guide_urls = self.generate_guide_urls(destination)[:max_sources]
 
         # Search all sources in parallel
-        tasks = [
-            self.search_single_source(guide["source"], guide["url"], destination)
-            for guide in guide_urls
-        ]
+        tasks = [self.search_single_source(guide["source"], guide["url"], destination) for guide in guide_urls]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -348,7 +316,7 @@ Text to analyze:
             "sources_searched": sources_searched,
             "places_found": len(unique_places),
             "places": unique_places,
-            "errors": errors if errors else None
+            "errors": errors if errors else None,
         }
 
 

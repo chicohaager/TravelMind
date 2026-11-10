@@ -5,12 +5,12 @@ Provides easy-to-use functions for logging security-relevant events.
 Designed for async FastAPI usage with proper error handling.
 """
 
-from typing import Optional, Any, Dict
-from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
-import structlog
+from typing import Any, Dict, Optional
 
+import structlog
+from fastapi import Request
 from models.audit_log import AuditLog
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger(__name__)
 
@@ -29,8 +29,8 @@ class AuditService:
         "login": "auth.login",
         "logout": "auth.logout",
         "login_failed": "auth.login_failed",
-        "password_change": "auth.password_change",
-        "token_refresh": "auth.token_refresh",
+        "password_change": "auth.password_change",  # nosec B105
+        "token_refresh": "auth.token_refresh",  # nosec B105
         "register": "auth.register",
     }
 
@@ -53,7 +53,7 @@ class AuditService:
     SECURITY_EVENTS = {
         "permission_denied": "security.permission_denied",
         "rate_limited": "security.rate_limited",
-        "invalid_token": "security.invalid_token",
+        "invalid_token": "security.invalid_token",  # nosec B105
         "suspicious_activity": "security.suspicious_activity",
     }
 

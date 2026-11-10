@@ -20,7 +20,7 @@ class SyncQueueService {
   onSyncStatusChange(callback) {
     this.syncListeners.push(callback)
     return () => {
-      this.syncListeners = this.syncListeners.filter(cb => cb !== callback)
+      this.syncListeners = this.syncListeners.filter((cb) => cb !== callback)
     }
   }
 
@@ -28,7 +28,7 @@ class SyncQueueService {
    * Notify all listeners of sync status
    */
   notifySyncStatus(status) {
-    this.syncListeners.forEach(listener => listener(status))
+    this.syncListeners.forEach((listener) => listener(status))
   }
 
   /**
@@ -43,7 +43,7 @@ class SyncQueueService {
         data: operation.data,
         entityType: operation.entityType,
         tempId: operation.tempId || `temp_${Date.now()}_${Math.random()}`,
-        metadata: operation.metadata || {}
+        metadata: operation.metadata || {},
       })
 
       console.log('Operation queued:', operation)
@@ -97,7 +97,7 @@ class SyncQueueService {
           await indexedDB.updateSyncQueueItem(item.id, {
             status: 'completed',
             completed_at: new Date().toISOString(),
-            result
+            result,
           })
 
           succeeded++
@@ -116,7 +116,7 @@ class SyncQueueService {
               status: 'failed',
               error: error.message,
               retries,
-              failed_at: new Date().toISOString()
+              failed_at: new Date().toISOString(),
             })
             failed++
           } else {
@@ -124,7 +124,7 @@ class SyncQueueService {
             await indexedDB.updateSyncQueueItem(item.id, {
               status: 'pending',
               error: error.message,
-              retries
+              retries,
             })
           }
         }
@@ -132,7 +132,7 @@ class SyncQueueService {
         processed++
         this.notifySyncStatus({
           syncing: true,
-          progress: (processed / pendingItems.length) * 100
+          progress: (processed / pendingItems.length) * 100,
         })
       }
 
@@ -149,7 +149,7 @@ class SyncQueueService {
         syncing: false,
         success: failed === 0,
         succeeded,
-        failed
+        failed,
       })
     } catch (error) {
       console.error('Error processing sync queue:', error)
@@ -163,17 +163,17 @@ class SyncQueueService {
    * Execute a queued operation
    */
   async executeOperation(item) {
-    const { operation, method, data, entityType } = item
+    const { operation, method, data, entityType, tempId } = item
 
     console.log('Executing operation:', operation, entityType, method)
 
     switch (entityType) {
       case 'trip':
-        return this.executeTripOperation(operation, method, data)
+        return this.executeTripOperation(operation, method, data, tempId)
       case 'diary':
-        return this.executeDiaryOperation(operation, method, data)
+        return this.executeDiaryOperation(operation, method, data, tempId)
       case 'place':
-        return this.executePlaceOperation(operation, method, data)
+        return this.executePlaceOperation(operation, method, data, tempId)
       default:
         throw new Error(`Unknown entity type: ${entityType}`)
     }
@@ -182,7 +182,7 @@ class SyncQueueService {
   /**
    * Execute trip operations
    */
-  async executeTripOperation(operation, method, data) {
+  async executeTripOperation(operation, method, data, _tempId) {
     switch (operation) {
       case 'create': {
         const tripResponse = await tripsService.create(data)
@@ -190,13 +190,11 @@ class SyncQueueService {
         await indexedDB.saveTrip(tripResponse.data)
         return tripResponse.data
       }
-
       case 'update': {
         const updateResponse = await tripsService.update(data.id, data)
         await indexedDB.saveTrip(updateResponse.data)
         return updateResponse.data
       }
-
       case 'delete':
         await tripsService.delete(data.id)
         await indexedDB.deleteTrip(data.id)
@@ -210,20 +208,18 @@ class SyncQueueService {
   /**
    * Execute diary operations
    */
-  async executeDiaryOperation(operation, method, data) {
+  async executeDiaryOperation(operation, method, data, _tempId) {
     switch (operation) {
       case 'create': {
         const diaryResponse = await diaryService.create(data.trip_id, data)
         await indexedDB.saveDiaryEntry(diaryResponse.data)
         return diaryResponse.data
       }
-
       case 'update': {
         const updateResponse = await diaryService.update(data.id, data)
         await indexedDB.saveDiaryEntry(updateResponse.data)
         return updateResponse.data
       }
-
       case 'delete':
         await diaryService.delete(data.id)
         await indexedDB.deleteDiaryEntry(data.id)
@@ -233,7 +229,6 @@ class SyncQueueService {
         const photoResponse = await diaryService.uploadPhoto(data.entryId, data.file)
         return photoResponse.data
       }
-
       default:
         throw new Error(`Unknown diary operation: ${operation}`)
     }
@@ -242,20 +237,18 @@ class SyncQueueService {
   /**
    * Execute place operations
    */
-  async executePlaceOperation(operation, method, data) {
+  async executePlaceOperation(operation, method, data, _tempId) {
     switch (operation) {
       case 'create': {
         const placeResponse = await placesService.create(data.trip_id, data)
         await indexedDB.savePlace(placeResponse.data)
         return placeResponse.data
       }
-
       case 'update': {
         const updateResponse = await placesService.update(data.id, data)
         await indexedDB.savePlace(updateResponse.data)
         return updateResponse.data
       }
-
       case 'delete':
         await placesService.delete(data.id)
         await indexedDB.deletePlace(data.id)
@@ -265,7 +258,6 @@ class SyncQueueService {
         const photoResponse = await placesService.uploadPhoto(data.placeId, data.file)
         return photoResponse.data
       }
-
       default:
         throw new Error(`Unknown place operation: ${operation}`)
     }
@@ -278,10 +270,10 @@ class SyncQueueService {
     const all = await indexedDB.getSyncQueue()
     return {
       total: all.length,
-      pending: all.filter(item => item.status === 'pending').length,
-      syncing: all.filter(item => item.status === 'syncing').length,
-      failed: all.filter(item => item.status === 'failed').length,
-      completed: all.filter(item => item.status === 'completed').length
+      pending: all.filter((item) => item.status === 'pending').length,
+      syncing: all.filter((item) => item.status === 'syncing').length,
+      failed: all.filter((item) => item.status === 'failed').length,
+      completed: all.filter((item) => item.status === 'completed').length,
     }
   }
 
@@ -293,7 +285,7 @@ class SyncQueueService {
     for (const item of failed) {
       await indexedDB.updateSyncQueueItem(item.id, {
         status: 'pending',
-        retries: 0
+        retries: 0,
       })
     }
 

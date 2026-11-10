@@ -1,5 +1,6 @@
 {
   "title": "Karte",
+  "showPhotos": "Fotos auf der Karte anzeigen",
   "noPlacesYet": "Noch keine Orte",
   "addPlacesToSeeOnMap": "Füge Orte zu deiner Reise hinzu, um sie auf der Karte zu sehen",
   "addPlaces": "Orte hinzufügen",
@@ -15,5 +16,8 @@
   "legend": "Legende",
   "places": "Orte",
   "routes": "Routen",
-  "moreRoutes": "+{{count}} weitere"
+  "moreRoutes": "+{{count}} weitere",
+  "ohnePosition_one": "{{count}} Ort ohne Position — nicht auf der Karte",
+  "ohnePosition_other": "{{count}} Orte ohne Position — nicht auf der Karte",
+  "positionUnsicher": "Ungefähre Position — nicht sicher dieser Ort"
 }

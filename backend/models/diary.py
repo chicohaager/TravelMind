@@ -2,10 +2,10 @@
 Diary Entry model
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float
+from models.database import Base
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from models.database import Base
 
 
 class DiaryEntry(Base):
@@ -44,6 +44,13 @@ class DiaryEntry(Base):
     # Relationships
     trip = relationship("Trip", back_populates="diary_entries")
     author = relationship("User", back_populates="diary_entries")
+    media = relationship(
+        "Media",
+        back_populates="diary_entry",
+        cascade="all, delete-orphan",
+        order_by="Media.order_index",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f"<DiaryEntry {self.title}>"

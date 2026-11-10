@@ -14,22 +14,22 @@ vi.mock('axios', () => {
     patch: vi.fn(),
     interceptors: {
       request: { use: vi.fn() },
-      response: { use: vi.fn() }
-    }
+      response: { use: vi.fn() },
+    },
   }
 
   return {
     default: {
-      create: vi.fn(() => mockAxiosInstance)
-    }
+      create: vi.fn(() => mockAxiosInstance),
+    },
   }
 })
 
 describe('API Service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Re-evaluate ./api on every import so axios.create is called again
-    // after clearAllMocks (otherwise only the first test sees the call)
+    // Re-run module bodies on each dynamic import so the top-level
+    // axios.create() in api.js fires per test (calls are cleared above).
     vi.resetModules()
     // Reset localStorage mock
     window.localStorage.getItem.mockReturnValue(null)

@@ -21,7 +21,7 @@ export default function NotFound() {
             transition={{
               duration: 2,
               repeat: Infinity,
-              ease: "easeInOut"
+              ease: 'easeInOut',
             }}
             className="inline-block"
           >

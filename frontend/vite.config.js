@@ -81,7 +81,7 @@ export default defineConfig({
         name: 'TravelMind - Reiseplanung mit KI',
         short_name: 'TravelMind',
         description: 'Deine KI-gestützte Reiseplanung mit Offline-Support',
-        theme_color: '#6366F1',
+        theme_color: '#146264',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
@@ -167,13 +167,34 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild',
+    // Vite 8 liefert esbuild nicht mehr mit; der Bundler ist Rolldown und
+    // bringt oxc als Minifier mit. 'esbuild' hier fuehrt zu
+    // "Failed to load transformWithEsbuild".
+    minify: 'oxc',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'map-vendor': ['leaflet', 'react-leaflet'],
-          'ui-vendor': ['framer-motion', 'lucide-react']
+        // Vite 8 baut mit Rolldown; dort ist `manualChunks` nur noch als
+        // FUNKTION zulaessig — die Objektform bricht mit
+        // "TypeError: manualChunks is not a function" ab.
+        manualChunks(id) {
+          // Übersetzungen: EIN Chunk je Sprache statt einer Datei je
+          // Namensraum. Ohne das entstehen 4 Sprachen × 28 Namensräume = 112
+          // Dateien, und ein deutscher Erstbesuch holt 57 davon (28 × de plus
+          // 28 × en als Rückfallsprache) — gemessen am 2026-08-25 im Browser.
+          // Die Bytes wären dieselben, aber 57 Runden statt 2.
+          const locale = id.match(/[/\\]locales[/\\]([a-z]{2})[/\\][^/\\]+\.json$/)
+          if (locale) return `locale-${locale[1]}`
+
+          if (!id.includes('node_modules')) return undefined
+          const gruppen = {
+            'react-vendor': ['/react/', '/react-dom/', '/react-router-dom/', '/react-router/'],
+            'map-vendor': ['/leaflet/', '/react-leaflet/'],
+            'ui-vendor': ['/framer-motion/', '/lucide-react/'],
+          }
+          for (const [name, muster] of Object.entries(gruppen)) {
+            if (muster.some((m) => id.includes(m))) return name
+          }
+          return undefined
         }
       }
     }

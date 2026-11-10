@@ -1,0 +1,45 @@
+# Eine Quelle der Wahrheit fuer die Python-Werkzeuge.
+#
+# Bis zum 2026-08-25 gab es diese Datei nicht — .pre-commit-config.yaml
+# verwies mit `bandit -c pyproject.toml` darauf, der Hook konnte also gar
+# nicht laufen. Zusammen mit dem nie installierten pre-commit-Hook erklaert
+# das, wie 169 flake8-Verstoesse und 61 unformatierte Dateien auflaufen
+# konnten, obwohl die Konfiguration seit jeher im Repository liegt.
+#
+# flake8 liest kein TOML; seine Werte stehen in setup.cfg — mit denselben
+# Zahlen.
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+extend-exclude = '''
+/(
+  | venv
+  | node_modules
+  | backend/alembic/versions
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+skip = ["venv", "node_modules", "backend/alembic/versions"]
+
+[tool.bandit]
+exclude_dirs = ["venv", "node_modules", "backend/tests", "backend/alembic"]
+# Projektweite Ausnahmen — jede mit Begruendung. Alles Uebrige wird je ZEILE
+# mit `# nosec <code> — <grund>` ausgenommen, nicht pauschal.
+#
+#   B101  assert — in Tests ueblich; Tests sind ohnehin ausgeschlossen.
+#   B104  Bindung an 0.0.0.0 — in einem Container ist das die Absicht: der
+#         Prozess lauscht im Container-Netz, veroeffentlicht wird ueber das
+#         Port-Mapping der Compose.
+#   B404/B603/B607  subprocess in den Sicherungsskripten. Sie rufen pg_dump
+#         bzw. psql mit einer im Code gebauten Argumentliste auf (kein
+#         shell=True, keine Zeichenkette). Der Aufruf ist der Zweck der
+#         Skripte; ohne Ausnahme waeren sie nicht pruefbar.
+skips = ["B101", "B104", "B404", "B603", "B607"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+asyncio_mode = "auto"

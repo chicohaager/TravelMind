@@ -1,20 +1,31 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X, MapPin, Star, Clock, Phone, Globe, ExternalLink,
-  Calendar, DollarSign, Info, Image as ImageIcon,
-  Plus
+  X,
+  MapPin,
+  Star,
+  Clock,
+  Phone,
+  Globe,
+  ExternalLink,
+  Calendar,
+  Euro,
+  Info,
+  Image as ImageIcon,
+  Plus,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTranslation } from 'react-i18next'
+import { getPhotoUrl, getThumbUrl, onThumbError } from '@/utils/images'
+import { aktuelleLocale } from '@/utils/format'
 
 export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }) {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('about')
 
   const TABS = [
-    { id: 'about', labelKey: 'places.tabAbout', icon: Info },
-    { id: 'photos', labelKey: 'places.tabPhotos', icon: ImageIcon },
+    { id: 'about', labelKey: 'places:tabAbout', icon: Info },
+    { id: 'photos', labelKey: 'places:tabPhotos', icon: ImageIcon },
   ]
 
   if (!isOpen || !place) return null
@@ -43,10 +54,11 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
           >
             {/* Header Image */}
             {place.image_url && (
-              <div className="relative h-48 bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+              <div className="relative h-48 bg-gray-200 dark:bg-gray-700 shrink-0">
                 <img
-                  src={place.image_url}
+                  src={getPhotoUrl(place.image_url)}
                   alt={place.name}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
                 <button
@@ -138,7 +150,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {place.address && (
                         <div className="flex items-start gap-3">
-                          <MapPin className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <MapPin className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:addressField')}
@@ -150,7 +162,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.opening_hours && (
                         <div className="flex items-start gap-3">
-                          <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:openingHours')}
@@ -162,7 +174,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.phone && (
                         <div className="flex items-start gap-3">
-                          <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:phoneField')}
@@ -179,7 +191,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.website && (
                         <div className="flex items-start gap-3">
-                          <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:websiteField')}
@@ -199,7 +211,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.cost && (
                         <div className="flex items-start gap-3">
-                          <DollarSign className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Euro className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:costField')}
@@ -213,17 +225,17 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
                       {place.visit_date && (
                         <div className="flex items-start gap-3">
-                          <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 shrink-0 mt-0.5" />
                           <div>
                             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('places:visitDateField')}
                             </div>
                             <div className="text-sm">
-                              {new Date(place.visit_date).toLocaleDateString('de-DE', {
+                              {new Date(place.visit_date).toLocaleDateString(aktuelleLocale(), {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
-                                day: 'numeric'
+                                day: 'numeric',
                               })}
                             </div>
                           </div>
@@ -276,8 +288,12 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
                         {place.photos.map((photo, index) => (
                           <img
                             key={index}
-                            src={photo}
-                            alt={t('places:photoAlt').replace('{name}', place.name).replace('{index}', index + 1)}
+                            src={getThumbUrl(photo)}
+                            onError={onThumbError(photo)}
+                            loading="lazy"
+                            alt={t('places:photoAlt')
+                              .replace('{name}', place.name)
+                              .replace('{index}', index + 1)}
                             className="w-full h-48 object-cover rounded-lg"
                           />
                         ))}
@@ -297,7 +313,7 @@ export default function PlaceDetailModal({ place, isOpen, onClose, onAddToTrip }
 
             {/* Footer with Action Button */}
             {onAddToTrip && (
-              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 shrink-0">
                 <button
                   onClick={() => {
                     onAddToTrip(place)

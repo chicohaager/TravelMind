@@ -12,31 +12,26 @@ Usage:
     python backup_database.py --compress         # Compress with gzip
 """
 
-import os
-import sys
 import argparse
+import gzip
+import logging
+import os
 import shutil
 import subprocess
-import gzip
-from datetime import datetime, timedelta
+import sys
+import tarfile
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
-import logging
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def get_database_url() -> str:
     """Get database URL from environment."""
-    return os.getenv(
-        "DATABASE_URL",
-        "sqlite:///./data/travelmind.db"
-    )
+    return os.getenv("DATABASE_URL", "sqlite:///./data/travelmind.db")
 
 
 def parse_database_url(url: str) -> dict:
@@ -44,10 +39,7 @@ def parse_database_url(url: str) -> dict:
     if url.startswith("sqlite"):
         # SQLite: sqlite:///./data/travelmind.db
         path = url.replace("sqlite:///", "").replace("sqlite://", "")
-        return {
-            "type": "sqlite",
-            "path": path
-        }
+        return {"type": "sqlite", "path": path}
     else:
         # PostgreSQL: postgresql://user:pass@host:port/dbname
         parsed = urlparse(url)
@@ -57,11 +49,11 @@ def parse_database_url(url: str) -> dict:
             "port": parsed.port or 5432,
             "database": parsed.path.lstrip("/"),
             "username": parsed.username,
-            "password": parsed.password
+            "password": parsed.password,
         }
 
 
-def backup_sqlite(db_path: str, output_dir: Path, compress: bool = False) -> Path:
+def backup_sqlite(db_path: str, output_dir: Path, compress: bool = False, timestamp: str = None) -> Path:
     """
     Backup SQLite database.
 
@@ -72,7 +64,7 @@ def backup_sqlite(db_path: str, output_dir: Path, compress: bool = False) -> Pat
     if not db_file.exists():
         raise FileNotFoundError(f"Database file not found: {db_path}")
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_name = f"travelmind_backup_{timestamp}.db"
     backup_path = output_dir / backup_name
 
@@ -102,8 +94,8 @@ def backup_sqlite(db_path: str, output_dir: Path, compress: bool = False) -> Pat
     # Compress if requested
     if compress:
         compressed_path = backup_path.with_suffix(".db.gz")
-        with open(backup_path, 'rb') as f_in:
-            with gzip.open(compressed_path, 'wb') as f_out:
+        with open(backup_path, "rb") as f_in:
+            with gzip.open(compressed_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         backup_path.unlink()
         backup_path = compressed_path
@@ -112,13 +104,13 @@ def backup_sqlite(db_path: str, output_dir: Path, compress: bool = False) -> Pat
     return backup_path
 
 
-def backup_postgresql(config: dict, output_dir: Path, compress: bool = False) -> Path:
+def backup_postgresql(config: dict, output_dir: Path, compress: bool = False, timestamp: str = None) -> Path:
     """
     Backup PostgreSQL database using pg_dump.
 
     Requires pg_dump to be installed on the system.
     """
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_name = f"travelmind_backup_{timestamp}.sql"
     backup_path = output_dir / backup_name
 
@@ -127,12 +119,18 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False) ->
     # Build pg_dump command
     cmd = [
         "pg_dump",
-        "-h", config["host"],
-        "-p", str(config["port"]),
-        "-U", config["username"],
-        "-d", config["database"],
-        "-F", "c",  # Custom format (compressed)
-        "-f", str(backup_path.with_suffix(".dump"))
+        "-h",
+        config["host"],
+        "-p",
+        str(config["port"]),
+        "-U",
+        config["username"],
+        "-d",
+        config["database"],
+        "-F",
+        "c",  # Custom format (compressed)
+        "-f",
+        str(backup_path.with_suffix(".dump")),
     ]
 
     # Set password via environment
@@ -141,13 +139,8 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False) ->
         env["PGPASSWORD"] = config["password"]
 
     try:
-        result = subprocess.run(
-            cmd,
-            env=env,
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        # check=True wirft bei Fehlschlag; die Rueckgabe wird nicht gebraucht.
+        subprocess.run(cmd, env=env, capture_output=True, text=True, check=True)
         backup_path = backup_path.with_suffix(".dump")
         logger.info(f"PostgreSQL backup created: {backup_path}")
 
@@ -161,8 +154,8 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False) ->
     # Additional compression for custom format backups
     if compress:
         compressed_path = backup_path.with_suffix(".dump.gz")
-        with open(backup_path, 'rb') as f_in:
-            with gzip.open(compressed_path, 'wb') as f_out:
+        with open(backup_path, "rb") as f_in:
+            with gzip.open(compressed_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         backup_path.unlink()
         backup_path = compressed_path
@@ -171,39 +164,78 @@ def backup_postgresql(config: dict, output_dir: Path, compress: bool = False) ->
     return backup_path
 
 
+def backup_uploads(uploads_dir: str, output_dir: Path, timestamp: str = None):
+    """
+    Archive the uploads directory (photos) into a gzip-compressed tarball.
+
+    The uploaded files are the irreplaceable part of a TravelMind backup — the
+    database only references them by path. Returns the archive Path, or None if
+    the uploads directory is missing/empty.
+    """
+    src = Path(uploads_dir)
+    if not src.exists():
+        logger.warning(f"Uploads directory not found, skipping: {uploads_dir}")
+        return None
+    if not any(src.iterdir()):
+        logger.warning(f"Uploads directory is empty, skipping: {uploads_dir}")
+        return None
+
+    timestamp = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive_path = output_dir / f"travelmind_uploads_{timestamp}.tar.gz"
+
+    logger.info(f"Backing up uploads directory: {uploads_dir}")
+    with tarfile.open(archive_path, "w:gz") as tar:
+        # arcname keeps the top-level folder name (e.g. "uploads") in the archive.
+        tar.add(src, arcname=src.name)
+
+    logger.info(f"Uploads archive created: {archive_path}")
+    return archive_path
+
+
 def cleanup_old_backups(output_dir: Path, keep: int = 7) -> int:
     """
     Remove old backups, keeping only the most recent ones.
 
     Returns the number of backups removed.
     """
-    # Find all backup files
-    patterns = ["travelmind_backup_*.db", "travelmind_backup_*.db.gz",
-                "travelmind_backup_*.dump", "travelmind_backup_*.dump.gz",
-                "travelmind_backup_*.sql", "travelmind_backup_*.sql.gz"]
+    # Database backups and uploads archives are pruned independently, so that
+    # `--keep N` retains the N most recent of *each* (a DB dump always keeps its
+    # matching uploads archive).
+    db_patterns = [
+        "travelmind_backup_*.db",
+        "travelmind_backup_*.db.gz",
+        "travelmind_backup_*.dump",
+        "travelmind_backup_*.dump.gz",
+        "travelmind_backup_*.sql",
+        "travelmind_backup_*.sql.gz",
+    ]
+    uploads_patterns = ["travelmind_uploads_*.tar.gz"]
 
-    backup_files = []
-    for pattern in patterns:
-        backup_files.extend(output_dir.glob(pattern))
-
-    # Sort by modification time (newest first)
-    backup_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-
-    # Remove old backups
     removed = 0
-    for backup_file in backup_files[keep:]:
-        logger.info(f"Removing old backup: {backup_file}")
-        backup_file.unlink()
-        removed += 1
+    for patterns in (db_patterns, uploads_patterns):
+        files = []
+        for pattern in patterns:
+            files.extend(output_dir.glob(pattern))
+        files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+        for old_file in files[keep:]:
+            logger.info(f"Removing old backup: {old_file}")
+            old_file.unlink()
+            removed += 1
 
     return removed
 
 
 def get_backup_info(output_dir: Path) -> list:
     """Get information about existing backups."""
-    patterns = ["travelmind_backup_*.db", "travelmind_backup_*.db.gz",
-                "travelmind_backup_*.dump", "travelmind_backup_*.dump.gz",
-                "travelmind_backup_*.sql", "travelmind_backup_*.sql.gz"]
+    patterns = [
+        "travelmind_backup_*.db",
+        "travelmind_backup_*.db.gz",
+        "travelmind_backup_*.dump",
+        "travelmind_backup_*.dump.gz",
+        "travelmind_backup_*.sql",
+        "travelmind_backup_*.sql.gz",
+        "travelmind_uploads_*.tar.gz",
+    ]
 
     backup_files = []
     for pattern in patterns:
@@ -212,20 +244,22 @@ def get_backup_info(output_dir: Path) -> list:
     backups = []
     for f in sorted(backup_files, key=lambda x: x.stat().st_mtime, reverse=True):
         stat = f.stat()
-        backups.append({
-            "name": f.name,
-            "size": stat.st_size,
-            "size_human": format_size(stat.st_size),
-            "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            "path": str(f)
-        })
+        backups.append(
+            {
+                "name": f.name,
+                "size": stat.st_size,
+                "size_human": format_size(stat.st_size),
+                "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                "path": str(f),
+            }
+        )
 
     return backups
 
 
 def format_size(size: int) -> str:
     """Format file size in human-readable format."""
-    for unit in ['B', 'KB', 'MB', 'GB']:
+    for unit in ["B", "KB", "MB", "GB"]:
         if size < 1024:
             return f"{size:.1f} {unit}"
         size /= 1024
@@ -252,46 +286,31 @@ Examples:
 
     # Restore from backup (SQLite)
     python backup_database.py --restore /path/to/backup.db
-        """
+        """,
     )
 
     parser.add_argument(
-        "--output", "-o",
+        "--output", "-o", type=str, default="./backups", help="Output directory for backups (default: ./backups)"
+    )
+
+    parser.add_argument("--keep", "-k", type=int, default=7, help="Number of backups to keep (default: 7)")
+
+    parser.add_argument("--compress", "-c", action="store_true", help="Compress backup with gzip")
+
+    parser.add_argument("--list", "-l", action="store_true", help="List existing backups")
+
+    parser.add_argument("--restore", "-r", type=str, help="Restore from backup file")
+
+    parser.add_argument("--database-url", type=str, help="Override DATABASE_URL environment variable")
+
+    parser.add_argument(
+        "--uploads-dir",
         type=str,
-        default="./backups",
-        help="Output directory for backups (default: ./backups)"
+        default=os.getenv("UPLOAD_DIR", "./uploads"),
+        help="Uploads directory (photos) to include (default: $UPLOAD_DIR or ./uploads)",
     )
 
-    parser.add_argument(
-        "--keep", "-k",
-        type=int,
-        default=7,
-        help="Number of backups to keep (default: 7)"
-    )
-
-    parser.add_argument(
-        "--compress", "-c",
-        action="store_true",
-        help="Compress backup with gzip"
-    )
-
-    parser.add_argument(
-        "--list", "-l",
-        action="store_true",
-        help="List existing backups"
-    )
-
-    parser.add_argument(
-        "--restore", "-r",
-        type=str,
-        help="Restore from backup file"
-    )
-
-    parser.add_argument(
-        "--database-url",
-        type=str,
-        help="Override DATABASE_URL environment variable"
-    )
+    parser.add_argument("--skip-uploads", action="store_true", help="Do not back up the uploads directory (photos)")
 
     args = parser.parse_args()
 
@@ -330,8 +349,8 @@ Examples:
 
             # Handle compressed backups
             if restore_path.suffix == ".gz":
-                with gzip.open(restore_path, 'rb') as f_in:
-                    with open(db_path, 'wb') as f_out:
+                with gzip.open(restore_path, "rb") as f_in:
+                    with open(db_path, "wb") as f_out:
                         shutil.copyfileobj(f_in, f_out)
             else:
                 shutil.copy2(restore_path, db_path)
@@ -341,12 +360,16 @@ Examples:
             # For PostgreSQL, use pg_restore
             cmd = [
                 "pg_restore",
-                "-h", db_config["host"],
-                "-p", str(db_config["port"]),
-                "-U", db_config["username"],
-                "-d", db_config["database"],
+                "-h",
+                db_config["host"],
+                "-p",
+                str(db_config["port"]),
+                "-U",
+                db_config["username"],
+                "-d",
+                db_config["database"],
                 "-c",  # Clean (drop) database objects before recreating
-                str(restore_path)
+                str(restore_path),
             ]
 
             env = os.environ.copy()
@@ -362,33 +385,35 @@ Examples:
 
         return
 
-    # Create backup
+    # Create backup. DB dump and uploads archive share one timestamp so they
+    # form a matching pair.
     try:
-        if db_config["type"] == "sqlite":
-            backup_path = backup_sqlite(
-                db_config["path"],
-                output_dir,
-                compress=args.compress
-            )
-        else:
-            backup_path = backup_postgresql(
-                db_config,
-                output_dir,
-                compress=args.compress
-            )
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # Get backup size
+        if db_config["type"] == "sqlite":
+            backup_path = backup_sqlite(db_config["path"], output_dir, compress=args.compress, timestamp=timestamp)
+        else:
+            backup_path = backup_postgresql(db_config, output_dir, compress=args.compress, timestamp=timestamp)
+
         size = backup_path.stat().st_size
         logger.info(f"Backup complete: {backup_path} ({format_size(size)})")
+
+        # Back up uploads (photos) unless explicitly skipped
+        uploads_path = None
+        if not args.skip_uploads:
+            uploads_path = backup_uploads(args.uploads_dir, output_dir, timestamp=timestamp)
 
         # Cleanup old backups
         removed = cleanup_old_backups(output_dir, keep=args.keep)
         if removed > 0:
             logger.info(f"Removed {removed} old backup(s)")
 
-        print(f"\n✅ Backup successful!")
-        print(f"   File: {backup_path}")
-        print(f"   Size: {format_size(size)}")
+        print("\n✅ Backup successful!")
+        print(f"   Database: {backup_path} ({format_size(size)})")
+        if uploads_path:
+            print(f"   Uploads:  {uploads_path} ({format_size(uploads_path.stat().st_size)})")
+        elif not args.skip_uploads:
+            print(f"   Uploads:  (none found at {args.uploads_dir})")
 
     except Exception as e:
         logger.error(f"Backup failed: {e}")

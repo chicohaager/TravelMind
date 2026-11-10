@@ -79,6 +79,7 @@ backend/uploads/
 
 # Development artifacts
 frontend/dev-dist/
+frontend/html/
 
 # Large media files in root
 *.jpg
@@ -93,3 +94,17 @@ frontend/dev-dist/
 *.tmp
 *.bak
 .env.new
+
+# Lokale Recovery-Dumps (nicht committen)
+_recovery/
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+frontend/.ds-css/
+
+# Ausrollziel (Benutzer@Host) — privat, gehoert nicht in ein oeffentliches Repo
+deploy/ziel.conf
+# Konkrete private Werte (Regex je Zeile) — nie committen
+scripts/private-werte.txt

@@ -4,15 +4,28 @@ Migration script to copy data from SQLite to PostgreSQL
 """
 
 import asyncio
+import os
 import sqlite3
-from sqlalchemy import create_engine, text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from datetime import datetime
-import sys
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Database URLs
-SQLITE_URL = "sqlite:///./data/travelmind.db"
-POSTGRES_URL = "postgresql+asyncpg://travelmind:travelmind@db:5432/travelmind"
+#
+# Bis 2026-08-25 stand die Postgres-Adresse hier fest verdrahtet, samt
+# Zugangsdaten (travelmind:travelmind) und ohne jede Moeglichkeit, sie zu
+# ueberschreiben. Ein Skript, das Daten schreibt, darf sein Ziel nicht raten:
+# es faellt jetzt laut aus, wenn DATABASE_URL fehlt.
+SQLITE_URL = os.getenv("SQLITE_URL", "sqlite:///./data/travelmind.db")
+POSTGRES_URL = os.getenv("DATABASE_URL")
+
+if not POSTGRES_URL:
+    raise SystemExit(
+        "DATABASE_URL ist nicht gesetzt.\n"
+        "Beispiel: DATABASE_URL='postgresql+asyncpg://<benutzer>:<passwort>@<host>:5432/<datenbank>'"
+    )
+
 
 async def migrate():
     """Migrate data from SQLite to PostgreSQL"""
@@ -52,8 +65,8 @@ async def migrate():
                         "email": user["email"],
                         "hashed_password": user["hashed_password"],
                         "created_at": created_at,
-                        "updated_at": updated_at
-                    }
+                        "updated_at": updated_at,
+                    },
                 )
             await session.commit()
             print(f"   ✅ Migrated {len(users)} users")
@@ -80,8 +93,8 @@ async def migrate():
                             "ai_provider": setting["ai_provider"],
                             "encrypted_api_key": setting["encrypted_api_key"],
                             "created_at": created_at,
-                            "updated_at": updated_at
-                        }
+                            "updated_at": updated_at,
+                        },
                     )
                 await session.commit()
                 print(f"   ✅ Migrated {len(settings)} settings")
@@ -122,8 +135,8 @@ async def migrate():
                         "currency": trip["currency"],
                         "cover_image": trip["cover_image"] if "cover_image" in trip.keys() else None,
                         "created_at": created_at,
-                        "updated_at": updated_at
-                    }
+                        "updated_at": updated_at,
+                    },
                 )
             await session.commit()
             print(f"   ✅ Migrated {len(trips)} trips")
@@ -160,8 +173,8 @@ async def migrate():
                             "photos": entry["photos"],
                             "tags": entry["tags"],
                             "created_at": entry["created_at"],
-                            "updated_at": entry["updated_at"]
-                        }
+                            "updated_at": entry["updated_at"],
+                        },
                     )
                 await session.commit()
                 print(f"   ✅ Migrated {len(entries)} diary entries")
@@ -204,8 +217,8 @@ async def migrate():
                             "notes": place["notes"],
                             "photos": place["photos"],
                             "created_at": place["created_at"],
-                            "updated_at": place["updated_at"]
-                        }
+                            "updated_at": place["updated_at"],
+                        },
                     )
                 await session.commit()
                 print(f"   ✅ Migrated {len(places)} places")
@@ -237,8 +250,8 @@ async def migrate():
                             "date": expense["date"],
                             "description": expense["description"],
                             "created_at": expense["created_at"],
-                            "updated_at": expense["updated_at"]
-                        }
+                            "updated_at": expense["updated_at"],
+                        },
                     )
                 await session.commit()
                 print(f"   ✅ Migrated {len(expenses)} expenses")
@@ -254,6 +267,7 @@ async def migrate():
         finally:
             sqlite_conn.close()
             await pg_engine.dispose()
+
 
 if __name__ == "__main__":
     asyncio.run(migrate())
